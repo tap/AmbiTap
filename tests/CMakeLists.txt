@@ -9,6 +9,11 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(ambitap_tests
     test_core.cpp
+    test_dsp_encoder.cpp
+    test_dsp_transforms.cpp
+    test_dsp_stateful.cpp
+    test_dsp_matrix.cpp
+    test_dsp_binaural.cpp
     test_rotation.cpp
     test_geometry.cpp
     test_decoding.cpp

@@ -6,6 +6,18 @@
 #ifndef AMBITAP_AMBITAP_H
 #define AMBITAP_AMBITAP_H
 
+#include "analysis/energy_vector.h"
+#include "dsp/binaural_renderer.h"
+#include "dsp/decoder.h"
+#include "dsp/directional_loudness.h"
+#include "dsp/doppler.h"
+#include "dsp/encoder.h"
+#include "dsp/format_converter.h"
+#include "dsp/mirror.h"
+#include "dsp/rotator.h"
+#include "dsp/spatial_compressor.h"
+#include "dsp/util/async_rebuilder.h"
+#include "dsp/virtual_mic.h"
 #include "math/core/coords.h"
 #include "math/core/indexing.h"
 #include "math/core/normalization.h"
