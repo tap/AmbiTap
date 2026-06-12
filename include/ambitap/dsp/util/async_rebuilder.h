@@ -71,6 +71,10 @@ namespace ambitap::dsp {
 
         /// Latest published product, or nullptr before the first build.
         /// Wait-free; safe from the audio thread.
+        ///
+        /// Uses the shared_ptr atomic free functions rather than C++20's
+        /// std::atomic<std::shared_ptr<T>> because Apple's libc++ does not yet
+        /// implement the latter (P0718); switch once it lands everywhere.
         std::shared_ptr<Product> load() const {
             return std::atomic_load_explicit(&m_active, std::memory_order_acquire);
         }

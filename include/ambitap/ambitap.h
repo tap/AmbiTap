@@ -7,6 +7,7 @@
 #define AMBITAP_AMBITAP_H
 
 #include "analysis/energy_vector.h"
+#include "analysis/soundfield_grid.h"
 #include "dsp/binaural_renderer.h"
 #include "dsp/decoder.h"
 #include "dsp/directional_loudness.h"

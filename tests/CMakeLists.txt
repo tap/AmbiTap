@@ -14,6 +14,7 @@ add_executable(ambitap_tests
     test_dsp_stateful.cpp
     test_dsp_matrix.cpp
     test_dsp_binaural.cpp
+    test_analysis_soundfield.cpp
     test_rotation.cpp
     test_geometry.cpp
     test_decoding.cpp

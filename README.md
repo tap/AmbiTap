@@ -1,6 +1,6 @@
 # AmbiTap
 
-A target-independent C++17 library for higher-order ambisonics (HOA), using the
+A target-independent C++20 library for higher-order ambisonics (HOA), using the
 AmbiX convention throughout (ACN channel ordering, SN3D normalization).
 
 AmbiTap is the shared core for three wrapper targets:
@@ -36,7 +36,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Requirements: CMake ≥ 3.21, a C++17 compiler. Eigen is found via an existing
+Requirements: CMake ≥ 3.21, a C++20 compiler. Eigen is found via an existing
 `Eigen3::Eigen` target, an installed Eigen, or a pinned FetchContent download —
 in that order. GoogleTest is fetched automatically when tests are enabled.
 
