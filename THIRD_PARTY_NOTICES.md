@@ -74,12 +74,9 @@ algorithms or formulas from them. Algorithms and mathematical formulas are not
 copyrightable; no code is taken from these sources.
 
 - F. Zotter (2009), *Analysis and Synthesis of Sound-Radiation with Spherical
-  Arrays* — spherical-harmonic conventions (`core/spherical_harmonics.h`).
-- A. Politis, *Spherical-Harmonic-Transform* library (github.com/polarch,
-  BSD-3) — used to cross-check the SH evaluation in
-  `core/spherical_harmonics.h`. If any expression is ever copied from it rather
-  than independently implemented from the formulas, its BSD-3 copyright notice
-  must be reproduced here.
+  Arrays* — spherical-harmonic conventions (`core/spherical_harmonics.h`). The
+  SH evaluation is implemented directly from the published formulas; no
+  third-party SH code is incorporated.
 - F. Zotter and M. Frank (2012), "All-Round Ambisonic Panning and Decoding,"
   JAES 60(10) — ALLRAD and max-rE (`decoding/allrad.h`, `decoding/max_re.h`).
 - F. Zotter and M. Frank (2019), *Ambisonics* (Springer Open) — EPAD decoder

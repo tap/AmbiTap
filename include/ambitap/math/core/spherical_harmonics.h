@@ -28,8 +28,7 @@ namespace ambitap {
     ///
     /// References:
     ///   Zotter, F. (2009). "Analysis and Synthesis of Sound-Radiation with Spherical Arrays".
-    ///   Cross-checked against A. Politis's Spherical-Harmonic-Transform library
-    ///   (github.com/polarch, BSD-3); see THIRD_PARTY_NOTICES.md.
+    /// Implemented directly from the published formulas; no third-party SH code is used.
     inline void evaluate_sh(int order, float azimuth, float elevation, float* out) {
         const float sin_el = std::sin(elevation);
         const float cos_el = std::cos(elevation);
