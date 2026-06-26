@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Mode-matching ambisonics decoder matrix construction.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_MODE_MATCHING_H
 #define AMBITAP_MATH_MODE_MATCHING_H

@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// 3D convex hull computation for speaker layout triangulation.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_CONVEX_HULL_H
 #define AMBITAP_MATH_CONVEX_HULL_H

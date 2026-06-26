@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Umbrella header for the AmbiTap math layer.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_AMBITAP_H
 #define AMBITAP_AMBITAP_H

@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Real-time partitioned overlap-save convolver using Ooura FFT.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_CONVOLUTION_H
 #define AMBITAP_MATH_CONVOLUTION_H

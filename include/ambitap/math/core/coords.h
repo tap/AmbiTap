@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Spherical coordinate type for ambisonics support code.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_COORDS_H
 #define AMBITAP_MATH_COORDS_H

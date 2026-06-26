@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Per-direction soundfield energy analysis on an equirectangular grid.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 #define AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H

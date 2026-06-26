@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Active intensity vector estimator (broadband energy vector).
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_ANALYSIS_ENERGY_VECTOR_H
 #define AMBITAP_ANALYSIS_ENERGY_VECTOR_H

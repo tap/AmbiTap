@@ -2,7 +2,7 @@
 /// Multi-channel variable delay for HOA — models distance-based time-of-flight
 /// (and the associated Doppler shift when distance is modulated).
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_DOPPLER_H
 #define AMBITAP_DSP_DOPPLER_H

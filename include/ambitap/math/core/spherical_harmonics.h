@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Real spherical harmonic evaluation using ACN/SN3D (AmbiX convention).
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_SPHERICAL_HARMONICS_H
 #define AMBITAP_MATH_SPHERICAL_HARMONICS_H
@@ -28,7 +28,7 @@ namespace ambitap {
     ///
     /// References:
     ///   Zotter, F. (2009). "Analysis and Synthesis of Sound-Radiation with Spherical Arrays".
-    ///   Polarch MATLAB HOA library (BSD).
+    /// Implemented directly from the published formulas; no third-party SH code is used.
     inline void evaluate_sh(int order, float azimuth, float elevation, float* out) {
         const float sin_el = std::sin(elevation);
         const float cos_el = std::cos(elevation);

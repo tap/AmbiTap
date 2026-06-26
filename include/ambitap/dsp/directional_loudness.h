@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Apply directional gain to a higher-order ambisonics signal.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
 #define AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
