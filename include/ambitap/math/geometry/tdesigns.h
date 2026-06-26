@@ -10,7 +10,7 @@
 /// and the rest of AmbiTap are MIT-licensed (see LICENSE).
 /// Cartesian (x, y, z) on the unit sphere. For ALLRAD at order N use t >= 2*N + 1.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_TDESIGNS_H
 #define AMBITAP_MATH_TDESIGNS_H

@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// ACN (Ambisonic Channel Number) indexing and channel count utilities.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_INDEXING_H
 #define AMBITAP_MATH_INDEXING_H

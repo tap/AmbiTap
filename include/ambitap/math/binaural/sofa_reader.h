@@ -3,7 +3,7 @@
 /// Requires libmysofa; gated by the AMBITAP_HAS_SOFA macro, set by the
 /// AMBITAP_ENABLE_SOFA build option.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_SOFA_READER_H
 #define AMBITAP_MATH_SOFA_READER_H

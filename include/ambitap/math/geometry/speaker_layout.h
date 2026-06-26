@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Triangulated speaker layout with VBAP gain computation and distance compensation.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_SPEAKER_LAYOUT_H
 #define AMBITAP_MATH_SPEAKER_LAYOUT_H

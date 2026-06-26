@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Soundfield mirroring (LR / FB / UD) via per-channel sign flips on the SH basis.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_MIRROR_H
 #define AMBITAP_DSP_MIRROR_H

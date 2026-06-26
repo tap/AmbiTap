@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// HOA rotator: Euler-angle SH rotation with async matrix rebuild.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_ROTATOR_H
 #define AMBITAP_DSP_ROTATOR_H

@@ -35,7 +35,7 @@ Defaults:
 If --cache is given, downloaded tables are stored there and reused on later runs
 so the header can be regenerated offline.
 
-Copyright 2026 Timothy Place. Distributed under the MIT License.
+Copyright 2025-2026 Timothy Place. Distributed under the MIT License.
 """
 
 import argparse
@@ -152,7 +152,7 @@ def emit_header(designs_points):
     lines.append("/// and the rest of AmbiTap are MIT-licensed (see LICENSE).")
     lines.append("/// Cartesian (x, y, z) on the unit sphere. For ALLRAD at order N use t >= 2*N + 1.")
     lines.append("/// Timothy Place")
-    lines.append("/// Copyright 2025 Timothy Place.")
+    lines.append("/// Copyright 2025-2026 Timothy Place.")
     lines.append("")
     lines.append("#ifndef AMBITAP_MATH_TDESIGNS_H")
     lines.append("#define AMBITAP_MATH_TDESIGNS_H")

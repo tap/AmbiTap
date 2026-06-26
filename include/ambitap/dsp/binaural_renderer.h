@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Binaural renderer: HOA bus -> stereo via SH-domain HRTF convolution.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_BINAURAL_RENDERER_H
 #define AMBITAP_DSP_BINAURAL_RENDERER_H

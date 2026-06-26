@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// ALLRAD (All-Round Ambisonic Decoder) matrix construction.
 /// Timothy Place
-/// Copyright 2025 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_ALLRAD_H
 #define AMBITAP_MATH_ALLRAD_H

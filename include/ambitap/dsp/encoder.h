@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// Point-source HOA encoder processor.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_ENCODER_H
 #define AMBITAP_DSP_ENCODER_H

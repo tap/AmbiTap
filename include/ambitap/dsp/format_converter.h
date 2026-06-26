@@ -1,7 +1,7 @@
 /// AmbiTap: target-independent ambisonics library
 /// FuMa <-> AmbiX channel ordering and normalization conversion.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_DSP_FORMAT_CONVERTER_H
 #define AMBITAP_DSP_FORMAT_CONVERTER_H

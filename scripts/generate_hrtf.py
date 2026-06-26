@@ -27,7 +27,15 @@ Defaults:
     max_order:   5
     output_path: include/ambitap/math/binaural/hrtf_data.h
 
-Copyright 2026 Timothy Place.
+The SOFA file is the MIT KEMAR (normal pinna) HRTF set of W. G. Gardner and
+K. D. Martin (MIT Media Lab, 1994), distributed free of charge on the condition
+that the authors are credited. A SOFA-format copy is available from the SOFA
+project (e.g. https://www.sofacoustics.org/data/database/mit/), or convert the
+original MIT distribution (https://sound.media.mit.edu/resources/KEMAR.html).
+Record the exact source file you used here when you regenerate, so the embedded
+coefficients stay reproducible. See THIRD_PARTY_NOTICES.md for the credit text.
+
+Copyright 2025-2026 Timothy Place. Distributed under the MIT License.
 """
 
 import os
@@ -192,6 +200,12 @@ def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
         "/// Built-in SH-domain HRTF dataset for binaural rendering.",
         "/// Auto-generated from MIT KEMAR (normal pinna) via SOFA + scripts/generate_hrtf.py.",
         "///",
+        "/// Source measurements: W. G. Gardner and K. D. Martin, \"HRTF Measurements of",
+        "/// a KEMAR Dummy-Head Microphone,\" MIT Media Lab Perceptual Computing Technical",
+        "/// Report #280 (1994). The KEMAR data is distributed free of charge by the MIT",
+        "/// Media Laboratory on the condition that the authors are credited; this header",
+        "/// is a spherical-harmonic projection of that data. See THIRD_PARTY_NOTICES.md.",
+        "///",
         "/// Two parallel datasets are emitted:",
         "///   builtin_hrtf_{left,right}       - standard LS SH projection.",
         "///   builtin_hrtf_magls_{left,right} - magnitude least-squares projection",
@@ -199,7 +213,7 @@ def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
         "/// The binaural renderer switches between them at runtime via the",
         "/// hrtf_dataset parameter.",
         "/// Timothy Place",
-        "/// Copyright 2026 Timothy Place.",
+        "/// Copyright 2025-2026 Timothy Place.",
         "",
         "#ifndef AMBITAP_MATH_HRTF_DATA_H",
         "#define AMBITAP_MATH_HRTF_DATA_H",

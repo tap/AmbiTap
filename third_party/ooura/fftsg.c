@@ -1,4 +1,16 @@
 /*
+Copyright(C) 1996-2001 Takuya OOURA
+    email: ooura@mmm.t.u-tokyo.ac.jp
+    download: http://momonga.t.u-tokyo.ac.jp/~ooura/fft.html
+    You may use, copy, modify this code for any purpose and
+    without fee. You may distribute this ORIGINAL package.
+
+This file (fftsg.c, the split-radix "Fast Version III") is vendored from
+Ooura's General Purpose FFT Package; see readme.txt in this directory for the
+full package description and license. Only this single source file is bundled.
+*/
+
+/*
 Fast Fourier/Cosine/Sine Transform
     dimension   :one
     data length :power of 2

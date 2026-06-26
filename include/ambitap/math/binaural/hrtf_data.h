@@ -2,6 +2,12 @@
 /// Built-in SH-domain HRTF dataset for binaural rendering.
 /// Auto-generated from MIT KEMAR (normal pinna) via SOFA + scripts/generate_hrtf.py.
 ///
+/// Source measurements: W. G. Gardner and K. D. Martin, "HRTF Measurements of
+/// a KEMAR Dummy-Head Microphone," MIT Media Lab Perceptual Computing Technical
+/// Report #280 (1994). The KEMAR data is distributed free of charge by the MIT
+/// Media Laboratory on the condition that the authors are credited; this header
+/// is a spherical-harmonic projection of that data. See THIRD_PARTY_NOTICES.md.
+///
 /// Two parallel datasets are emitted:
 ///   builtin_hrtf_{left,right}       - standard LS SH projection.
 ///   builtin_hrtf_magls_{left,right} - magnitude least-squares projection
@@ -9,7 +15,7 @@
 /// The binaural renderer switches between them at runtime via the
 /// hrtf_dataset parameter.
 /// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// Copyright 2025-2026 Timothy Place.
 
 #ifndef AMBITAP_MATH_HRTF_DATA_H
 #define AMBITAP_MATH_HRTF_DATA_H
