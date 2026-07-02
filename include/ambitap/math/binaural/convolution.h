@@ -119,7 +119,7 @@ namespace ambitap {
                     const double xi = X[2 * k + 1];
                     const double hr = H[2 * k];
                     const double hi = H[2 * k + 1];
-                    m_accum[2 * k]     += xr * hr - xi * hi;
+                    m_accum[2 * k] += xr * hr - xi * hi;
                     m_accum[2 * k + 1] += xr * hi + xi * hr;
                 }
             }

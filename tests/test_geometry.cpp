@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <random>
+#include <stdexcept>
 
 using namespace ambitap;
 
@@ -70,7 +71,9 @@ TEST(SpeakerLayout, VbapAtSpeakerIsThatSpeaker) {
         ASSERT_EQ(gains.size(), speakers.size());
         EXPECT_NEAR(gains[i], 1.0f, 1e-4f) << "speaker " << i;
         for (size_t j = 0; j < gains.size(); ++j) {
-            if (j != i) EXPECT_NEAR(gains[j], 0.0f, 1e-4f) << "speaker " << i << " leak " << j;
+            if (j != i) {
+                EXPECT_NEAR(gains[j], 0.0f, 1e-4f) << "speaker " << i << " leak " << j;
+            }
         }
     }
 }
@@ -106,16 +109,124 @@ TEST(SpeakerLayout, DistanceCompensation) {
     EXPECT_FLOAT_EQ(comp.gains[0], 0.25f);
 }
 
+// Audit finding C1: coplanar inputs used to produce a garbage "hull" with
+// duplicate-vertex, zero-volume triangles that silently broke VBAP (and thus
+// ALLRAD) on every 2D preset. Degenerate inputs must yield an empty hull.
+TEST(ConvexHull, DegenerateInputsReturnEmpty) {
+    auto ring = [](size_t n) {
+        std::vector<Eigen::Vector3f> pts;
+        for (size_t i = 0; i < n; ++i) {
+            const float a = 2.0f * k_pi * static_cast<float>(i) / static_cast<float>(n);
+            pts.push_back({std::cos(a), std::sin(a), 0.0f});
+        }
+        return pts;
+    };
+
+    EXPECT_TRUE(convex_hull_3d(ring(8)).empty()) << "coplanar ring";
+    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {-1, 0, 0}, {0.5f, 0, 0}, {-0.5f, 0, 0}}).empty())
+        << "collinear";
+    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}}).empty())
+        << "coincident";
+    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}).empty()) << "< 4 points";
+}
+
+// 2D pairwise VBAP on planar layouts (the mode all horizontal presets use).
+TEST(SpeakerLayout, PairwisePanningOn5_1) {
+    speaker_layout layout(layouts::surround_5_1()); // L, R, C, LS, RS
+    ASSERT_TRUE(layout.is_pairwise());
+    ASSERT_EQ(layout.num_triangles(), 0u);
+
+    const float deg = k_pi / 180.0f;
+
+    // A source between C (0°) and L (+30°) activates exactly that pair, with
+    // the 2D VBAP (tangent-law) split and unit energy.
+    {
+        const auto g = layout.vbap_gains({20.0f * deg, 0.0f});
+        EXPECT_GT(g[0], g[2]) << "20° is closer to L(30°) than C(0°)";
+        EXPECT_GT(g[2], 0.1f);
+        EXPECT_FLOAT_EQ(g[1], 0.0f);
+        EXPECT_FLOAT_EQ(g[3], 0.0f);
+        EXPECT_FLOAT_EQ(g[4], 0.0f);
+        float e = 0.f;
+        for (float v : g) e += v * v;
+        EXPECT_NEAR(e, 1.0f, 1e-5f);
+
+        // Exact 2D VBAP solution for speakers at 0°/30°, source at 20°.
+        const float gl = std::sin(20.0f * deg) / std::sin(30.0f * deg);
+        const float gc = std::cos(20.0f * deg) - gl * std::cos(30.0f * deg);
+        const float n  = std::sqrt(gl * gl + gc * gc);
+        EXPECT_NEAR(g[0], gl / n, 1e-4f);
+        EXPECT_NEAR(g[2], gc / n, 1e-4f);
+    }
+
+    // A source exactly at a speaker is that speaker alone.
+    for (size_t i = 0; i < layout.num_speakers(); ++i) {
+        const auto g = layout.vbap_gains(layout.speakers()[i]);
+        EXPECT_NEAR(g[i], 1.0f, 1e-4f) << "speaker " << i;
+    }
+
+    // The rear gap (180°) pans between LS (+110°) and RS (-110°).
+    {
+        const auto g = layout.vbap_gains({180.0f * deg, 0.0f});
+        EXPECT_NEAR(g[3], g[4], 1e-4f);
+        EXPECT_GT(g[3], 0.5f);
+        EXPECT_FLOAT_EQ(g[0], 0.0f);
+        EXPECT_FLOAT_EQ(g[1], 0.0f);
+        EXPECT_FLOAT_EQ(g[2], 0.0f);
+    }
+
+    // An elevated source pans by azimuth (projection onto the ring plane).
+    {
+        const auto g = layout.vbap_gains({0.0f, 45.0f * deg});
+        EXPECT_GT(g[2], 0.9f);
+    }
+}
+
+TEST(SpeakerLayout, PairwisePanningOnStereo) {
+    speaker_layout layout(layouts::stereo()); // L(+30°), R(-30°)
+    ASSERT_TRUE(layout.is_pairwise());
+
+    const auto center = layout.vbap_gains({0.0f, 0.0f});
+    EXPECT_NEAR(center[0], center[1], 1e-4f);
+    EXPECT_NEAR(center[0], 1.0f / std::sqrt(2.0f), 1e-3f);
+
+    const auto left = layout.vbap_gains(layout.speakers()[0]);
+    EXPECT_NEAR(left[0], 1.0f, 1e-4f);
+    EXPECT_NEAR(left[1], 0.0f, 1e-4f);
+}
+
+TEST(SpeakerLayout, PairwiseGainsAreEnergyNormalizedOnOctagon) {
+    speaker_layout layout(layouts::octagon());
+    ASSERT_TRUE(layout.is_pairwise());
+
+    for (float az = -3.1f; az <= 3.1f; az += 0.13f) {
+        const auto g      = layout.vbap_gains({az, 0.0f});
+        float      e      = 0.f;
+        int        active = 0;
+        for (float v : g) {
+            EXPECT_GE(v, 0.0f);
+            e += v * v;
+            if (v > 1e-6f) ++active;
+        }
+        EXPECT_NEAR(e, 1.0f, 1e-4f) << "az=" << az;
+        EXPECT_LE(active, 2) << "pairwise panning uses at most one pair";
+    }
+}
+
+TEST(SpeakerLayout, EmptyLayoutThrows) {
+    EXPECT_THROW(speaker_layout(std::vector<spherical_coord> {}), std::invalid_argument);
+}
+
 TEST(Tdesigns, PointsAreOnUnitSphere) {
     for (int order = 1; order <= max_order; ++order) {
-        size_t count          = 0;
-        const float (*pts)[3] = tdesign_for_order(order, count);
+        size_t count         = 0;
+        const float(*pts)[3] = tdesign_for_order(order, count);
         ASSERT_NE(pts, nullptr) << "order " << order;
         // ALLRAD needs t >= 2N+1, which needs at least (N+1)^2 points.
         EXPECT_GE(count, channel_count(order)) << "order " << order;
         for (size_t i = 0; i < count; ++i) {
-            const float norm = std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1]
-                                         + pts[i][2] * pts[i][2]);
+            const float norm =
+                std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1] + pts[i][2] * pts[i][2]);
             EXPECT_NEAR(norm, 1.0f, 1e-4f) << "order " << order << " point " << i;
         }
     }

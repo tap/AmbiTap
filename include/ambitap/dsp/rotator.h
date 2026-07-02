@@ -8,6 +8,7 @@
 
 #include "../math/core/indexing.h"
 #include "../math/core/rotation.h"
+#include "../math/core/validate.h"
 #include "util/async_rebuilder.h"
 
 #include <atomic>
@@ -25,11 +26,27 @@ namespace ambitap::dsp {
     ///   roll  — rotation about the +X (front) axis, applied last
     ///
     /// Threading model: angle setters submit a job to a worker thread that runs
-    /// the sh_rotation least-squares solve; the resulting row-major (C × C)
-    /// matrix is published via an atomic shared_ptr swap. Until the first setter
-    /// fires, is_active() is false and process() is a passthrough — callers can
-    /// use that for a fast path. The audio path is wait-free.
+    /// the sh_rotation solve; the resulting row-major (C × C) matrix is
+    /// published wait-free (rt_published — the audio thread never locks,
+    /// allocates, or frees; the worker does all freeing). Until the first
+    /// setter fires, is_active() is false and process() is a passthrough.
+    /// Exactly one audio thread may call the process methods.
+    ///
+    /// Click suppression: each newly adopted matrix is crossfaded in over
+    /// k_fade_samples against the previous one (the identity for the first),
+    /// so continuous head-tracking updates do not zipper.
     class rotator {
+      public:
+        /// Crossfade length applied when a new rotation matrix is adopted.
+        static constexpr size_t k_fade_samples = 256;
+
+        /// Published product: the new matrix plus the matrix to fade from.
+        struct product {
+            std::vector<float> m;    ///< row-major (C × C)
+            std::vector<float> prev; ///< same shape; identity before any build
+        };
+
+      private:
         int    m_order;
         size_t m_channels;
 
@@ -37,22 +54,40 @@ namespace ambitap::dsp {
         std::atomic<float> m_pitch {0.0f};
         std::atomic<float> m_roll {0.0f};
 
+        // Crossfade state; owned by the (single) audio thread.
+        mutable const product* m_fade_ref {nullptr};
+        mutable size_t         m_fade_pos {k_fade_samples};
+
+        // Worker-only: copy of the last matrix this worker built, used as the
+        // fade-from matrix of the next product.
+        mutable std::vector<float> m_worker_prev;
+
         // Declared after everything the build callback reads (see async_rebuilder).
-        async_rebuilder<const std::vector<float>> m_rebuilder;
+        async_rebuilder<const product> m_rebuilder;
 
       public:
         /// @param order  Ambisonics order in [0, max_order]. Order 0 is a passthrough.
+        /// @throws std::invalid_argument on out-of-range order.
         explicit rotator(int order)
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::rotator"))
             , m_channels(channel_count(order))
             , m_rebuilder([this] { return build(); }) {}
 
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void set_yaw(float radians) { m_yaw.store(radians); m_rebuilder.submit(); }
-        void set_pitch(float radians) { m_pitch.store(radians); m_rebuilder.submit(); }
-        void set_roll(float radians) { m_roll.store(radians); m_rebuilder.submit(); }
+        void set_yaw(float radians) {
+            m_yaw.store(radians);
+            m_rebuilder.submit();
+        }
+        void set_pitch(float radians) {
+            m_pitch.store(radians);
+            m_rebuilder.submit();
+        }
+        void set_roll(float radians) {
+            m_roll.store(radians);
+            m_rebuilder.submit();
+        }
 
         /// Set all three angles with a single rebuild.
         void set_rotation(float yaw_radians, float pitch_radians, float roll_radians) {
@@ -71,62 +106,102 @@ namespace ambitap::dsp {
         bool is_active() const { return m_rebuilder.has_value(); }
 
         /// Latest row-major (channels × channels) rotation matrix, or nullptr
-        /// while is_active() is false. Wait-free.
-        std::shared_ptr<const std::vector<float>> matrix() const { return m_rebuilder.load(); }
+        /// while is_active() is false. Any thread EXCEPT the real-time path
+        /// (UI/tests); the audio path uses process()/process_frame().
+        std::shared_ptr<const std::vector<float>> matrix() const {
+            auto p = m_rebuilder.peek();
+            if (!p) return nullptr;
+            return {p, &p->m}; // aliasing: shares ownership, points at the matrix
+        }
 
         /// Block until pending rebuilds have finished (tests / offline use).
         void wait_for_settling() { m_rebuilder.wait_for_settling(); }
 
         /// Rotate one frame of channels() samples. Output must not alias input.
-        void process_frame(const float* in, float* out) const {
-            auto m = matrix();
-            if (!m) {
-                for (size_t ch = 0; ch < m_channels; ++ch) out[ch] = in[ch];
-                return;
-            }
-            const float* data = m->data();
-            for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
-                float acc = 0.f;
-                for (size_t in_ch = 0; in_ch < m_channels; ++in_ch) {
-                    acc += data[out_ch * m_channels + in_ch] * in[in_ch];
-                }
-                out[out_ch] = acc;
-            }
+        /// Audio thread only; wait-free.
+        void process_frame(const float* in, float* out) const noexcept {
+            auto guard = m_rebuilder.read_lock();
+            apply_frames(guard.get(), &in, &out, 1, true);
         }
 
-        /// Rotate a block of planar channel buffers. Output must not alias input.
-        void process(const float* const* in, float* const* out, size_t frame_count) const {
-            auto m = matrix();
-            if (!m) {
-                for (size_t ch = 0; ch < m_channels; ++ch) {
-                    for (size_t i = 0; i < frame_count; ++i) out[ch][i] = in[ch][i];
-                }
-                return;
-            }
-            const float* data = m->data();
-            for (size_t i = 0; i < frame_count; ++i) {
-                for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
-                    float acc = 0.f;
-                    for (size_t in_ch = 0; in_ch < m_channels; ++in_ch) {
-                        acc += data[out_ch * m_channels + in_ch] * in[in_ch][i];
-                    }
-                    out[out_ch][i] = acc;
-                }
-            }
+        /// Rotate a block of planar channel buffers. Output must not alias
+        /// input. Audio thread only; wait-free.
+        void process(const float* const* in, float* const* out, size_t frame_count) const noexcept {
+            auto guard = m_rebuilder.read_lock();
+            apply_frames(guard.get(), in, out, frame_count, false);
         }
 
       private:
-        std::shared_ptr<const std::vector<float>> build() const {
+        // frame_layout == true: in/out are single-frame channel arrays
+        // (in[0][ch]); false: planar buffers (in[ch][i]).
+        void apply_frames(const product* p, const float* const* in, float* const* out,
+                          size_t frame_count, bool frame_layout) const noexcept {
+            if (!p) {
+                if (frame_layout) {
+                    for (size_t ch = 0; ch < m_channels; ++ch) out[0][ch] = in[0][ch];
+                }
+                else {
+                    for (size_t ch = 0; ch < m_channels; ++ch) {
+                        for (size_t i = 0; i < frame_count; ++i) out[ch][i] = in[ch][i];
+                    }
+                }
+                return;
+            }
+
+            if (p != m_fade_ref) { // new matrix adopted: restart the crossfade
+                m_fade_ref = p;
+                m_fade_pos = 0;
+            }
+
+            const float* mat  = p->m.data();
+            const float* prev = p->prev.data();
+
+            for (size_t i = 0; i < frame_count; ++i) {
+                const bool  fading = m_fade_pos < k_fade_samples;
+                const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
+                                                 / static_cast<float>(k_fade_samples)
+                                            : 1.f;
+                for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
+                    float acc_new = 0.f;
+                    float acc_old = 0.f;
+                    for (size_t in_ch = 0; in_ch < m_channels; ++in_ch) {
+                        const float x = frame_layout ? in[0][in_ch] : in[in_ch][i];
+                        acc_new += mat[out_ch * m_channels + in_ch] * x;
+                        if (fading) acc_old += prev[out_ch * m_channels + in_ch] * x;
+                    }
+                    const float y = fading ? acc_old + (acc_new - acc_old) * alpha : acc_new;
+                    if (frame_layout) {
+                        out[0][out_ch] = y;
+                    }
+                    else {
+                        out[out_ch][i] = y;
+                    }
+                }
+                if (fading) ++m_fade_pos;
+            }
+        }
+
+        std::shared_ptr<const product> build() const {
             sh_rotation rot(m_order, m_yaw.load(), m_pitch.load(), m_roll.load());
             const auto& m = rot.matrix();
 
-            auto fresh = std::make_shared<std::vector<float>>(m_channels * m_channels);
+            auto fresh = std::make_shared<product>();
+            fresh->m.resize(m_channels * m_channels);
             for (size_t row = 0; row < m_channels; ++row) {
                 for (size_t col = 0; col < m_channels; ++col) {
-                    (*fresh)[row * m_channels + col] = m(static_cast<Eigen::Index>(row),
-                                                         static_cast<Eigen::Index>(col));
+                    fresh->m[row * m_channels + col] =
+                        m(static_cast<Eigen::Index>(row), static_cast<Eigen::Index>(col));
                 }
             }
+
+            if (m_worker_prev.empty()) { // first build: fade in from identity
+                m_worker_prev.assign(m_channels * m_channels, 0.f);
+                for (size_t d = 0; d < m_channels; ++d) {
+                    m_worker_prev[d * m_channels + d] = 1.f;
+                }
+            }
+            fresh->prev   = m_worker_prev;
+            m_worker_prev = fresh->m;
             return fresh;
         }
     };

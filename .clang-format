@@ -1,76 +1,42 @@
+# AmbiTap house style: 4-space indent (also inside namespaces), aligned
+# declaration/assignment columns, Stroustrup braces, comma-first constructor
+# initializers, left-bound pointers, 100-column limit.
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
 
-BasedOnStyle: Google
-
-# Breaking string literals when combined with a column limit can result in some
-# really terribly-formatted source where there are many lines in a row that each
-# consist of string literals that only contain one or two characters each.
-BreakStringLiterals: false
-
-# While sorting includes is visually appealing, we choose not to do it since
-# it can functionally change the source in some cases where headers have been
-# poorly architected.
-SortIncludes: false
-
-ColumnLimit: 120
-
-# Project-specific tweaks on top of the base Google style
-
+ColumnLimit: 100
 IndentWidth: 4
 AccessModifierOffset: -2
-AlignTrailingComments: true
----
-Language:        Java
-ContinuationIndentWidth: 4
-JavaImportGroups: ['android', 'com.android', 'com.bmwgroup', 'com', 'java', 'vendor.bmw']
-AlignAfterOpenBracket: Align
----
-
-# AOEM Audio Group modifications to the above style
-
----
-Language:        Cpp
-UseTab: Never
-
 NamespaceIndentation: All
-CompactNamespaces: true
-FixNamespaceComments: true
+
+PointerAlignment: Left
+BreakBeforeBinaryOperators: NonAssignment
+SpaceBeforeCpp11BracedList: true
+# House style: braces attach everywhere (including functions); only `else`
+# gets its own line.
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: false
+  AfterClass: false
+  AfterStruct: false
+  AfterNamespace: false
+  AfterControlStatement: Never
+  BeforeElse: true
+  BeforeCatch: true
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
 
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
-AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
-MaxEmptyLinesToKeep: 2
+AlignTrailingComments: true
 
-PackConstructorInitializers: Never
-BreakConstructorInitializers: BeforeComma
-ConstructorInitializerIndentWidth: 0
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
 
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortBlocksOnASingleLine: Never
-InsertBraces: true
-
-SpaceBeforeCpp11BracedList: true
-
-
-BreakBeforeBraces: Custom
-BraceWrapping:
-  AfterClass:      false
-  AfterControlStatement: false
-  AfterEnum:       false
-  AfterFunction:   false
-  AfterNamespace:  false
-  AfterObjCDeclaration: false
-  AfterStruct:     false
-  AfterUnion:      false
-  AfterExternBlock: false
-  BeforeCatch:     true
-  BeforeElse:      true
-  IndentBraces:    false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-  SplitEmptyNamespace: false
-
-DerivePointerAlignment: false
-PointerAlignment: Left
-
----
+BreakStringLiterals: false
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+KeepEmptyLinesAtTheStartOfBlocks: false

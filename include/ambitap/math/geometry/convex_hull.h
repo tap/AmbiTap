@@ -24,10 +24,21 @@ namespace ambitap {
     /// normals. Incremental algorithm suitable for small point sets (< ~1000 points),
     /// which is typical for speaker layouts and T-designs.
     ///
+    /// Degenerate inputs — fewer than four points, or point sets that are
+    /// (affinely) coincident, collinear, or coplanar, such as a horizontal
+    /// speaker ring — have no 3D hull and return an empty vector. Callers must
+    /// check for this; speaker_layout falls back to 2D pairwise panning.
+    ///
     /// Reference: de Berg et al., "Computational Geometry", Ch. 11.
     inline std::vector<triangle> convex_hull_3d(const std::vector<Eigen::Vector3f>& points) {
         const size_t n = points.size();
         if (n < 4) return {};
+
+        // Degeneracy thresholds for the seed-tetrahedron searches below. Points
+        // are speaker/T-design directions on (or near) the unit sphere, so an
+        // absolute scale is meaningful.
+        constexpr float k_degenerate_sq   = 1e-10f; // squared distances
+        constexpr float k_degenerate_dist = 1e-5f;  // plane distance
 
         // Initial tetrahedron: pick four non-coplanar seed points.
         size_t p0 = 0, p1 = 1, p2 = 0, p3 = 0;
@@ -40,6 +51,7 @@ namespace ambitap {
                 p1       = i;
             }
         }
+        if (max_dist <= k_degenerate_sq) return {}; // all points coincident
 
         Eigen::Vector3f dir01 = (points[p1] - points[p0]).normalized();
         max_dist              = 0.0f;
@@ -52,6 +64,7 @@ namespace ambitap {
                 p2       = i;
             }
         }
+        if (max_dist <= k_degenerate_sq) return {}; // all points collinear
 
         Eigen::Vector3f normal = (points[p1] - points[p0]).cross(points[p2] - points[p0]);
         normal.normalize();
@@ -64,6 +77,7 @@ namespace ambitap {
                 p3       = i;
             }
         }
+        if (max_dist <= k_degenerate_dist) return {}; // all points coplanar
 
         float sign = (points[p3] - points[p0]).dot(normal);
 
@@ -76,9 +90,9 @@ namespace ambitap {
         std::vector<face> faces;
         auto              add_face = [&](size_t a, size_t b, size_t c) {
             face f;
-            f.v[0]  = a;
-            f.v[1]  = b;
-            f.v[2]  = c;
+            f.v[0] = a;
+            f.v[1] = b;
+            f.v[2] = c;
             f.normal = (points[b] - points[a]).cross(points[c] - points[a]).normalized();
             f.alive = true;
             faces.push_back(f);
@@ -90,7 +104,8 @@ namespace ambitap {
             add_face(p0, p1, p3);
             add_face(p1, p2, p3);
             add_face(p0, p3, p2);
-        } else {
+        }
+        else {
             add_face(p0, p1, p2);
             add_face(p0, p3, p1);
             add_face(p1, p3, p2);
@@ -172,8 +187,9 @@ namespace ambitap {
             for (const auto& e : horizon) {
                 add_face(e.a, e.b, i);
                 // The new face should point away from origin (points lie on a sphere).
-                face&           f           = faces.back();
-                Eigen::Vector3f face_center = (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
+                face&           f = faces.back();
+                Eigen::Vector3f face_center =
+                    (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
                 if (face_center.dot(f.normal) < 0) {
                     std::swap(f.v[1], f.v[2]);
                     f.normal = -f.normal;

@@ -19,13 +19,13 @@ using namespace ambitap;
 
 namespace {
 
-std::vector<float> encode_at(int order, float az, float el) {
-    dsp::encoder enc(order);
-    enc.set_direction(az, el);
-    std::vector<float> v(enc.channels());
-    for (size_t ch = 0; ch < v.size(); ++ch) v[ch] = enc.coefficients()[ch];
-    return v;
-}
+    std::vector<float> encode_at(int order, float az, float el) {
+        dsp::encoder enc(order);
+        enc.set_direction(az, el);
+        std::vector<float> v(enc.channels());
+        for (size_t ch = 0; ch < v.size(); ++ch) v[ch] = enc.coefficients()[ch];
+        return v;
+    }
 
 } // namespace
 
@@ -33,7 +33,7 @@ std::vector<float> encode_at(int order, float az, float el) {
 TEST(DspMirror, MirrorsMatchReflectedEncoding) {
     constexpr int   order = 3;
     constexpr float az = 0.7f, el = 0.4f;
-    const float     pi = static_cast<float>(M_PI);
+    const float     pi = k_pi;
 
     const auto src = encode_at(order, az, el);
 
@@ -42,11 +42,11 @@ TEST(DspMirror, MirrorsMatchReflectedEncoding) {
         float ref_az, ref_el;
     };
     const Case cases[] = {
-        {true, false, false, -az, el},          // LR: az -> -az
-        {false, true, false, pi - az, el},      // FB: az -> pi - az
-        {false, false, true, az, -el},          // UD: el -> -el
-        {true, true, false, az - pi, el},       // LR+FB: az -> az - pi (mod 2pi)
-        {true, false, true, -az, -el},          // LR+UD
+        {true, false, false, -az, el},     // LR: az -> -az
+        {false, true, false, pi - az, el}, // FB: az -> pi - az
+        {false, false, true, az, -el},     // UD: el -> -el
+        {true, true, false, az - pi, el},  // LR+FB: az -> az - pi (mod 2pi)
+        {true, false, true, -az, -el},     // LR+UD
     };
 
     for (const auto& c : cases) {
@@ -54,6 +54,7 @@ TEST(DspMirror, MirrorsMatchReflectedEncoding) {
         m.set_flip_lr(c.lr);
         m.set_flip_fb(c.fb);
         m.set_flip_ud(c.ud);
+        m.snap_parameters(); // sign changes crossfade; test wants exact values
 
         std::vector<float> out(m.channels());
         m.process_frame(src.data(), out.data());
@@ -108,13 +109,14 @@ TEST(DspFormatConverter, WChannelGain) {
 TEST(DspVirtualMic, FirstOrderCardioid) {
     dsp::virtual_mic mic(1);
     mic.set_direction(0.9f, 0.3f);
+    mic.snap_parameters(); // coefficient changes ramp; test wants exact values
 
     // Source at the look direction: W*W + dir·dir = 1 + 1 = 2.
     const auto at_look = encode_at(1, 0.9f, 0.3f);
     EXPECT_NEAR(mic.process_frame(at_look.data()), 2.0f, 1e-5f);
 
     // Source at the antipode: 1 - 1 = 0 (cardioid null).
-    const float pi      = static_cast<float>(M_PI);
+    const float pi      = k_pi;
     const auto  at_back = encode_at(1, 0.9f - pi, -0.3f);
     EXPECT_NEAR(mic.process_frame(at_back.data()), 0.0f, 1e-5f);
 }
@@ -146,22 +148,48 @@ TEST(DspDirectionalLoudness, UnityGainIsBypass) {
     }
 }
 
-TEST(DspDirectionalLoudness, BoostMatchesExtractReencode) {
-    constexpr int order = 2;
-    dsp::directional_loudness dl(order);
-    dl.set_direction(0.5f, 0.25f);
-    dl.set_gain(3.0f);
+// A source encoded exactly at the look direction must come out scaled by
+// exactly the requested gain — the property the beam calibration exists for.
+// (Audit finding C4: the uncalibrated formula achieved 1 + (g-1)(order+1),
+// turning "attenuate to 0.5" into an inverted, louder -1.0.)
+TEST(DspDirectionalLoudness, AchievesRequestedGainAtLookDirection) {
+    constexpr float az = 0.3f, el = -0.2f;
+    for (int order : {1, 3, 5}) {
+        const auto in = encode_at(order, az, el);
+        for (float gain : {0.0f, 0.5f, 1.0f, 2.0f}) {
+            dsp::directional_loudness dl(order);
+            dl.set_direction(az, el);
+            dl.set_gain(gain);
+            dl.snap_parameters(); // ramps off: assert the settled gain exactly
 
-    const auto         in = encode_at(order, -0.2f, 0.1f);
+            std::vector<float> out(dl.channels());
+            dl.process_frame(in.data(), out.data());
+
+            for (size_t ch = 0; ch < out.size(); ++ch) {
+                EXPECT_NEAR(out[ch], gain * in[ch], 1e-5f)
+                    << "order=" << order << " gain=" << gain << " ch=" << ch;
+            }
+        }
+    }
+}
+
+// Sources well away from the look direction are far less affected than the
+// on-beam source: attenuating the beam must not gut the rest of the scene.
+TEST(DspDirectionalLoudness, OffBeamSourceLargelyUnaffected) {
+    constexpr int             order = 3;
+    dsp::directional_loudness dl(order);
+    dl.set_direction(0.0f, 0.0f); // look at front
+    dl.set_gain(0.0f);            // remove the front
+    dl.snap_parameters();
+
+    const auto         in = encode_at(order, k_pi, 0.0f); // rear source
     std::vector<float> out(dl.channels());
     dl.process_frame(in.data(), out.data());
 
-    float extracted = 0.f;
-    for (size_t ch = 0; ch < dl.channels(); ++ch) {
-        extracted += in[ch] * dl.sh_coefficient(ch);
+    float in_e = 0.f, diff_e = 0.f;
+    for (size_t ch = 0; ch < out.size(); ++ch) {
+        in_e += in[ch] * in[ch];
+        diff_e += (out[ch] - in[ch]) * (out[ch] - in[ch]);
     }
-    for (size_t ch = 0; ch < dl.channels(); ++ch) {
-        EXPECT_NEAR(out[ch], in[ch] + 2.0f * extracted * dl.sh_coefficient(ch), 1e-5f)
-            << "ch=" << ch;
-    }
+    EXPECT_LT(diff_e, 0.05f * in_e);
 }

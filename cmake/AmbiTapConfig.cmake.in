@@ -1,0 +1,22 @@
+@PACKAGE_INIT@
+
+# AmbiTap requires Eigen; resolve it in the consumer the same way the build
+# did (an installed Eigen3 config package).
+include(CMakeFindDependencyMacro)
+find_dependency(Eigen3 3.3 CONFIG)
+
+include("${CMAKE_CURRENT_LIST_DIR}/AmbiTapTargets.cmake")
+
+# When the producing build fetched Eigen itself, AmbiTap::ambitap links an
+# empty shim target (its include paths were build-tree-only); forward the
+# shim to the consumer's real Eigen resolved by find_dependency above.
+if(TARGET AmbiTap::ambitap_eigen)
+    set_property(TARGET AmbiTap::ambitap_eigen APPEND
+        PROPERTY INTERFACE_LINK_LIBRARIES Eigen3::Eigen)
+endif()
+
+# Note: the installed package does not carry SOFA (libmysofa) support; vendor
+# AmbiTap via add_subdirectory/FetchContent with AMBITAP_ENABLE_SOFA=ON if you
+# need ambitap/math/binaural/sofa_reader.h.
+
+check_required_components(AmbiTap)

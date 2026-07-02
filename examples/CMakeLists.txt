@@ -1,0 +1,5 @@
+add_executable(encode_rotate_decode encode_rotate_decode.cpp)
+target_link_libraries(encode_rotate_decode PRIVATE AmbiTap::ambitap ambitap_warnings)
+
+add_executable(binaural_render binaural_render.cpp)
+target_link_libraries(binaural_render PRIVATE AmbiTap::ambitap ambitap_warnings)

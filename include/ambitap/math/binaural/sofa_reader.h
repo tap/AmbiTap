@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -36,15 +37,13 @@ namespace ambitap {
         float                                        sample_rate {0.f};
         std::vector<float>                           azimuth;   // radians
         std::vector<float>                           elevation; // radians
-        std::vector<std::vector<std::vector<float>>> hrir;      // [measurement][ear 0=L/1=R][sample]
+        std::vector<std::vector<std::vector<float>>> hrir; // [measurement][ear 0=L/1=R][sample]
 
         /// Project the measured HRIRs onto the SH basis at the given order.
         ///
         /// out_left and out_right are filled as [acn_channel][sample] of size
         /// (order+1)^2 x min(hrir_length, max_taps).
-        void decompose_sh(int                              order,
-                          size_t                           max_taps,
-                          std::vector<std::vector<float>>& out_left,
+        void decompose_sh(int order, size_t max_taps, std::vector<std::vector<float>>& out_left,
                           std::vector<std::vector<float>>& out_right) const {
             const size_t num_ch = channel_count(order);
             const size_t taps   = std::min(hrir_length, max_taps);
@@ -55,20 +54,26 @@ namespace ambitap {
             Eigen::MatrixXf Y(M, C);
             float           sh_buf[max_channel_count];
             for (Eigen::Index i = 0; i < M; ++i) {
-                evaluate_sh(order,
-                            azimuth[static_cast<size_t>(i)],
-                            elevation[static_cast<size_t>(i)],
-                            sh_buf);
+                evaluate_sh(order, azimuth[static_cast<size_t>(i)],
+                            elevation[static_cast<size_t>(i)], sh_buf);
                 for (Eigen::Index j = 0; j < C; ++j) {
                     Y(i, j) = sh_buf[j];
                 }
             }
 
-            // Moore-Penrose pseudoinverse via normal equations + LDLT (cheap when M >> C,
-            // which is typical for spherical measurement grids).
-            Eigen::MatrixXf Y_pinv = (Y.transpose() * Y)
-                                         .ldlt()
-                                         .solve(Y.transpose() * Eigen::MatrixXf::Identity(M, M));
+            // Rank-revealing pseudoinverse. Normal equations + LDLT would return
+            // silent NaN/garbage for measurement grids that cannot support the
+            // requested order (e.g. a horizontal-ring SOFA file); detect and
+            // report that instead.
+            Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXf> cod(Y);
+            cod.setThreshold(1e-4f);
+            if (cod.rank() < C) {
+                throw std::runtime_error(
+                    "ambitap::hrtf_data::decompose_sh: measurement grid cannot support order "
+                    + std::to_string(order) + " (re-encoding matrix rank "
+                    + std::to_string(cod.rank()) + " < " + std::to_string(C) + " channels)");
+            }
+            Eigen::MatrixXf Y_pinv = cod.pseudoInverse();
 
             out_left.assign(num_ch, std::vector<float>(taps, 0.f));
             out_right.assign(num_ch, std::vector<float>(taps, 0.f));
@@ -93,19 +98,41 @@ namespace ambitap {
 
     /// Load HRTF measurements from a SOFA file via libmysofa.
     ///
-    /// @throws std::runtime_error if the file cannot be opened or parsed.
+    /// Requirements checked at load time (violations throw): exactly two
+    /// receivers (left/right ears), and no per-measurement Data.Delay — files
+    /// that store time-of-arrival separately would decode with broken ITD if
+    /// the delays were silently dropped.
+    ///
+    /// @throws std::runtime_error if the file cannot be opened or parsed, or
+    ///         does not meet the requirements above.
     inline hrtf_data load_sofa(const std::string& path) {
         int err = MYSOFA_OK;
 
-        MYSOFA_HRTF* hrtf = mysofa_load(path.c_str(), &err);
+        const std::unique_ptr<MYSOFA_HRTF, decltype(&mysofa_free)> hrtf(
+            mysofa_load(path.c_str(), &err), &mysofa_free);
         if (hrtf == nullptr || err != MYSOFA_OK) {
-            if (hrtf != nullptr) mysofa_free(hrtf);
-            throw std::runtime_error("ambisonics::load_sofa: failed to load \"" + path + "\"");
+            throw std::runtime_error("ambitap::load_sofa: failed to load \"" + path + "\"");
+        }
+
+        if (hrtf->R != 2) {
+            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has "
+                                     + std::to_string(hrtf->R)
+                                     + " receivers; only 2 (left/right) is supported");
+        }
+        if (hrtf->DataDelay.values != nullptr) {
+            for (unsigned i = 0; i < hrtf->DataDelay.elements; ++i) {
+                if (hrtf->DataDelay.values[i] != 0.0f) {
+                    throw std::runtime_error(
+                        "ambitap::load_sofa: \"" + path
+                        + "\" carries non-zero Data.Delay, which is not supported; "
+                          "bake the delays into the IRs before loading");
+                }
+            }
         }
 
         // libmysofa stores source positions in spherical-degrees by default; convert
         // to Cartesian to get a uniform handle, then derive radians.
-        mysofa_tocartesian(hrtf);
+        mysofa_tocartesian(hrtf.get());
 
         hrtf_data data;
         data.num_measurements = static_cast<size_t>(hrtf->M);
@@ -128,7 +155,7 @@ namespace ambitap {
             data.hrir[i][0].resize(data.hrir_length);
             data.hrir[i][1].resize(data.hrir_length);
 
-            // DataIR layout (post-tocartesian): [measurement * R * N + receiver * N + sample]
+            // DataIR layout: [measurement * R * N + receiver * N + sample]
             const size_t base = i * 2 * data.hrir_length;
             for (size_t t = 0; t < data.hrir_length; ++t) {
                 data.hrir[i][0][t] = hrtf->DataIR.values[base + t];
@@ -136,7 +163,6 @@ namespace ambitap {
             }
         }
 
-        mysofa_free(hrtf);
         return data;
     }
 

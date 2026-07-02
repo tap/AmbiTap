@@ -24,8 +24,16 @@ namespace ambitap {
     /// for any direction d. R_l is computed by evaluating SH at many linearly
     /// independent test directions and solving the overdetermined system.
     ///
-    /// More robust than the Ivanic-Ruedenberg recurrence at the cost of a slightly
-    /// more expensive construction.
+    /// Accuracy note: this sampling/least-squares construction is accurate to
+    /// float roundoff (~1e-6 orthogonality error at order 10, audit-verified)
+    /// but is an approximation, unlike the Ivanic-Ruedenberg recurrence (with
+    /// its published erratum), which is exact up to roundoff and cheaper to
+    /// build. It is kept for its implementation simplicity, not because it is
+    /// more robust.
+    ///
+    /// Euler convention (angle constructor): intrinsic Z-Y'-X'' — yaw about
+    /// +Z first, pitch about +Y second, roll about +X last, right-hand rule
+    /// (positive pitch tilts the front axis DOWN).
     class sh_rotation {
         int             m_order;
         size_t          m_num_channels;
@@ -75,9 +83,8 @@ namespace ambitap {
                 float t  = (static_cast<float>(i) + 0.5f) / static_cast<float>(num_dirs);
                 float el = std::asin(2.0f * t - 1.0f);
                 float az = static_cast<float>(i) * 2.3999632f; // golden angle
-                test_dirs.push_back({std::cos(el) * std::cos(az),
-                                     std::cos(el) * std::sin(az),
-                                     std::sin(el)});
+                test_dirs.push_back(
+                    {std::cos(el) * std::cos(az), std::cos(el) * std::sin(az), std::sin(el)});
             }
 
             float sh_orig[max_channel_count];
@@ -103,22 +110,21 @@ namespace ambitap {
                     evaluate_sh(l, raz, rel, sh_rot);
 
                     for (int j = 0; j < block_size; ++j) {
-                        size_t acn                                  = acn_index(l, j - l);
-                        Y_orig(i, static_cast<Eigen::Index>(j))     = sh_orig[acn];
-                        Y_rot(i, static_cast<Eigen::Index>(j))      = sh_rot[acn];
+                        size_t acn                              = acn_index(l, j - l);
+                        Y_orig(i, static_cast<Eigen::Index>(j)) = sh_orig[acn];
+                        Y_rot(i, static_cast<Eigen::Index>(j))  = sh_rot[acn];
                     }
                 }
 
                 // Least squares: Y_rot = Y_orig * R_l^T
-                Eigen::MatrixXf R_l_T = (Y_orig.transpose() * Y_orig)
-                                            .ldlt()
-                                            .solve(Y_orig.transpose() * Y_rot);
+                Eigen::MatrixXf R_l_T =
+                    (Y_orig.transpose() * Y_orig).ldlt().solve(Y_orig.transpose() * Y_rot);
                 Eigen::MatrixXf R_l = R_l_T.transpose();
 
                 for (int m = -l; m <= l; ++m) {
                     for (int mp = -l; mp <= l; ++mp) {
-                        auto row          = static_cast<Eigen::Index>(acn_index(l, m));
-                        auto col          = static_cast<Eigen::Index>(acn_index(l, mp));
+                        auto row           = static_cast<Eigen::Index>(acn_index(l, m));
+                        auto col           = static_cast<Eigen::Index>(acn_index(l, mp));
                         m_matrix(row, col) = R_l(m + l, mp + l);
                     }
                 }
