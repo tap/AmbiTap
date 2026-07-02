@@ -69,12 +69,9 @@ namespace ambitap {
         float           sh_buf[max_channel_count];
 
         for (Eigen::Index v = 0; v < V; ++v) {
-            float x  = tdesign_pts[v][0];
-            float y  = tdesign_pts[v][1];
-            float z  = tdesign_pts[v][2];
-            float az = std::atan2(y, x);
-            float el = std::atan2(z, std::sqrt(x * x + y * y));
-            evaluate_sh(order, az, el, sh_buf);
+            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1],
+                                          tdesign_pts[v][2]);
+            evaluate_sh(order, dir, sh_buf);
             for (Eigen::Index c = 0; c < C; ++c) {
                 Y_virtual(v, c) = sh_buf[c];
             }
@@ -106,13 +103,10 @@ namespace ambitap {
         Eigen::MatrixXf G(V, L);
 
         for (Eigen::Index v = 0; v < V; ++v) {
-            float x  = tdesign_pts[v][0];
-            float y  = tdesign_pts[v][1];
-            float z  = tdesign_pts[v][2];
-            float az = std::atan2(y, x);
-            float el = std::atan2(z, std::sqrt(x * x + y * y));
+            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1],
+                                          tdesign_pts[v][2]);
 
-            auto gains = layout.vbap_gains({az, el});
+            auto gains = layout.vbap_gains(dir);
             for (Eigen::Index l = 0; l < L; ++l) {
                 G(v, l) = gains[static_cast<size_t>(l)];
             }

@@ -1,5 +1,10 @@
 build/
+build*/
 .cache/
 compile_commands.json
+CMakeUserPresets.json
+.vscode/
+.idea/
 .DS_Store
 __pycache__/
+*.wav

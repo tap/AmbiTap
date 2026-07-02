@@ -24,8 +24,16 @@ namespace ambitap {
     /// for any direction d. R_l is computed by evaluating SH at many linearly
     /// independent test directions and solving the overdetermined system.
     ///
-    /// More robust than the Ivanic-Ruedenberg recurrence at the cost of a slightly
-    /// more expensive construction.
+    /// Accuracy note: this sampling/least-squares construction is accurate to
+    /// float roundoff (~1e-6 orthogonality error at order 10, audit-verified)
+    /// but is an approximation, unlike the Ivanic-Ruedenberg recurrence (with
+    /// its published erratum), which is exact up to roundoff and cheaper to
+    /// build. It is kept for its implementation simplicity, not because it is
+    /// more robust.
+    ///
+    /// Euler convention (angle constructor): intrinsic Z-Y'-X'' — yaw about
+    /// +Z first, pitch about +Y second, roll about +X last, right-hand rule
+    /// (positive pitch tilts the front axis DOWN).
     class sh_rotation {
         int             m_order;
         size_t          m_num_channels;

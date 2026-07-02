@@ -47,7 +47,7 @@ TEST(Normalization, Sn3dBasics) {
 TEST(Normalization, N3dRelations) {
     for (int n = 0; n <= max_order; ++n) {
         for (int m = 0; m <= n; ++m) {
-            EXPECT_NEAR(n3d_factor(n, m), sn3d_factor(n, m) * std::sqrt(2.0f * n + 1.0f), 1e-6f);
+            EXPECT_NEAR(n3d_factor(n, m), sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
         }
         EXPECT_NEAR(sn3d_to_n3d(n) * n3d_to_sn3d(n), 1.0f, 1e-6f);
     }

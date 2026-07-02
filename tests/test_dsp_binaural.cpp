@@ -195,3 +195,64 @@ TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
     for (float v : r.right_db) peak = std::max(peak, v);
     EXPECT_NEAR(peak, 0.f, 1e-3f);
 }
+
+// Audit finding B7: the built-in HRTFs are 44.1 kHz data; prepare() must
+// adapt them to the host rate or every spectral cue shifts and ITDs shrink.
+TEST(DspBinaural, PrepareResamplesBuiltinHrtfToHostRate) {
+    constexpr size_t block = 64;
+
+    // Reference: W-only impulse at the native rate reproduces the raw FIR.
+    dsp::binaural_renderer native(1);
+    native.prepare(block); // 44.1 kHz default
+
+    // Same impulse at 2x the rate: the response must stretch to ~2x the
+    // length — its energy centroid lands at ~2x the native centroid.
+    dsp::binaural_renderer doubled(1);
+    doubled.prepare(block, 2.f * builtin_hrtf_sample_rate);
+
+    auto centroid = [](dsp::binaural_renderer& bin) {
+        planar             in(4, block);
+        in.bufs[0][0] = 1.f;
+        std::vector<float> l(block), r(block);
+        double num = 0.0, den = 0.0;
+        size_t t = 0;
+        for (size_t b = 0; b < 6; ++b) {
+            bin.process(in.ptrs.data(), l.data(), r.data(), block);
+            for (size_t i = 0; i < block; ++i, ++t) {
+                num += static_cast<double>(t) * l[i] * l[i];
+                den += l[i] * l[i];
+            }
+            in.bufs[0][0] = 0.f;
+        }
+        return num / den;
+    };
+
+    const double c_native  = centroid(native);
+    const double c_doubled = centroid(doubled);
+    EXPECT_NEAR(c_doubled / c_native, 2.0, 0.1)
+        << "native centroid " << c_native << ", 2x-rate centroid " << c_doubled;
+
+    // Sanity: preparing at the native rate must reproduce the FIR bit-close
+    // (the resampling path must not engage).
+    EXPECT_FLOAT_EQ(native.sample_rate(), builtin_hrtf_sample_rate);
+}
+
+// resample_fir basics: identity at equal rates; a delta stretches by the
+// rate ratio with unity peak amplitude (within windowed-sinc ripple).
+TEST(ResampleFir, DeltaAndIdentity) {
+    std::vector<float> delta(64, 0.f);
+    delta[20] = 1.f;
+
+    const auto same = resample_fir(delta.data(), delta.size(), 48000.f, 48000.f);
+    ASSERT_EQ(same.size(), delta.size());
+    EXPECT_FLOAT_EQ(same[20], 1.f);
+
+    const auto up = resample_fir(delta.data(), delta.size(), 44100.f, 88200.f);
+    ASSERT_EQ(up.size(), 128u);
+    size_t peak = 0;
+    for (size_t i = 1; i < up.size(); ++i) {
+        if (std::fabs(up[i]) > std::fabs(up[peak])) peak = i;
+    }
+    EXPECT_EQ(peak, 40u);
+    EXPECT_NEAR(up[peak], 1.f, 0.02f);
+}

@@ -6,6 +6,8 @@
 #ifndef AMBITAP_MATH_MAX_RE_H
 #define AMBITAP_MATH_MAX_RE_H
 
+#include "../core/coords.h"
+
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -22,7 +24,7 @@ namespace ambitap {
     ///
     /// Reference: Zotter & Frank (2012), "All-Round Ambisonic Panning and Decoding".
     inline std::vector<float> max_re_weights(int order) {
-        const float theta = (137.9f * static_cast<float>(M_PI) / 180.0f)
+        const float theta = (137.9f * k_pi / 180.0f)
                             / (static_cast<float>(order) + 1.51f);
         const float x = std::cos(theta);
 

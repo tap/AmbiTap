@@ -7,6 +7,7 @@
 #define AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 
 #include "../dsp/util/rt_published.h"
+#include "../math/core/coords.h"
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
@@ -215,14 +216,12 @@ namespace ambitap::analysis {
         /// Direction of a grid cell. Edge-sampled: column 0 = -pi (back wrap),
         /// row 0 = +pi/2 (zenith).
         static float azimuth_of_column(int col, int az_steps) {
-            return -static_cast<float>(M_PI)
-                 + static_cast<float>(col) * static_cast<float>(2.0 * M_PI)
-                       / static_cast<float>(az_steps);
+            return -k_pi + static_cast<float>(col) * 2.0f * k_pi
+                               / static_cast<float>(az_steps);
         }
         static float elevation_of_row(int row, int el_steps) {
-            return static_cast<float>(M_PI / 2.0)
-                 - static_cast<float>(row) * static_cast<float>(M_PI)
-                       / static_cast<float>(el_steps);
+            return k_pi * 0.5f
+                 - static_cast<float>(row) * k_pi / static_cast<float>(el_steps);
         }
     };
 

@@ -7,23 +7,54 @@ on:
 
 jobs:
   build-test:
+    # Compiler/OS matrix, warnings-as-errors everywhere.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - name: linux-gcc
+            os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - name: linux-clang
+            os: ubuntu-latest
+            cc: clang
+            cxx: clang++
+          - name: macos-appleclang
+            os: macos-latest
+            cc: cc
+            cxx: c++
+          - name: windows-msvc
+            os: windows-latest
+            cc: cl
+            cxx: cl
+    name: build-test (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 40
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          -DAMBITAP_WERROR=ON
+          -DAMBITAP_BUILD_EXAMPLES=ON
+          -DAMBITAP_BUILD_BENCH=ON
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel --config Release
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --build-config Release
+
+      - name: Run examples (smoke)
+        if: runner.os != 'Windows'
+        run: |
+          ./build/examples/encode_rotate_decode
+          ./build/examples/binaural_render /tmp/orbit.wav
 
   sanitize:
     # ASan+UBSan and TSan legs. TSan is what guards the wait-free publish
@@ -39,7 +70,7 @@ jobs:
             flags: "-fsanitize=thread -fno-sanitize-recover=all -O1"
     name: sanitize (${{ matrix.name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -53,3 +84,67 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  sofa:
+    # The optional SOFA path is real code; build it so it cannot rot.
+    name: sofa (build with AMBITAP_ENABLE_SOFA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          -DAMBITAP_ENABLE_SOFA=ON -DAMBITAP_WERROR=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  install:
+    # find_package(AmbiTap) must actually work: install to a prefix, then
+    # configure and build a minimal downstream consumer against it.
+    name: install + find_package smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Eigen (the exported package declares it as a dependency)
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+
+      - name: Configure, build, install
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DAMBITAP_BUILD_TESTS=OFF
+          cmake --build build --parallel
+          cmake --install build --prefix "$PWD/prefix"
+
+      - name: Build a downstream consumer via find_package
+        run: |
+          mkdir consumer && cd consumer
+          cat > main.cpp <<'EOF'
+          #include <ambitap/ambitap.h>
+          #include <cstdio>
+          int main() {
+              ambitap::dsp::encoder enc(3);
+              enc.set_direction(0.5f, 0.1f);
+              enc.snap_parameters();
+              float out[16];
+              enc.process_sample(1.0f, out);
+              std::printf("W=%f\n", out[0]);
+              return out[0] == 1.0f ? 0 : 1;
+          }
+          EOF
+          cat > CMakeLists.txt <<'EOF'
+          cmake_minimum_required(VERSION 3.24)
+          project(consumer CXX)
+          find_package(AmbiTap CONFIG REQUIRED)
+          add_executable(consumer main.cpp)
+          target_link_libraries(consumer PRIVATE AmbiTap::ambitap)
+          EOF
+          cmake -B build -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/prefix"
+          cmake --build build
+          ./build/consumer

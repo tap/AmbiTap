@@ -188,7 +188,7 @@ def compute_sh_hrtf_magls(Y, Y_pinv, hrir_data, fft_len, sample_rate,
 
 
 def emit_array(lines, name, data, num_ch, fft_len):
-    lines.append(f"constexpr float {name}[{num_ch}][{fft_len}] = {{")
+    lines.append(f"inline constexpr float {name}[{num_ch}][{fft_len}] = {{")
     for ch in range(num_ch):
         vals = data[ch]
         val_strs = [f"{v:.8e}f" for v in vals]
@@ -233,10 +233,10 @@ def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
         "",
         "namespace ambitap {",
         "",
-        f"constexpr int    builtin_hrtf_order       = {order};",
-        f"constexpr size_t builtin_hrtf_channels    = {num_ch};",
-        f"constexpr size_t builtin_hrtf_length      = {fft_len};",
-        f"constexpr float  builtin_hrtf_sample_rate = {sample_rate}f;",
+        f"inline constexpr int    builtin_hrtf_order       = {order};",
+        f"inline constexpr size_t builtin_hrtf_channels    = {num_ch};",
+        f"inline constexpr size_t builtin_hrtf_length      = {fft_len};",
+        f"inline constexpr float  builtin_hrtf_sample_rate = {sample_rate}f;",
         "",
     ]
     ear_names = ["left", "right"]

@@ -37,9 +37,39 @@
 > stress, torn/UAF product check) and `tests/test_rt_safety.cpp` (replaced
 > global `operator new`/`delete` proving the process paths allocation- and
 > free-free), plus ASan+UBSan and TSan legs in CI. 97 tests green under all
-> three sanitizers. Still open: P2 (CI matrix parity, install/export,
-> benchmarks, docs/examples, HRTF sample-rate handling) and the MagLS dataset
-> regeneration noted above.
+> three sanitizers.
+>
+> **P2 remediation (same day, same branch):** install/export rules +
+> `AmbiTapConfig.cmake` make the README's `find_package(AmbiTap)` claim true
+> (both the fetched-Eigen and system-Eigen paths are smoke-tested by a CI job
+> that installs to a prefix and builds a downstream consumer). CI grew to a
+> GCC/Clang/AppleClang/MSVC matrix with `AMBITAP_WERROR=ON`, the sanitizer
+> legs, a SOFA build leg, and example smoke runs; the tests/examples/bench
+> build against a strict warnings target (`-Wall -Wextra -Wpedantic
+> -Wconversion -Wshadow`, `/W4 /permissive-`) warning-free. B7 is fixed:
+> `binaural_renderer::prepare(block, sample_rate)` resamples the built-in
+> 44.1 kHz FIRs to the host rate (windowed-sinc, `math/binaural/resample.h`),
+> with a centroid-scaling regression test. New `examples/`
+> (encode→rotate→decode; binaural WAV render) and dependency-free `bench/`
+> (µs/block per processor per order + rebuild latency). Hygiene: the stale
+> foreign `.clang-format` was replaced with a config matching the house style
+> (plus `.clang-format-ignore` for generated tables — a one-time reformat
+> commit is needed before CI can enforce it); the `BUILD_TESTS` cache clobber
+> is gone; GTest prefers a system install (`FIND_PACKAGE_ARGS`); test
+> discovery/run timeouts added; the deprecated Eigen `FetchContent_Populate`
+> path is version-gated away on CMake ≥ 3.28; the HRTF tables are `inline
+> constexpr` (one copy per binary, generator updated to match); `M_PI` is gone
+> from library headers (`k_pi` in coords.h, plus a shared `to_spherical`
+> helper); README contradictions (B14) fixed and the RT contract documented.
+> 99 tests green under plain, ASan+UBSan, and TSan.
+>
+> **Remaining (needs the author):** regenerate the MagLS dataset against the
+> KEMAR source SOFA and enable `HrtfData.DISABLED_MaglsDatasetIsCausal`; pin
+> libmysofa to the v1.3.4 commit SHA (unreachable from the audit sandbox);
+> decide on the one-time `clang-format` reformat commit + CI gate. Deferred
+> with rationale: Q1 (rotation via least-squares fit — accurate to ~1e-6
+> through order 10, but the doc overstating it vs. Ivanic–Ruedenberg was
+> fixed), P3 polish items not otherwise picked up along the way.
 
 **Date:** 2026-07-02
 **Scope:** every header under `include/ambitap/`, all tests, scripts, build system, and CI — reviewed line-by-line, with SampleRateTap as the quality/completeness bar.

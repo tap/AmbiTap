@@ -24,14 +24,14 @@
 
 namespace ambitap {
 
-constexpr int    builtin_hrtf_order       = 5;
-constexpr size_t builtin_hrtf_channels    = 36;
-constexpr size_t builtin_hrtf_length      = 128;
-constexpr float  builtin_hrtf_sample_rate = 44100.0f;
+inline constexpr int    builtin_hrtf_order       = 5;
+inline constexpr size_t builtin_hrtf_channels    = 36;
+inline constexpr size_t builtin_hrtf_length      = 128;
+inline constexpr float  builtin_hrtf_sample_rate = 44100.0f;
 
 /// LS SH-domain HRTF for the left ear.
 /// Indexed as builtin_hrtf_left[acn_channel][sample].
-constexpr float builtin_hrtf_left[36][128] = {
+inline constexpr float builtin_hrtf_left[36][128] = {
     { // ACN 0
         -2.40804503e-05f, -1.84914307e-05f, -2.07514672e-05f, -1.96298812e-05f, -1.70994867e-05f, 1.40416223e-05f, 2.18587181e-05f, 2.93638510e-05f,
         1.66464576e-05f, 1.49477635e-05f, -1.53427426e-05f, -8.72011247e-06f, 7.29107784e-08f, 1.63008990e-05f, -9.78223448e-06f, -2.58522219e-05f,
@@ -684,7 +684,7 @@ constexpr float builtin_hrtf_left[36][128] = {
 
 /// LS SH-domain HRTF for the right ear.
 /// Indexed as builtin_hrtf_right[acn_channel][sample].
-constexpr float builtin_hrtf_right[36][128] = {
+inline constexpr float builtin_hrtf_right[36][128] = {
     { // ACN 0
         -2.40804503e-05f, -1.84914307e-05f, -2.07514672e-05f, -1.96298812e-05f, -1.70994867e-05f, 1.40416223e-05f, 2.18587181e-05f, 2.93638510e-05f,
         1.66464576e-05f, 1.49477635e-05f, -1.53427426e-05f, -8.72011247e-06f, 7.29107783e-08f, 1.63008990e-05f, -9.78223448e-06f, -2.58522219e-05f,
@@ -1337,7 +1337,7 @@ constexpr float builtin_hrtf_right[36][128] = {
 
 /// MagLS SH-domain HRTF for the left ear (better HF).
 /// Indexed as builtin_hrtf_magls_left[acn_channel][sample].
-constexpr float builtin_hrtf_magls_left[36][128] = {
+inline constexpr float builtin_hrtf_magls_left[36][128] = {
     { // ACN 0
         7.60185149e-02f, 5.01107883e-02f, -1.27656844e-01f, -1.30181488e-01f, 5.76825950e-03f, 2.37464464e-02f, 4.38553558e-02f, 2.67292917e-02f,
         -3.88727062e-02f, -1.22567793e-02f, 5.02598583e-02f, 4.33043541e-02f, 1.99442029e-03f, -2.34670922e-02f, -2.78018997e-02f, -9.07061000e-03f,
@@ -1990,7 +1990,7 @@ constexpr float builtin_hrtf_magls_left[36][128] = {
 
 /// MagLS SH-domain HRTF for the right ear (better HF).
 /// Indexed as builtin_hrtf_magls_right[acn_channel][sample].
-constexpr float builtin_hrtf_magls_right[36][128] = {
+inline constexpr float builtin_hrtf_magls_right[36][128] = {
     { // ACN 0
         7.60185149e-02f, 5.01107883e-02f, -1.27656844e-01f, -1.30181488e-01f, 5.76825950e-03f, 2.37464464e-02f, 4.38553558e-02f, 2.67292917e-02f,
         -3.88727062e-02f, -1.22567793e-02f, 5.02598583e-02f, 4.33043541e-02f, 1.99442029e-03f, -2.34670922e-02f, -2.78018997e-02f, -9.07061000e-03f,

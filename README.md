@@ -1,5 +1,9 @@
 # AmbiTap
 
+[![CI](https://github.com/tap/AmbiTap/actions/workflows/ci.yml/badge.svg)](https://github.com/tap/AmbiTap/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+
 A target-independent C++20 library for higher-order ambisonics (HOA), using the
 AmbiX convention throughout (ACN channel ordering, SN3D normalization).
 
@@ -14,19 +18,32 @@ AmbiTap is the shared core for three wrapper targets:
 ```
 include/ambitap/
 ├── ambitap.h            umbrella header
-└── math/
-    ├── core/            spherical harmonics, ACN indexing, SN3D/N3D, SH rotation
-    ├── geometry/        3D convex hull, VBAP speaker layouts, presets, T-designs
-    ├── decoding/        mode-matching, ALLRAD, EPAD decoder construction, max-rE
-    └── binaural/        Ooura real-FFT wrapper, partitioned overlap-save convolver,
-                         embedded SH-domain MIT KEMAR HRTF (order 5, LS + MagLS),
-                         optional SOFA reader
+├── math/
+│   ├── core/            spherical harmonics, ACN indexing, SN3D/N3D, SH rotation
+│   ├── geometry/        3D convex hull, 3D + 2D pairwise VBAP, presets, T-designs
+│   ├── decoding/        mode-matching, ALLRAD, EPAD decoder construction, max-rE
+│   └── binaural/        Ooura real-FFT wrapper, partitioned overlap-save convolver,
+│                        embedded SH-domain MIT KEMAR HRTF (order 5, LS + MagLS),
+│                        FIR resampling, optional SOFA reader
+├── dsp/                 runtime-sized processors: encoder, rotator, decoder,
+│                        binaural renderer, mirror, virtual mic, doppler,
+│                        directional loudness, spatial compressor,
+│                        FuMa <-> AmbiX format converter
+│   └── util/            wait-free publication (rt_published), async matrix
+│                        rebuild worker, parameter smoothing
+└── analysis/            UI-feeding analysis: energy vector, soundfield heatmap
 ```
 
 The library is header-only apart from one tiny static target (`AmbiTap::fft`,
-the vendored Ooura `fftsg.c`). A stateful DSP "processor" layer (`ambitap::dsp`)
-and UI-feeding analysis (`ambitap::analysis`) build on the math layer; the
-processors are runtime-sized with a wait-free real-time `process()` path.
+the vendored Ooura `fftsg.c`).
+
+**The real-time contract** (machine-checked in `tests/test_rt_safety.cpp` and
+`tests/test_dsp_threads.cpp`, under TSan in CI): every `process()` path is
+wait-free — it never locks, never allocates or frees, and never blocks on the
+worker threads that rebuild decode/rotation matrices. Parameter changes are
+click-free: coefficient tables ramp, matrices crossfade in, and delay changes
+glide. Setters are safe to call from one control thread while audio runs; for
+offline/exact rendering call `snap_parameters()` / `wait_for_settling()`.
 
 ## Building
 
@@ -36,14 +53,30 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Requirements: CMake ≥ 3.21, a C++20 compiler. Eigen is found via an existing
+Requirements: CMake ≥ 3.24, a C++20 compiler. Eigen is found via an existing
 `Eigen3::Eigen` target, an installed Eigen, or a pinned FetchContent download —
-in that order. GoogleTest is fetched automatically when tests are enabled.
+in that order. GoogleTest is fetched automatically when tests are enabled (an
+installed GTest is preferred when present).
+
+Example programs live in `examples/` (`encode_rotate_decode`,
+`binaural_render` — writes a WAV of a source orbiting the head) and a
+dependency-free micro-benchmark in `bench/` (`-DAMBITAP_BUILD_BENCH=ON`).
 
 ## Consuming
 
 ```cmake
-add_subdirectory(path/to/AmbiTap)   # or find_package(AmbiTap) once installed
+add_subdirectory(path/to/AmbiTap)   # or FetchContent
+target_link_libraries(my_target PRIVATE AmbiTap::ambitap)
+```
+
+or install it and use the exported package (CI smoke-tests this path):
+
+```bash
+cmake -B build && cmake --install build --prefix /some/prefix
+```
+
+```cmake
+find_package(AmbiTap CONFIG REQUIRED)   # needs an installed Eigen3
 target_link_libraries(my_target PRIVATE AmbiTap::ambitap)
 ```
 
@@ -51,17 +84,28 @@ Options:
 
 | Option | Default | Effect |
 |---|---|---|
-| `AMBITAP_ENABLE_SOFA` | `OFF` | FetchContent libmysofa v1.3.4 and define `AMBITAP_HAS_SOFA`, enabling `ambitap/math/binaural/sofa_reader.h` |
+| `AMBITAP_ENABLE_SOFA` | `OFF` | FetchContent libmysofa and define `AMBITAP_HAS_SOFA`, enabling `ambitap/math/binaural/sofa_reader.h` (build-tree consumers only; not exported) |
 | `AMBITAP_BUILD_TESTS` | `ON` when top-level | Build the GTest suite |
+| `AMBITAP_BUILD_EXAMPLES` | `ON` when top-level | Build the example programs |
+| `AMBITAP_BUILD_BENCH` | `OFF` | Build the micro-benchmarks |
+| `AMBITAP_WERROR` | `OFF` | Warnings as errors (used by CI) |
+| `AMBITAP_INSTALL` | `ON` when top-level | Generate install/export rules |
 
 ## Conventions
 
 - **Channel ordering:** ACN. **Normalization:** SN3D (AmbiX). FuMa conversion
-  lives in the wrapper targets, not here.
+  (orders 0–3) is provided by `dsp::format_converter`.
 - **Angles:** radians; azimuth 0 = front, +π/2 = left; elevation 0 = horizon,
-  +π/2 = zenith.
+  +π/2 = zenith. Rotations compose as yaw (about +Z) then pitch (about +Y)
+  then roll (about +X); positive pitch tilts the front axis downward
+  (right-hand rule about +Y).
 - Decoder constructors return Eigen matrices shaped `(speakers × channels)`
-  with `speaker_signals = D * hoa`.
+  with `speaker_signals = D * hoa`. All three constructions (mode-matching,
+  ALLRAD, EPAD) share one absolute-gain convention and are built in the
+  orthonormal (N3D) basis internally.
+- **Binaural sample rate:** the embedded KEMAR HRTFs are 44.1 kHz data; pass
+  the host rate to `binaural_renderer::prepare(block_size, sample_rate)` and
+  the FIRs are resampled to match.
 
 ## Third-party
 
@@ -83,6 +127,11 @@ Options:
   <http://neilsloane.com/sphdesigns/>. The point coordinates are mathematical
   facts taken from that catalogue rather than from any redistribution-licensed
   repackaging.
+
+## Audit
+
+A full correctness and quality audit (with its remediation status) lives in
+[`docs/AUDIT.md`](docs/AUDIT.md).
 
 ## License
 

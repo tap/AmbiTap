@@ -47,6 +47,13 @@ struct rt_guard {
 
 } // namespace
 
+// GCC pairs allocation/deallocation functions by inspection and cannot see
+// that these replacements are internally consistent (malloc in every new,
+// free in every delete); silence its false positive for this file.
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
+
 void* operator new(std::size_t size) {
     if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
     if (void* p = std::malloc(size ? size : 1)) return p;
