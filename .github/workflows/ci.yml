@@ -124,6 +124,36 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  embedded:
+    # The embedded real-time profile must stay bare-metal-clean: the RT
+    # subset (tools/embedded/rt_core_check.cpp documents it) cross-compiles
+    # for Cortex-M55 with no exceptions, no RTTI, no threads, no Eigen, and
+    # no hardware doubles (-Wdouble-promotion catches accidental promotion
+    # in the per-sample paths). Links against newlib-nano + nosys to prove
+    # nothing hidden is pulled in.
+    name: embedded (cortex-m55 RT-profile gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Arm bare-metal toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Cross-compile the RT profile for Cortex-M55
+        run: |
+          arm-none-eabi-g++ -std=c++20 -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
+            -fno-exceptions -fno-rtti -Os \
+            -Wall -Wextra -Werror -Wdouble-promotion \
+            -Iinclude \
+            -c tools/embedded/rt_core_check.cpp -o rt_core_check.o
+          arm-none-eabi-gcc -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -Os \
+            -c third_party/ooura/fftsg_float.c -o fftsg_float.o
+          arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
+            --specs=nosys.specs --specs=nano.specs \
+            rt_core_check.o fftsg_float.o -o rt_core_check.elf
+          arm-none-eabi-size rt_core_check.elf
+
   install:
     # find_package(AmbiTap) must actually work: install to a prefix, then
     # configure and build a minimal downstream consumer against it.

@@ -159,6 +159,16 @@ Options:
   facts taken from that catalogue rather than from any redistribution-licensed
   repackaging.
 
+## Embedded targets
+
+The real-time paths run on embedded processors (Cortex-M55, Hexagon
+AudioReach): the RT profile — every `process()` path, including a float32
+binaural engine (`dsp::binaural_core`) and precomputed-matrix application
+(`dsp::matrix_applier`) — builds with no exceptions, no threads, no Eigen,
+and no hardware doubles, and CI cross-compiles it for bare-metal Cortex-M55
+on every push. Profile definition, per-order cycle/memory budgets, and
+AudioReach integration notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
+
 ## Audit
 
 A full correctness and quality audit (with its remediation status) lives in

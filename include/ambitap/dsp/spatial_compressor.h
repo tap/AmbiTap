@@ -6,6 +6,7 @@
 #ifndef AMBITAP_DSP_SPATIAL_COMPRESSOR_H
 #define AMBITAP_DSP_SPATIAL_COMPRESSOR_H
 
+#include "../math/core/fast_math.h"
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
@@ -37,6 +38,7 @@ namespace ambitap::dsp {
         float  m_release_s {0.1f};
 
         std::atomic<float> m_threshold_db {-12.f};
+        std::atomic<float> m_threshold_lin {0.251188643f}; // 10^(-12/20)
         std::atomic<float> m_ratio {4.f};
         std::atomic<float> m_makeup_db {0.f};
         std::atomic<float> m_attack_coef {0.f};
@@ -61,7 +63,12 @@ namespace ambitap::dsp {
         }
 
         /// Compression threshold in dB.
-        void  set_threshold_db(float db) { m_threshold_db.store(db, std::memory_order_relaxed); }
+        void set_threshold_db(float db) {
+            m_threshold_db.store(db, std::memory_order_relaxed);
+            // Linear mirror, so the audio thread's below-threshold fast path
+            // is a single compare (exact libm here; control thread).
+            m_threshold_lin.store(std::pow(10.f, db / 20.f), std::memory_order_relaxed);
+        }
         float threshold_db() const { return m_threshold_db.load(std::memory_order_relaxed); }
 
         /// Compression ratio. 1 = no compression.
@@ -88,6 +95,11 @@ namespace ambitap::dsp {
 
         /// Update the envelope follower with one W sample, then return the
         /// linear gain to apply to every channel (compression + makeup).
+        ///
+        /// Uses fast_log2/fast_exp2 (error < 1e-4 dB) instead of per-sample
+        /// libm — std::log10 + std::pow here cost hundreds of cycles each on
+        /// FPUs without hardware doubles. Below threshold the gain needs no
+        /// transcendentals at all: a single linear-domain compare.
         float process_envelope(float w_sample) noexcept {
             const float abs_w = std::abs(w_sample);
             const float coef  = (abs_w > m_envelope)
@@ -96,12 +108,16 @@ namespace ambitap::dsp {
             m_envelope += (abs_w - m_envelope) * coef;
             if (m_envelope < 1e-30f) m_envelope = 0.f; // denormal guard
 
-            const float env_db    = 20.f * std::log10(std::max(m_envelope, 1e-12f));
+            const float makeup_db = m_makeup_db.load(std::memory_order_relaxed);
+            if (m_envelope <= m_threshold_lin.load(std::memory_order_relaxed)) {
+                return (makeup_db == 0.f) ? 1.f : fast_linear_from_db(makeup_db);
+            }
+            const float env_db    = fast_db_from_linear(std::max(m_envelope, 1e-12f));
             const float over      = env_db - m_threshold_db.load(std::memory_order_relaxed);
             const float ratio     = m_ratio.load(std::memory_order_relaxed);
             const float reduce_db = (over > 0.f) ? -over * (1.f - 1.f / ratio) : 0.f;
-            const float total_db  = reduce_db + m_makeup_db.load(std::memory_order_relaxed);
-            return std::pow(10.f, total_db / 20.f);
+            const float total_db  = reduce_db + makeup_db;
+            return fast_linear_from_db(total_db);
         }
 
         /// Process a block of planar channel buffers (W = channel 0).

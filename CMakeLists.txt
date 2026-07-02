@@ -91,7 +91,7 @@ endif()
 # (host applications, Max externals, Pd externals) can link it.
 # ------------------------------------------------------------------------------
 
-add_library(ambitap_fft STATIC third_party/ooura/fftsg.c)
+add_library(ambitap_fft STATIC third_party/ooura/fftsg.c third_party/ooura/fftsg_float.c)
 add_library(AmbiTap::fft ALIAS ambitap_fft)
 set_target_properties(ambitap_fft PROPERTIES
     POSITION_INDEPENDENT_CODE ON
