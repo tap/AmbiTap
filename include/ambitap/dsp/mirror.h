@@ -55,9 +55,21 @@ namespace ambitap::dsp {
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void set_flip_lr(bool flip) { m_flip_lr = flip; recalculate(); publish(); }
-        void set_flip_fb(bool flip) { m_flip_fb = flip; recalculate(); publish(); }
-        void set_flip_ud(bool flip) { m_flip_ud = flip; recalculate(); publish(); }
+        void set_flip_lr(bool flip) {
+            m_flip_lr = flip;
+            recalculate();
+            publish();
+        }
+        void set_flip_fb(bool flip) {
+            m_flip_fb = flip;
+            recalculate();
+            publish();
+        }
+        void set_flip_ud(bool flip) {
+            m_flip_ud = flip;
+            recalculate();
+            publish();
+        }
 
         /// Skip the sign crossfade: the audio thread jumps straight to the
         /// latest signs on its next call. Offline rendering / tests.
@@ -113,8 +125,7 @@ namespace ambitap::dsp {
 
                 if (m_flip_lr && m < 0) flip = !flip;
                 if (m_flip_fb) {
-                    const bool fb_flip =
-                        (m > 0 && (m & 1)) || (m < 0 && ((abs_m & 1) == 0));
+                    const bool fb_flip = (m > 0 && (m & 1)) || (m < 0 && ((abs_m & 1) == 0));
                     if (fb_flip) flip = !flip;
                 }
                 if (m_flip_ud && (((n + abs_m) & 1) != 0)) flip = !flip;

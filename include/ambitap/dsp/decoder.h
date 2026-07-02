@@ -177,7 +177,7 @@ namespace ambitap::dsp {
             for (size_t i = 0; i < frame_count; ++i) {
                 const bool  fading = m_fade_pos < k_fade_samples;
                 const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                  / static_cast<float>(k_fade_samples)
+                                                 / static_cast<float>(k_fade_samples)
                                             : 1.f;
                 for (size_t s = 0; s < m->speakers; ++s) {
                     float acc_new = 0.f;
@@ -213,15 +213,15 @@ namespace ambitap::dsp {
 
             Eigen::MatrixXf D;
             switch (algorithm) {
-                case decoder_algorithm::allrad:
-                    D = compute_allrad_decoder(m_order, speakers, mre);
-                    break;
-                case decoder_algorithm::epad:
-                    D = compute_epad_decoder(m_order, speakers, mre);
-                    break;
-                case decoder_algorithm::mode_match:
-                    D = compute_mode_matching_decoder(m_order, speakers, mre);
-                    break;
+            case decoder_algorithm::allrad:
+                D = compute_allrad_decoder(m_order, speakers, mre);
+                break;
+            case decoder_algorithm::epad:
+                D = compute_epad_decoder(m_order, speakers, mre);
+                break;
+            case decoder_algorithm::mode_match:
+                D = compute_mode_matching_decoder(m_order, speakers, mre);
+                break;
             }
 
             auto fresh      = std::make_shared<matrix>();
@@ -238,8 +238,7 @@ namespace ambitap::dsp {
             // Fade-from matrix: the previous build when shapes match, else
             // zeros (fade in from silence — also covers the first build).
             const auto last = m_rebuilder.peek(); // worker thread; safe to lock
-            if (last && last->speakers == fresh->speakers
-                && last->channels == fresh->channels) {
+            if (last && last->speakers == fresh->speakers && last->channels == fresh->channels) {
                 fresh->prev = last->data;
             }
             else {

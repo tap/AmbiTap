@@ -6,6 +6,25 @@ on:
   pull_request:
 
 jobs:
+  format:
+    # The one-time reformat landed with the matching .clang-format; from here
+    # on, formatting is enforced. Generated tables are excluded via
+    # .clang-format-ignore and the explicit pathspecs below.
+    name: clang-format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check formatting
+        run: |
+          sudo apt-get update && sudo apt-get install -y clang-format-18
+          clang-format-18 --dry-run --Werror \
+            $(git ls-files '*.h' '*.cpp' \
+              ':!:third_party/**' \
+              ':!:include/ambitap/math/binaural/hrtf_data.h' \
+              ':!:include/ambitap/math/geometry/tdesigns.h')
+
   build-test:
     # Compiler/OS matrix, warnings-as-errors everywhere.
     strategy:

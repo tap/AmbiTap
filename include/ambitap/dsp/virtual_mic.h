@@ -7,8 +7,8 @@
 #define AMBITAP_DSP_VIRTUAL_MIC_H
 
 #include "../math/core/indexing.h"
-#include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
 #include "../math/decoding/max_re.h"
 #include "util/smoothing.h"
 
@@ -54,10 +54,18 @@ namespace ambitap::dsp {
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void  set_azimuth(float radians) { m_azimuth = radians; recalculate(); publish(); }
+        void set_azimuth(float radians) {
+            m_azimuth = radians;
+            recalculate();
+            publish();
+        }
         float azimuth() const { return m_azimuth; }
 
-        void  set_elevation(float radians) { m_elevation = radians; recalculate(); publish(); }
+        void set_elevation(float radians) {
+            m_elevation = radians;
+            recalculate();
+            publish();
+        }
         float elevation() const { return m_elevation; }
 
         void set_direction(float azimuth_radians, float elevation_radians) {
@@ -67,7 +75,11 @@ namespace ambitap::dsp {
             publish();
         }
 
-        void set_max_re(bool enabled) { m_max_re = enabled; recalculate(); publish(); }
+        void set_max_re(bool enabled) {
+            m_max_re = enabled;
+            recalculate();
+            publish();
+        }
         bool max_re() const { return m_max_re; }
 
         /// Skip the coefficient ramp: the audio thread jumps straight to the

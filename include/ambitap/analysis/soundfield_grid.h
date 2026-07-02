@@ -9,8 +9,8 @@
 #include "../dsp/util/rt_published.h"
 #include "../math/core/coords.h"
 #include "../math/core/indexing.h"
-#include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
 
 #include <algorithm>
 #include <atomic>
@@ -58,9 +58,9 @@ namespace ambitap::analysis {
 
       private:
         struct grid {
-            int                             az_steps;
-            int                             el_steps; // == az_steps / 2
-            int                             directions;
+            int                az_steps;
+            int                el_steps; // == az_steps / 2
+            int                directions;
             std::vector<float> Y; ///< (D x C) row-major SH table
             /// Length D, smoothed. Written by the audio thread through the
             /// published-const product, hence mutable.
@@ -76,8 +76,8 @@ namespace ambitap::analysis {
             }
         };
 
-        int    m_order;
-        size_t m_channels;
+        int                m_order;
+        size_t             m_channels;
         std::atomic<float> m_fs {48000.f};
         std::atomic<float> m_smoothing_ms {200.f};
 
@@ -108,9 +108,7 @@ namespace ambitap::analysis {
         void set_smoothing_time_ms(float ms) {
             m_smoothing_ms.store(ms, std::memory_order_relaxed);
         }
-        float smoothing_time_ms() const {
-            return m_smoothing_ms.load(std::memory_order_relaxed);
-        }
+        float smoothing_time_ms() const { return m_smoothing_ms.load(std::memory_order_relaxed); }
 
         /// Rebuild the SH table at a new resolution (elevation resolution is
         /// azimuth_steps / 2) and publish atomically. Resets energies. Cheap
@@ -176,9 +174,9 @@ namespace ambitap::analysis {
                     }
                     block_energy += Yd[c] * ry;
                 }
-                const auto   idx  = static_cast<size_t>(d);
-                const float  prev = g->energy[idx].load(std::memory_order_relaxed);
-                const float  next = prev + alpha * (block_energy - prev);
+                const auto  idx  = static_cast<size_t>(d);
+                const float prev = g->energy[idx].load(std::memory_order_relaxed);
+                const float next = prev + alpha * (block_energy - prev);
                 g->energy[idx].store(next, std::memory_order_relaxed);
             }
         }
@@ -216,12 +214,10 @@ namespace ambitap::analysis {
         /// Direction of a grid cell. Edge-sampled: column 0 = -pi (back wrap),
         /// row 0 = +pi/2 (zenith).
         static float azimuth_of_column(int col, int az_steps) {
-            return -k_pi + static_cast<float>(col) * 2.0f * k_pi
-                               / static_cast<float>(az_steps);
+            return -k_pi + static_cast<float>(col) * 2.0f * k_pi / static_cast<float>(az_steps);
         }
         static float elevation_of_row(int row, int el_steps) {
-            return k_pi * 0.5f
-                 - static_cast<float>(row) * k_pi / static_cast<float>(el_steps);
+            return k_pi * 0.5f - static_cast<float>(row) * k_pi / static_cast<float>(el_steps);
         }
     };
 

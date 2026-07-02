@@ -19,33 +19,33 @@ using namespace ambitap;
 
 namespace {
 
-Eigen::MatrixXf reencoding_matrix(int order, const std::vector<spherical_coord>& speakers) {
-    const auto      L = static_cast<Eigen::Index>(speakers.size());
-    const auto      C = static_cast<Eigen::Index>(channel_count(order));
-    Eigen::MatrixXf Y(L, C);
-    float           sh[max_channel_count];
-    for (Eigen::Index i = 0; i < L; ++i) {
-        evaluate_sh(order, speakers[static_cast<size_t>(i)], sh);
-        for (Eigen::Index j = 0; j < C; ++j) Y(i, j) = sh[j];
+    Eigen::MatrixXf reencoding_matrix(int order, const std::vector<spherical_coord>& speakers) {
+        const auto      L = static_cast<Eigen::Index>(speakers.size());
+        const auto      C = static_cast<Eigen::Index>(channel_count(order));
+        Eigen::MatrixXf Y(L, C);
+        float           sh[max_channel_count];
+        for (Eigen::Index i = 0; i < L; ++i) {
+            evaluate_sh(order, speakers[static_cast<size_t>(i)], sh);
+            for (Eigen::Index j = 0; j < C; ++j) Y(i, j) = sh[j];
+        }
+        return Y;
     }
-    return Y;
-}
 
-Eigen::VectorXf encode(int order, spherical_coord dir) {
-    float sh[max_channel_count];
-    evaluate_sh(order, dir, sh);
-    Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
-    for (Eigen::Index i = 0; i < v.size(); ++i) v(i) = sh[i];
-    return v;
-}
+    Eigen::VectorXf encode(int order, spherical_coord dir) {
+        float sh[max_channel_count];
+        evaluate_sh(order, dir, sh);
+        Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
+        for (Eigen::Index i = 0; i < v.size(); ++i) v(i) = sh[i];
+        return v;
+    }
 
-// Index of the loudest speaker when decoding a source at `dir`.
-Eigen::Index loudest_speaker(const Eigen::MatrixXf& D, int order, spherical_coord dir) {
-    Eigen::VectorXf s = D * encode(order, dir);
-    Eigen::Index    idx = 0;
-    s.cwiseAbs().maxCoeff(&idx);
-    return idx;
-}
+    // Index of the loudest speaker when decoding a source at `dir`.
+    Eigen::Index loudest_speaker(const Eigen::MatrixXf& D, int order, spherical_coord dir) {
+        Eigen::VectorXf s   = D * encode(order, dir);
+        Eigen::Index    idx = 0;
+        s.cwiseAbs().maxCoeff(&idx);
+        return idx;
+    }
 
 } // namespace
 
@@ -72,8 +72,7 @@ TEST(ModeMatching, ReencodeIsIdentityWhenOverdetermined) {
     ASSERT_EQ(D.rows(), 8);
     ASSERT_EQ(D.cols(), 4);
     Eigen::MatrixXf YtD = Y.transpose() * D; // (C x C)
-    EXPECT_TRUE(YtD.isApprox(Eigen::MatrixXf::Identity(4, 4), 1e-4f))
-        << "Y^T * D =\n" << YtD;
+    EXPECT_TRUE(YtD.isApprox(Eigen::MatrixXf::Identity(4, 4), 1e-4f)) << "Y^T * D =\n" << YtD;
 }
 
 TEST(ModeMatching, LocalizesToNearestSpeaker) {
@@ -112,8 +111,7 @@ TEST(Epad, MatchesModeMatchingOnTDesignLayout) {
     const int  order = 1;
     const auto Dep   = compute_epad_decoder(order, layouts::cube());
     const auto Dmm   = compute_mode_matching_decoder(order, layouts::cube());
-    EXPECT_TRUE(Dep.isApprox(Dmm, 1e-4f))
-        << "EPAD =\n" << Dep << "\nmode-matching =\n" << Dmm;
+    EXPECT_TRUE(Dep.isApprox(Dmm, 1e-4f)) << "EPAD =\n" << Dep << "\nmode-matching =\n" << Dmm;
 }
 
 // Audit finding C2: without singular-value truncation, EPAD emitted
@@ -220,12 +218,11 @@ TEST(ModeMatching, UnderdeterminedRegimeUsesN3dBasis) {
     // Defining property of the pseudoinverse with L < C, full row rank:
     // pinv(Y^T) * Y^T == I_L (decode of any re-encoded speaker feed is exact).
     Eigen::MatrixXf DY = Dn3d * Y.transpose();
-    EXPECT_TRUE(DY.isApprox(Eigen::MatrixXf::Identity(5, 5), 1e-3f))
-        << "D * Y_n3d^T =\n" << DY;
+    EXPECT_TRUE(DY.isApprox(Eigen::MatrixXf::Identity(5, 5), 1e-3f)) << "D * Y_n3d^T =\n" << DY;
 
     // Regression guard: the (wrong) SN3D-basis pseudoinverse fails the same
     // identity by a large margin, so this test genuinely discriminates.
-    Eigen::MatrixXf Ysn = reencoding_matrix(order, speakers);
+    Eigen::MatrixXf                   Ysn = reencoding_matrix(order, speakers);
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(Ysn, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXf pinv_sn = svd.solve(Eigen::MatrixXf::Identity(5, 5)).transpose();
     Eigen::MatrixXf DYsn    = pinv_sn * Y.transpose();
@@ -234,7 +231,7 @@ TEST(ModeMatching, UnderdeterminedRegimeUsesN3dBasis) {
 
 TEST(MaxRe, EnergyNormalizedWeightsPreserveTotalEnergy) {
     for (int order : {1, 2, 3, 5}) {
-        const auto w = max_re_weights_energy_normalized(order);
+        const auto w   = max_re_weights_energy_normalized(order);
         float      num = 0.f, den = 0.f;
         for (int n = 0; n <= order; ++n) {
             const float g = static_cast<float>(2 * n + 1);

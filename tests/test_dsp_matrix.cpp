@@ -20,21 +20,21 @@ using namespace ambitap;
 
 namespace {
 
-// Newly published matrices crossfade in over k_fade_samples; run the fade out
-// so subsequent assertions see the settled matrix exactly.
-void run_out_rotator_fade(const dsp::rotator& rot) {
-    std::vector<float> in(rot.channels(), 0.f), out(rot.channels());
-    for (size_t i = 0; i < dsp::rotator::k_fade_samples; ++i) {
-        rot.process_frame(in.data(), out.data());
+    // Newly published matrices crossfade in over k_fade_samples; run the fade out
+    // so subsequent assertions see the settled matrix exactly.
+    void run_out_rotator_fade(const dsp::rotator& rot) {
+        std::vector<float> in(rot.channels(), 0.f), out(rot.channels());
+        for (size_t i = 0; i < dsp::rotator::k_fade_samples; ++i) {
+            rot.process_frame(in.data(), out.data());
+        }
     }
-}
 
-void run_out_decoder_fade(const dsp::decoder& dec, size_t out_channels) {
-    std::vector<float> in(dec.input_channels(), 0.f), out(out_channels);
-    for (size_t i = 0; i < dsp::decoder::k_fade_samples; ++i) {
-        dec.process_frame(in.data(), out.data(), out_channels);
+    void run_out_decoder_fade(const dsp::decoder& dec, size_t out_channels) {
+        std::vector<float> in(dec.input_channels(), 0.f), out(out_channels);
+        for (size_t i = 0; i < dsp::decoder::k_fade_samples; ++i) {
+            dec.process_frame(in.data(), out.data(), out_channels);
+        }
     }
-}
 
 } // namespace
 

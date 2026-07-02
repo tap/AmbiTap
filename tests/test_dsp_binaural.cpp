@@ -15,15 +15,15 @@ using namespace ambitap;
 
 namespace {
 
-// Planar input helper: channels x frames, all zero.
-struct planar {
-    std::vector<std::vector<float>> bufs;
-    std::vector<const float*>       ptrs;
-    planar(size_t channels, size_t frames)
-        : bufs(channels, std::vector<float>(frames, 0.f)) {
-        for (auto& b : bufs) ptrs.push_back(b.data());
-    }
-};
+    // Planar input helper: channels x frames, all zero.
+    struct planar {
+        std::vector<std::vector<float>> bufs;
+        std::vector<const float*>       ptrs;
+        planar(size_t channels, size_t frames)
+            : bufs(channels, std::vector<float>(frames, 0.f)) {
+            for (auto& b : bufs) ptrs.push_back(b.data());
+        }
+    };
 
 } // namespace
 
@@ -41,7 +41,7 @@ TEST(DspBinaural, SilentUntilPrepared) {
 }
 
 TEST(DspBinaural, WImpulseReproducesOmniHrtf) {
-    constexpr size_t block = 64;
+    constexpr size_t       block = 64;
     dsp::binaural_renderer bin(1);
     bin.prepare(block);
     ASSERT_TRUE(bin.is_prepared());
@@ -66,7 +66,7 @@ TEST(DspBinaural, WImpulseReproducesOmniHrtf) {
 }
 
 TEST(DspBinaural, VolumeScalesOutput) {
-    constexpr size_t block = 64;
+    constexpr size_t       block = 64;
     dsp::binaural_renderer a(1), b(1);
     a.prepare(block);
     b.prepare(block);
@@ -95,7 +95,7 @@ TEST(DspBinaural, VolumeScalesOutput) {
 }
 
 TEST(DspBinaural, MaglsProjectionDiffersFromLs) {
-    constexpr size_t block = 64;
+    constexpr size_t       block = 64;
     dsp::binaural_renderer ls(2), magls(2);
     ls.prepare(block);
     magls.set_projection(dsp::binaural_renderer::hrtf_projection::magls);
@@ -113,7 +113,7 @@ TEST(DspBinaural, MaglsProjectionDiffersFromLs) {
 }
 
 TEST(DspBinaural, HeadTrackingChangesOutput) {
-    constexpr size_t block = 64;
+    constexpr size_t       block = 64;
     dsp::binaural_renderer still(3), turned(3);
     still.prepare(block);
     turned.prepare(block);
@@ -163,7 +163,7 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
     evaluate_sh(order, 0.f, 0.f, sh);
     for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = sh[ch];
 
-    float e_left = 0.f, e_right = 0.f;
+    float              e_left = 0.f, e_right = 0.f;
     std::vector<float> l(block), r(block);
     // Run several blocks so the full HRIR (128 taps > one block) is captured.
     for (int b = 0; b < 4; ++b) {
@@ -182,7 +182,7 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
 
 TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
     dsp::binaural_renderer bin(1);
-    const auto r = bin.probe_response(0.5f, 0.1f);
+    const auto             r = bin.probe_response(0.5f, 0.1f);
 
     EXPECT_EQ(r.frequencies.size(), 257u); // 512-point FFT -> 257 bins
     EXPECT_EQ(r.left_db.size(), 257u);
@@ -211,11 +211,11 @@ TEST(DspBinaural, PrepareResamplesBuiltinHrtfToHostRate) {
     doubled.prepare(block, 2.f * builtin_hrtf_sample_rate);
 
     auto centroid = [](dsp::binaural_renderer& bin) {
-        planar             in(4, block);
+        planar in(4, block);
         in.bufs[0][0] = 1.f;
         std::vector<float> l(block), r(block);
-        double num = 0.0, den = 0.0;
-        size_t t = 0;
+        double             num = 0.0, den = 0.0;
+        size_t             t = 0;
         for (size_t b = 0; b < 6; ++b) {
             bin.process(in.ptrs.data(), l.data(), r.data(), block);
             for (size_t i = 0; i < block; ++i, ++t) {

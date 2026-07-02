@@ -83,9 +83,8 @@ namespace ambitap {
                 float t  = (static_cast<float>(i) + 0.5f) / static_cast<float>(num_dirs);
                 float el = std::asin(2.0f * t - 1.0f);
                 float az = static_cast<float>(i) * 2.3999632f; // golden angle
-                test_dirs.push_back({std::cos(el) * std::cos(az),
-                                     std::cos(el) * std::sin(az),
-                                     std::sin(el)});
+                test_dirs.push_back(
+                    {std::cos(el) * std::cos(az), std::cos(el) * std::sin(az), std::sin(el)});
             }
 
             float sh_orig[max_channel_count];
@@ -111,22 +110,21 @@ namespace ambitap {
                     evaluate_sh(l, raz, rel, sh_rot);
 
                     for (int j = 0; j < block_size; ++j) {
-                        size_t acn                                  = acn_index(l, j - l);
-                        Y_orig(i, static_cast<Eigen::Index>(j))     = sh_orig[acn];
-                        Y_rot(i, static_cast<Eigen::Index>(j))      = sh_rot[acn];
+                        size_t acn                              = acn_index(l, j - l);
+                        Y_orig(i, static_cast<Eigen::Index>(j)) = sh_orig[acn];
+                        Y_rot(i, static_cast<Eigen::Index>(j))  = sh_rot[acn];
                     }
                 }
 
                 // Least squares: Y_rot = Y_orig * R_l^T
-                Eigen::MatrixXf R_l_T = (Y_orig.transpose() * Y_orig)
-                                            .ldlt()
-                                            .solve(Y_orig.transpose() * Y_rot);
+                Eigen::MatrixXf R_l_T =
+                    (Y_orig.transpose() * Y_orig).ldlt().solve(Y_orig.transpose() * Y_rot);
                 Eigen::MatrixXf R_l = R_l_T.transpose();
 
                 for (int m = -l; m <= l; ++m) {
                     for (int mp = -l; mp <= l; ++mp) {
-                        auto row          = static_cast<Eigen::Index>(acn_index(l, m));
-                        auto col          = static_cast<Eigen::Index>(acn_index(l, mp));
+                        auto row           = static_cast<Eigen::Index>(acn_index(l, m));
+                        auto col           = static_cast<Eigen::Index>(acn_index(l, mp));
                         m_matrix(row, col) = R_l(m + l, mp + l);
                     }
                 }

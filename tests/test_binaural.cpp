@@ -18,23 +18,24 @@ using namespace ambitap;
 
 namespace {
 
-std::vector<float> random_signal(size_t length, unsigned seed) {
-    std::mt19937                          rng(seed);
-    std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-    std::vector<float>                    v(length);
-    for (auto& x : v) x = dist(rng);
-    return v;
-}
-
-std::vector<float> direct_convolution(const std::vector<float>& x, const std::vector<float>& h) {
-    std::vector<float> y(x.size() + h.size() - 1, 0.0f);
-    for (size_t i = 0; i < x.size(); ++i) {
-        for (size_t j = 0; j < h.size(); ++j) {
-            y[i + j] += x[i] * h[j];
-        }
+    std::vector<float> random_signal(size_t length, unsigned seed) {
+        std::mt19937                          rng(seed);
+        std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+        std::vector<float>                    v(length);
+        for (auto& x : v) x = dist(rng);
+        return v;
     }
-    return y;
-}
+
+    std::vector<float> direct_convolution(const std::vector<float>& x,
+                                          const std::vector<float>& h) {
+        std::vector<float> y(x.size() + h.size() - 1, 0.0f);
+        for (size_t i = 0; i < x.size(); ++i) {
+            for (size_t j = 0; j < h.size(); ++j) {
+                y[i + j] += x[i] * h[j];
+            }
+        }
+        return y;
+    }
 
 } // namespace
 
@@ -68,8 +69,8 @@ TEST(RealFft, DcBinOfConstantSignal) {
 }
 
 TEST(PartitionedConvolver, DeltaIrIsPassthrough) {
-    constexpr size_t block = 64;
-    const float      delta = 1.0f;
+    constexpr size_t      block = 64;
+    const float           delta = 1.0f;
     partitioned_convolver conv(block, &delta, 1);
 
     for (unsigned seed = 0; seed < 4; ++seed) {
@@ -83,8 +84,8 @@ TEST(PartitionedConvolver, DeltaIrIsPassthrough) {
 }
 
 TEST(PartitionedConvolver, MatchesDirectConvolution) {
-    constexpr size_t block     = 64;
-    constexpr size_t ir_len    = 200; // spans 4 partitions, last one partial
+    constexpr size_t block      = 64;
+    constexpr size_t ir_len     = 200; // spans 4 partitions, last one partial
     constexpr size_t num_blocks = 8;
 
     const auto ir    = random_signal(ir_len, 7);
@@ -138,7 +139,7 @@ TEST(HrtfData, DatasetShapeAndContent) {
     EXPECT_EQ(builtin_hrtf_sample_rate, 44100.0f);
 
     // Every dataset variant must carry energy in the omni (W) channel.
-    auto energy = [](const float (*data)[builtin_hrtf_length]) {
+    auto energy = [](const float(*data)[builtin_hrtf_length]) {
         double e = 0.0;
         for (size_t i = 0; i < builtin_hrtf_length; ++i) {
             e += static_cast<double>(data[0][i]) * static_cast<double>(data[0][i]);
@@ -162,7 +163,7 @@ TEST(HrtfData, MaglsDatasetIsCausal) {
     // The KEMAR ear-canal onset sits near sample 29 at 44.1 kHz; anything in
     // the first 26 samples is pre-onset. The LS dataset satisfies this with
     // 0.0% today; allow a small MagLS allowance for phase relaxation.
-    auto pre_onset_fraction = [](const float (*data)[builtin_hrtf_length]) {
+    auto pre_onset_fraction = [](const float(*data)[builtin_hrtf_length]) {
         double pre = 0.0, total = 0.0;
         for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {
             for (size_t i = 0; i < builtin_hrtf_length; ++i) {

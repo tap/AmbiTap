@@ -45,16 +45,16 @@ namespace ambitap {
     /// @throws std::invalid_argument on out-of-range order or empty speaker list.
     inline Eigen::MatrixXf compute_allrad_decoder(int                                 order,
                                                   const std::vector<spherical_coord>& speakers,
-                                                  bool                                use_max_re = true) {
+                                                  bool use_max_re = true) {
         validated_order(order, "compute_allrad_decoder");
         // speaker_layout validates non-emptiness.
         const auto     C = static_cast<Eigen::Index>(channel_count(order));
         speaker_layout layout(speakers);
 
         // Step 1: T-design virtual layout.
-        size_t tdesign_count = 0;
-        const float (*tdesign_pts)[3] = tdesign_for_order(order, tdesign_count);
-        const auto V                  = static_cast<Eigen::Index>(tdesign_count);
+        size_t tdesign_count         = 0;
+        const float(*tdesign_pts)[3] = tdesign_for_order(order, tdesign_count);
+        const auto V                 = static_cast<Eigen::Index>(tdesign_count);
 
         // Step 2: Sampling decoder for the T-design.
         // For a T-design with t >= 2N+1 in the ambisonic convention (Y_00 = 1),
@@ -69,8 +69,7 @@ namespace ambitap {
         float           sh_buf[max_channel_count];
 
         for (Eigen::Index v = 0; v < V; ++v) {
-            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1],
-                                          tdesign_pts[v][2]);
+            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1], tdesign_pts[v][2]);
             evaluate_sh(order, dir, sh_buf);
             for (Eigen::Index c = 0; c < C; ++c) {
                 Y_virtual(v, c) = sh_buf[c];
@@ -103,8 +102,7 @@ namespace ambitap {
         Eigen::MatrixXf G(V, L);
 
         for (Eigen::Index v = 0; v < V; ++v) {
-            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1],
-                                          tdesign_pts[v][2]);
+            const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1], tdesign_pts[v][2]);
 
             auto gains = layout.vbap_gains(dir);
             for (Eigen::Index l = 0; l < L; ++l) {

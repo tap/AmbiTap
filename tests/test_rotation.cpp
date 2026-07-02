@@ -16,15 +16,15 @@ using namespace ambitap;
 
 namespace {
 
-Eigen::VectorXf sh_at(int order, const Eigen::Vector3f& d) {
-    float sh[max_channel_count];
-    const float az = std::atan2(d.y(), d.x());
-    const float el = std::atan2(d.z(), std::sqrt(d.x() * d.x() + d.y() * d.y()));
-    evaluate_sh(order, az, el, sh);
-    Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
-    for (Eigen::Index i = 0; i < v.size(); ++i) v(i) = sh[i];
-    return v;
-}
+    Eigen::VectorXf sh_at(int order, const Eigen::Vector3f& d) {
+        float       sh[max_channel_count];
+        const float az = std::atan2(d.y(), d.x());
+        const float el = std::atan2(d.z(), std::sqrt(d.x() * d.x() + d.y() * d.y()));
+        evaluate_sh(order, az, el, sh);
+        Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
+        for (Eigen::Index i = 0; i < v.size(); ++i) v(i) = sh[i];
+        return v;
+    }
 
 } // namespace
 
@@ -74,8 +74,8 @@ TEST(Rotation, MatchesDirectEvaluation) {
         Eigen::VectorXf expected = sh_at(order, (R * d).eval());
         Eigen::VectorXf actual   = rot.matrix() * sh_at(order, d);
         EXPECT_TRUE(actual.isApprox(expected, 1e-3f))
-            << "d=(" << d.transpose() << ")\nexpected " << expected.transpose()
-            << "\nactual   " << actual.transpose();
+            << "d=(" << d.transpose() << ")\nexpected " << expected.transpose() << "\nactual   "
+            << actual.transpose();
     }
 }
 

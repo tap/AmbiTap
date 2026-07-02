@@ -36,16 +36,16 @@ namespace ambitap::dsp {
     /// k_smoothing_samples; call snap_parameters() for offline/exact use. The
     /// audio path is wait-free.
     class directional_loudness {
-        int    m_order;
-        size_t m_channels;
-        float  m_azimuth {0.0f};
-        float  m_elevation {0.0f};
+        int                                  m_order;
+        size_t                               m_channels;
+        float                                m_azimuth {0.0f};
+        float                                m_elevation {0.0f};
         std::array<float, max_channel_count> m_sh_at_direction {};
 
         smoothed_table<max_channel_count> m_smooth;
         smoothed_scalar                   m_gain {1.0f};
         // 1 / ||SH(d)||^2, recomputed with the direction.
-        smoothed_scalar                   m_inv_norm {1.0f};
+        smoothed_scalar m_inv_norm {1.0f};
 
       public:
         /// @param order  Ambisonics order in [0, max_order].
@@ -61,10 +61,18 @@ namespace ambitap::dsp {
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void  set_azimuth(float radians) { m_azimuth = radians; recalculate(); publish(); }
+        void set_azimuth(float radians) {
+            m_azimuth = radians;
+            recalculate();
+            publish();
+        }
         float azimuth() const { return m_azimuth; }
 
-        void  set_elevation(float radians) { m_elevation = radians; recalculate(); publish(); }
+        void set_elevation(float radians) {
+            m_elevation = radians;
+            recalculate();
+            publish();
+        }
         float elevation() const { return m_elevation; }
 
         void set_direction(float azimuth_radians, float elevation_radians) {

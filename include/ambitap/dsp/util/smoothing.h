@@ -30,8 +30,7 @@ namespace ambitap::dsp {
     /// Threading contract: any number of control-thread set()/snap() calls
     /// (externally serialized, as with all processor setters); exactly ONE
     /// audio thread calling tick().
-    template <size_t MaxN>
-    class smoothed_table {
+    template <size_t MaxN> class smoothed_table {
         std::array<std::atomic<float>, MaxN> m_target {};
         std::atomic<std::uint32_t>           m_generation {0};
         mutable std::atomic<bool>            m_snap {false};
@@ -90,8 +89,8 @@ namespace ambitap::dsp {
                 }
             }
             if (m_pos < k_smoothing_samples) {
-                const float alpha = (static_cast<float>(m_pos) + 1.f)
-                                    / static_cast<float>(k_smoothing_samples);
+                const float alpha =
+                    (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
                 for (size_t i = 0; i < count; ++i) {
                     m_now[i] = m_from[i] + (m_to[i] - m_from[i]) * alpha;
                 }
@@ -162,8 +161,8 @@ namespace ambitap::dsp {
                 }
             }
             if (m_pos < k_smoothing_samples) {
-                const float alpha = (static_cast<float>(m_pos) + 1.f)
-                                    / static_cast<float>(k_smoothing_samples);
+                const float alpha =
+                    (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
                 m_now = m_from + (m_to - m_from) * alpha;
                 ++m_pos;
             }

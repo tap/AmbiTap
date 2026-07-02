@@ -15,8 +15,8 @@
 // the AmbiTap::fft static library; link that target (see CMakeLists.txt for
 // how the vendored fftsg.c is compiled).
 extern "C" {
-    void rdft(int n, int isgn, double* a, int* ip, double* w);
-    void cdft(int n, int isgn, double* a, int* ip, double* w);
+void rdft(int n, int isgn, double* a, int* ip, double* w);
+void cdft(int n, int isgn, double* a, int* ip, double* w);
 }
 
 namespace ambitap {
@@ -56,7 +56,8 @@ namespace ambitap {
         void forward(const float* input, float* output) {
             for (int i = 0; i < m_size; ++i) m_buf[static_cast<size_t>(i)] = input[i];
             rdft(m_size, 1, m_buf.data(), m_ip.data(), m_w.data());
-            for (int i = 0; i < m_size; ++i) output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)]);
+            for (int i = 0; i < m_size; ++i)
+                output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)]);
         }
 
         /// Inverse real FFT: packed frequency-domain float[size] -> time-domain float[size].
@@ -70,15 +71,11 @@ namespace ambitap {
         }
 
         /// In-place forward FFT on a double buffer (no float conversion).
-        void forward_inplace(double* data) {
-            rdft(m_size, 1, data, m_ip.data(), m_w.data());
-        }
+        void forward_inplace(double* data) { rdft(m_size, 1, data, m_ip.data(), m_w.data()); }
 
         /// In-place inverse FFT on a double buffer (no float conversion, no scaling).
         /// Caller must scale by 2/size for a normalized inverse.
-        void inverse_inplace(double* data) {
-            rdft(m_size, -1, data, m_ip.data(), m_w.data());
-        }
+        void inverse_inplace(double* data) { rdft(m_size, -1, data, m_ip.data(), m_w.data()); }
     };
 
 } // namespace ambitap

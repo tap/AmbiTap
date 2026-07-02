@@ -39,8 +39,7 @@ namespace ambitap::dsp {
     /// The owner must declare its async_rebuilder member *after* every member
     /// the build callback reads, so the worker is joined (in ~async_rebuilder)
     /// before those members are destroyed.
-    template <typename Product>
-    class async_rebuilder {
+    template <typename Product> class async_rebuilder {
       public:
         using build_fn   = std::function<std::shared_ptr<Product>()>;
         using publish_fn = std::function<void()>;

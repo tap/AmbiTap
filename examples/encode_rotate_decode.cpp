@@ -23,7 +23,7 @@ int main() {
     enc.set_direction(45.0f * pi / 180.0f, 0.0f);
     enc.snap_parameters(); // offline render: no parameter ramp
 
-    std::vector<float>              mono(frames);
+    std::vector<float> mono(frames);
     for (size_t i = 0; i < frames; ++i) {
         mono[i] = std::sin(2.0f * pi * 440.0f * static_cast<float>(i) / 48000.0f);
     }
@@ -47,7 +47,7 @@ int main() {
     rot.process(rot_in.data(), rot_out.data(), frames);
 
     // 3. Decode to 5.1 (2D pairwise VBAP under the hood via ALLRAD).
-    const auto           speakers = ambitap::layouts::surround_5_1();
+    const auto            speakers = ambitap::layouts::surround_5_1();
     ambitap::dsp::decoder dec(order);
     dec.set_algorithm(ambitap::dsp::decoder_algorithm::allrad);
     dec.set_speakers(speakers);

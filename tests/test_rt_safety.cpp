@@ -29,21 +29,21 @@
 
 namespace {
 
-std::atomic<long>       g_allocs {0};
-std::atomic<long>       g_frees {0};
-thread_local bool g_armed = false;
+    std::atomic<long> g_allocs {0};
+    std::atomic<long> g_frees {0};
+    thread_local bool g_armed = false;
 
-struct rt_guard {
-    long a0, f0;
-    rt_guard()
-        : a0(g_allocs.load())
-        , f0(g_frees.load()) {
-        g_armed = true;
-    }
-    ~rt_guard() { g_armed = false; }
-    long allocations() const { return g_allocs.load() - a0; }
-    long frees() const { return g_frees.load() - f0; }
-};
+    struct rt_guard {
+        long a0, f0;
+        rt_guard()
+            : a0(g_allocs.load())
+            , f0(g_frees.load()) {
+            g_armed = true;
+        }
+        ~rt_guard() { g_armed = false; }
+        long allocations() const { return g_allocs.load() - a0; }
+        long frees() const { return g_frees.load() - f0; }
+    };
 
 } // namespace
 
@@ -67,8 +67,12 @@ void* operator new(std::size_t size, std::align_val_t al) {
     }
     return p;
 }
-void* operator new[](std::size_t size) { return ::operator new(size); }
-void* operator new[](std::size_t size, std::align_val_t al) { return ::operator new(size, al); }
+void* operator new[](std::size_t size) {
+    return ::operator new(size);
+}
+void* operator new[](std::size_t size, std::align_val_t al) {
+    return ::operator new(size, al);
+}
 void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
     if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
     return std::malloc(size ? size : 1);
@@ -88,15 +92,33 @@ void operator delete(void* p) noexcept {
     if (g_armed) g_frees.fetch_add(1, std::memory_order_relaxed);
     std::free(p);
 }
-void operator delete(void* p, std::size_t) noexcept { ::operator delete(p); }
-void operator delete(void* p, std::align_val_t) noexcept { ::operator delete(p); }
-void operator delete(void* p, std::size_t, std::align_val_t) noexcept { ::operator delete(p); }
-void operator delete[](void* p) noexcept { ::operator delete(p); }
-void operator delete[](void* p, std::size_t) noexcept { ::operator delete(p); }
-void operator delete[](void* p, std::align_val_t) noexcept { ::operator delete(p); }
-void operator delete[](void* p, std::size_t, std::align_val_t) noexcept { ::operator delete(p); }
-void operator delete(void* p, const std::nothrow_t&) noexcept { ::operator delete(p); }
-void operator delete[](void* p, const std::nothrow_t&) noexcept { ::operator delete(p); }
+void operator delete(void* p, std::size_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete(void* p, std::align_val_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete(void* p, std::size_t, std::align_val_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete[](void* p) noexcept {
+    ::operator delete(p);
+}
+void operator delete[](void* p, std::size_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete[](void* p, std::align_val_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete[](void* p, std::size_t, std::align_val_t) noexcept {
+    ::operator delete(p);
+}
+void operator delete(void* p, const std::nothrow_t&) noexcept {
+    ::operator delete(p);
+}
+void operator delete[](void* p, const std::nothrow_t&) noexcept {
+    ::operator delete(p);
+}
 void operator delete(void* p, std::align_val_t, const std::nothrow_t&) noexcept {
     ::operator delete(p);
 }
@@ -108,18 +130,18 @@ using namespace ambitap;
 
 namespace {
 
-struct planar {
-    std::vector<std::vector<float>> bufs;
-    std::vector<const float*>       in;
-    std::vector<float*>             out;
-    planar(size_t channels, size_t frames)
-        : bufs(channels, std::vector<float>(frames, 0.25f)) {
-        for (auto& b : bufs) {
-            in.push_back(b.data());
-            out.push_back(b.data()); // in-place where the processor allows it
+    struct planar {
+        std::vector<std::vector<float>> bufs;
+        std::vector<const float*>       in;
+        std::vector<float*>             out;
+        planar(size_t channels, size_t frames)
+            : bufs(channels, std::vector<float>(frames, 0.25f)) {
+            for (auto& b : bufs) {
+                in.push_back(b.data());
+                out.push_back(b.data()); // in-place where the processor allows it
+            }
         }
-    }
-};
+    };
 
 } // namespace
 

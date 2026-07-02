@@ -21,9 +21,7 @@ namespace ambitap {
     /// Convert spherical coordinates to a Cartesian unit vector.
     inline Eigen::Vector3f spherical_to_cartesian(float azimuth, float elevation) {
         float cos_el = std::cos(elevation);
-        return {cos_el * std::cos(azimuth),
-                cos_el * std::sin(azimuth),
-                std::sin(elevation)};
+        return {cos_el * std::cos(azimuth), cos_el * std::sin(azimuth), std::sin(elevation)};
     }
 
     inline Eigen::Vector3f spherical_to_cartesian(spherical_coord c) {
@@ -48,11 +46,11 @@ namespace ambitap {
 
         // 2D pairwise mode (planar layouts): plane basis, per-speaker in-plane
         // angle, and speaker indices sorted by that angle.
-        bool                         m_pairwise {false};
-        Eigen::Vector3f              m_plane_u {Eigen::Vector3f::UnitX()};
-        Eigen::Vector3f              m_plane_v {Eigen::Vector3f::UnitY()};
-        std::vector<float>           m_ring_angle; // parallel to m_ring_index
-        std::vector<size_t>          m_ring_index;
+        bool                m_pairwise {false};
+        Eigen::Vector3f     m_plane_u {Eigen::Vector3f::UnitX()};
+        Eigen::Vector3f     m_plane_v {Eigen::Vector3f::UnitY()};
+        std::vector<float>  m_ring_angle; // parallel to m_ring_index
+        std::vector<size_t> m_ring_index;
 
       public:
         /// @throws std::invalid_argument when speakers is empty.
@@ -147,7 +145,7 @@ namespace ambitap {
         };
 
         static compensation distance_compensation(const std::vector<float>& distances,
-                                                  float                     speed_of_sound = 343.0f) {
+                                                  float speed_of_sound = 343.0f) {
             compensation comp;
             const size_t n = distances.size();
             comp.delays.resize(n);

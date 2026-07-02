@@ -120,10 +120,10 @@ TEST(Hardening, DecoderConstructionRejectsBadInput) {
 // matrix inversions (inf/NaN) and nearest-speaker snapping.
 TEST(Hardening, AllDecodersFiniteOnAllPresets) {
     const std::vector<std::pair<const char*, std::vector<spherical_coord>>> presets = {
-        {"stereo", layouts::stereo()},       {"quad", layouts::quad()},
-        {"5.1", layouts::surround_5_1()},    {"hexagon", layouts::hexagon()},
-        {"7.1", layouts::surround_7_1()},    {"cube", layouts::cube()},
-        {"octagon", layouts::octagon()},     {"7.1.4", layouts::surround_7_1_4()},
+        {"stereo", layouts::stereo()},    {"quad", layouts::quad()},
+        {"5.1", layouts::surround_5_1()}, {"hexagon", layouts::hexagon()},
+        {"7.1", layouts::surround_7_1()}, {"cube", layouts::cube()},
+        {"octagon", layouts::octagon()},  {"7.1.4", layouts::surround_7_1_4()},
     };
 
     for (const auto& [name, speakers] : presets) {

@@ -52,7 +52,10 @@ namespace ambitap::analysis {
         }
 
         /// One-pole smoothing time constant, in seconds. ~10 ms is a usable default.
-        void  set_smoothing_time(float seconds) { m_smoothing_s = seconds; recalculate(); }
+        void set_smoothing_time(float seconds) {
+            m_smoothing_s = seconds;
+            recalculate();
+        }
         float smoothing_time() const { return m_smoothing_s; }
 
         /// Advance the estimator by one frame (in: >= 4 HOA channels, ACN order)

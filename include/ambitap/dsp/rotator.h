@@ -76,9 +76,18 @@ namespace ambitap::dsp {
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void set_yaw(float radians) { m_yaw.store(radians); m_rebuilder.submit(); }
-        void set_pitch(float radians) { m_pitch.store(radians); m_rebuilder.submit(); }
-        void set_roll(float radians) { m_roll.store(radians); m_rebuilder.submit(); }
+        void set_yaw(float radians) {
+            m_yaw.store(radians);
+            m_rebuilder.submit();
+        }
+        void set_pitch(float radians) {
+            m_pitch.store(radians);
+            m_rebuilder.submit();
+        }
+        void set_roll(float radians) {
+            m_roll.store(radians);
+            m_rebuilder.submit();
+        }
 
         /// Set all three angles with a single rebuild.
         void set_rotation(float yaw_radians, float pitch_radians, float roll_radians) {
@@ -150,7 +159,7 @@ namespace ambitap::dsp {
             for (size_t i = 0; i < frame_count; ++i) {
                 const bool  fading = m_fade_pos < k_fade_samples;
                 const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                  / static_cast<float>(k_fade_samples)
+                                                 / static_cast<float>(k_fade_samples)
                                             : 1.f;
                 for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
                     float acc_new = 0.f;
@@ -180,8 +189,8 @@ namespace ambitap::dsp {
             fresh->m.resize(m_channels * m_channels);
             for (size_t row = 0; row < m_channels; ++row) {
                 for (size_t col = 0; col < m_channels; ++col) {
-                    fresh->m[row * m_channels + col] = m(static_cast<Eigen::Index>(row),
-                                                         static_cast<Eigen::Index>(col));
+                    fresh->m[row * m_channels + col] =
+                        m(static_cast<Eigen::Index>(row), static_cast<Eigen::Index>(col));
                 }
             }
 

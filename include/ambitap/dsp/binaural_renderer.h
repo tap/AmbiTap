@@ -189,9 +189,18 @@ namespace ambitap::dsp {
             m_head_roll  = roll;
             apply_head_orientation();
         }
-        void set_yaw(float radians) { m_head_yaw = radians; apply_head_orientation(); }
-        void set_pitch(float radians) { m_head_pitch = radians; apply_head_orientation(); }
-        void set_roll(float radians) { m_head_roll = radians; apply_head_orientation(); }
+        void set_yaw(float radians) {
+            m_head_yaw = radians;
+            apply_head_orientation();
+        }
+        void set_pitch(float radians) {
+            m_head_pitch = radians;
+            apply_head_orientation();
+        }
+        void set_roll(float radians) {
+            m_head_roll = radians;
+            apply_head_orientation();
+        }
 
         /// Block until pending head-tracking rebuilds finish (tests/offline).
         void wait_for_settling() { m_head.wait_for_settling(); }
@@ -204,7 +213,7 @@ namespace ambitap::dsp {
                 length          = set[channel].size();
                 return set[channel].data();
             }
-            length = builtin_hrtf_length;
+            length           = builtin_hrtf_length;
             const bool magls = (m_projection == hrtf_projection::magls);
             if (ear == 0) {
                 return magls ? builtin_hrtf_magls_left[channel] : builtin_hrtf_left[channel];
@@ -216,7 +225,8 @@ namespace ambitap::dsp {
         /// block_size frames; left/right = block_size output samples each.
         /// Emits silence until prepare() has been called (or if frame_count
         /// doesn't match the prepared block size).
-        void process(const float* const* in, float* left, float* right, size_t frame_count) noexcept {
+        void process(const float* const* in, float* left, float* right,
+                     size_t frame_count) noexcept {
             if (m_conv_left.empty() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);
@@ -309,8 +319,8 @@ namespace ambitap::dsp {
             response r;
             r.frequencies.resize(bins);
             for (size_t k = 0; k < bins; ++k) {
-                r.frequencies[k] = static_cast<float>(k) * sample_rate
-                                   / static_cast<float>(fft_size);
+                r.frequencies[k] =
+                    static_cast<float>(k) * sample_rate / static_cast<float>(fft_size);
             }
             r.left_db.resize(bins);
             r.right_db.resize(bins);
@@ -329,8 +339,7 @@ namespace ambitap::dsp {
                 throw std::invalid_argument(
                     std::string("ambitap::dsp::binaural_renderer::") + who + ": order "
                     + std::to_string(m_order) + " exceeds the built-in HRTF order "
-                    + std::to_string(builtin_hrtf_order)
-                    + "; supply set_custom_hrtf() first");
+                    + std::to_string(builtin_hrtf_order) + "; supply set_custom_hrtf() first");
             }
         }
 
@@ -339,11 +348,10 @@ namespace ambitap::dsp {
         /// equivalent Z-Y-X Euler angles are extracted from that so the rotator
         /// (which composes in the same order) reproduces it exactly.
         void apply_head_orientation() {
-            const Eigen::Matrix3f R =
-                (Eigen::AngleAxisf(m_head_yaw, Eigen::Vector3f::UnitZ())
-                 * Eigen::AngleAxisf(m_head_pitch, Eigen::Vector3f::UnitY())
-                 * Eigen::AngleAxisf(m_head_roll, Eigen::Vector3f::UnitX()))
-                    .toRotationMatrix();
+            const Eigen::Matrix3f R = (Eigen::AngleAxisf(m_head_yaw, Eigen::Vector3f::UnitZ())
+                                       * Eigen::AngleAxisf(m_head_pitch, Eigen::Vector3f::UnitY())
+                                       * Eigen::AngleAxisf(m_head_roll, Eigen::Vector3f::UnitX()))
+                                          .toRotationMatrix();
             const Eigen::Matrix3f inv = R.transpose();
 
             const float yaw   = std::atan2(inv(1, 0), inv(0, 0));

@@ -81,9 +81,11 @@ namespace ambitap {
                 float y;
                 if (m > 0) {
                     y = norm * p * std::cos(static_cast<float>(m) * azimuth);
-                } else if (m < 0) {
+                }
+                else if (m < 0) {
                     y = norm * p * std::sin(static_cast<float>(abs_m) * azimuth);
-                } else {
+                }
+                else {
                     y = norm * p;
                 }
 

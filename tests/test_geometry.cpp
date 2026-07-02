@@ -116,8 +116,8 @@ TEST(ConvexHull, DegenerateInputsReturnEmpty) {
     auto ring = [](size_t n) {
         std::vector<Eigen::Vector3f> pts;
         for (size_t i = 0; i < n; ++i) {
-            const float a = 2.0f * static_cast<float>(M_PI) * static_cast<float>(i)
-                            / static_cast<float>(n);
+            const float a =
+                2.0f * static_cast<float>(M_PI) * static_cast<float>(i) / static_cast<float>(n);
             pts.push_back({std::cos(a), std::sin(a), 0.0f});
         }
         return pts;
@@ -201,8 +201,8 @@ TEST(SpeakerLayout, PairwiseGainsAreEnergyNormalizedOnOctagon) {
     ASSERT_TRUE(layout.is_pairwise());
 
     for (float az = -3.1f; az <= 3.1f; az += 0.13f) {
-        const auto g = layout.vbap_gains({az, 0.0f});
-        float      e = 0.f;
+        const auto g      = layout.vbap_gains({az, 0.0f});
+        float      e      = 0.f;
         int        active = 0;
         for (float v : g) {
             EXPECT_GE(v, 0.0f);
@@ -220,14 +220,14 @@ TEST(SpeakerLayout, EmptyLayoutThrows) {
 
 TEST(Tdesigns, PointsAreOnUnitSphere) {
     for (int order = 1; order <= max_order; ++order) {
-        size_t count          = 0;
-        const float (*pts)[3] = tdesign_for_order(order, count);
+        size_t count         = 0;
+        const float(*pts)[3] = tdesign_for_order(order, count);
         ASSERT_NE(pts, nullptr) << "order " << order;
         // ALLRAD needs t >= 2N+1, which needs at least (N+1)^2 points.
         EXPECT_GE(count, channel_count(order)) << "order " << order;
         for (size_t i = 0; i < count; ++i) {
-            const float norm = std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1]
-                                         + pts[i][2] * pts[i][2]);
+            const float norm =
+                std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1] + pts[i][2] * pts[i][2]);
             EXPECT_NEAR(norm, 1.0f, 1e-4f) << "order " << order << " point " << i;
         }
     }

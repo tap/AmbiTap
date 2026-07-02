@@ -69,11 +69,17 @@ namespace ambitap::dsp {
         float ratio() const { return m_ratio.load(std::memory_order_relaxed); }
 
         /// Envelope-follower attack time in seconds.
-        void  set_attack(float seconds) { m_attack_s = seconds; recalculate(); }
+        void set_attack(float seconds) {
+            m_attack_s = seconds;
+            recalculate();
+        }
         float attack() const { return m_attack_s; }
 
         /// Envelope-follower release time in seconds.
-        void  set_release(float seconds) { m_release_s = seconds; recalculate(); }
+        void set_release(float seconds) {
+            m_release_s = seconds;
+            recalculate();
+        }
         float release() const { return m_release_s; }
 
         /// Makeup gain applied after compression, in dB.

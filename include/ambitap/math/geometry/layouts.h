@@ -25,20 +25,17 @@ namespace ambitap {
         /// Quadraphonic: FL, BL, BR, FR.
         inline std::vector<spherical_coord> quad() {
             constexpr float a = 45.0f * k_pi / 180.0f;
-            return {{a, 0.0f},
-                    {k_pi - a, 0.0f},
-                    {-(k_pi - a), 0.0f},
-                    {-a, 0.0f}};
+            return {{a, 0.0f}, {k_pi - a, 0.0f}, {-(k_pi - a), 0.0f}, {-a, 0.0f}};
         }
 
         /// ITU 5.1 (no LFE): L, R, C, LS, RS.
         inline std::vector<spherical_coord> surround_5_1() {
             constexpr float deg = k_pi / 180.0f;
             return {
-                { 30.0f * deg, 0.0f}, // L
-                {-30.0f * deg, 0.0f}, // R
-                {  0.0f,       0.0f}, // C
-                { 110.0f * deg, 0.0f}, // LS
+                {30.0f * deg, 0.0f},   // L
+                {-30.0f * deg, 0.0f},  // R
+                {0.0f, 0.0f},          // C
+                {110.0f * deg, 0.0f},  // LS
                 {-110.0f * deg, 0.0f}, // RS
             };
         }
@@ -47,12 +44,12 @@ namespace ambitap {
         inline std::vector<spherical_coord> surround_7_1() {
             constexpr float deg = k_pi / 180.0f;
             return {
-                {  30.0f * deg, 0.0f}, // L
-                { -30.0f * deg, 0.0f}, // R
-                {   0.0f,       0.0f}, // C
-                {  90.0f * deg, 0.0f}, // LS
-                { -90.0f * deg, 0.0f}, // RS
-                { 135.0f * deg, 0.0f}, // LB
+                {30.0f * deg, 0.0f},   // L
+                {-30.0f * deg, 0.0f},  // R
+                {0.0f, 0.0f},          // C
+                {90.0f * deg, 0.0f},   // LS
+                {-90.0f * deg, 0.0f},  // RS
+                {135.0f * deg, 0.0f},  // LB
                 {-135.0f * deg, 0.0f}, // RB
             };
         }
@@ -63,18 +60,18 @@ namespace ambitap {
             constexpr float h   = 45.0f * deg;
             return {
                 // Ear level
-                {  30.0f * deg, 0.0f}, // L
-                { -30.0f * deg, 0.0f}, // R
-                {   0.0f,       0.0f}, // C
-                {  90.0f * deg, 0.0f}, // LS
-                { -90.0f * deg, 0.0f}, // RS
-                { 135.0f * deg, 0.0f}, // LB
+                {30.0f * deg, 0.0f},   // L
+                {-30.0f * deg, 0.0f},  // R
+                {0.0f, 0.0f},          // C
+                {90.0f * deg, 0.0f},   // LS
+                {-90.0f * deg, 0.0f},  // RS
+                {135.0f * deg, 0.0f},  // LB
                 {-135.0f * deg, 0.0f}, // RB
                 // Height
-                {  45.0f * deg, h},    // TFL
-                { -45.0f * deg, h},    // TFR
-                { 135.0f * deg, h},    // TBL
-                {-135.0f * deg, h},    // TBR
+                {45.0f * deg, h},   // TFL
+                {-45.0f * deg, h},  // TFR
+                {135.0f * deg, h},  // TBL
+                {-135.0f * deg, h}, // TBR
             };
         }
 
@@ -84,14 +81,8 @@ namespace ambitap {
             constexpr float az  = 45.0f * deg;
             constexpr float el  = 35.2644f * deg; // atan(1/sqrt(2))
             return {
-                {az, el},
-                {-az, el},
-                {180.0f * deg - az, el},
-                {-(180.0f * deg - az), el},
-                {az, -el},
-                {-az, -el},
-                {180.0f * deg - az, -el},
-                {-(180.0f * deg - az), -el},
+                {az, el},  {-az, el},  {180.0f * deg - az, el},  {-(180.0f * deg - az), el},
+                {az, -el}, {-az, -el}, {180.0f * deg - az, -el}, {-(180.0f * deg - az), -el},
             };
         }
 
@@ -99,18 +90,14 @@ namespace ambitap {
         inline std::vector<spherical_coord> hexagon() {
             constexpr float deg = k_pi / 180.0f;
             return {
-                {   0.0f,       0.0f},
-                {  60.0f * deg, 0.0f},
-                { 120.0f * deg, 0.0f},
-                { 180.0f * deg, 0.0f},
-                {-120.0f * deg, 0.0f},
-                { -60.0f * deg, 0.0f},
+                {0.0f, 0.0f},         {60.0f * deg, 0.0f},   {120.0f * deg, 0.0f},
+                {180.0f * deg, 0.0f}, {-120.0f * deg, 0.0f}, {-60.0f * deg, 0.0f},
             };
         }
 
         /// 8 speakers in the horizontal plane at 45-degree intervals.
         inline std::vector<spherical_coord> octagon() {
-            constexpr float deg = k_pi / 180.0f;
+            constexpr float              deg = k_pi / 180.0f;
             std::vector<spherical_coord> layout;
             for (int i = 0; i < 8; ++i) {
                 layout.push_back({static_cast<float>(i) * 45.0f * deg, 0.0f});

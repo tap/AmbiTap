@@ -16,47 +16,46 @@
 
 namespace {
 
-constexpr size_t k_block  = 64;
-constexpr float  k_fs     = 48000.0f;
-constexpr int    k_reps   = 400; // blocks per timed run
-constexpr int    k_runs   = 9;   // runs; median reported
+    constexpr size_t k_block = 64;
+    constexpr float  k_fs    = 48000.0f;
+    constexpr int    k_reps  = 400; // blocks per timed run
+    constexpr int    k_runs  = 9;   // runs; median reported
 
-using clock_t_ = std::chrono::steady_clock;
+    using clock_t_ = std::chrono::steady_clock;
 
-float g_sink = 0.f; // defeat dead-code elimination
+    float g_sink = 0.f; // defeat dead-code elimination
 
-struct planar {
-    std::vector<std::vector<float>> bufs;
-    std::vector<const float*>       in;
-    std::vector<float*>             out;
-    planar(size_t channels, size_t frames, float fill)
-        : bufs(channels, std::vector<float>(frames, fill)) {
-        for (auto& b : bufs) {
-            in.push_back(b.data());
-            out.push_back(b.data());
+    struct planar {
+        std::vector<std::vector<float>> bufs;
+        std::vector<const float*>       in;
+        std::vector<float*>             out;
+        planar(size_t channels, size_t frames, float fill)
+            : bufs(channels, std::vector<float>(frames, fill)) {
+            for (auto& b : bufs) {
+                in.push_back(b.data());
+                out.push_back(b.data());
+            }
         }
-    }
-};
+    };
 
-template <typename Fn>
-double bench_us_per_block(Fn&& fn) {
-    std::vector<double> runs;
-    for (int r = 0; r < k_runs; ++r) {
-        const auto t0 = clock_t_::now();
-        for (int i = 0; i < k_reps; ++i) fn();
-        const auto t1 = clock_t_::now();
-        runs.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count()
-                       / static_cast<double>(k_reps));
+    template <typename Fn> double bench_us_per_block(Fn&& fn) {
+        std::vector<double> runs;
+        for (int r = 0; r < k_runs; ++r) {
+            const auto t0 = clock_t_::now();
+            for (int i = 0; i < k_reps; ++i) fn();
+            const auto t1 = clock_t_::now();
+            runs.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count()
+                           / static_cast<double>(k_reps));
+        }
+        std::sort(runs.begin(), runs.end());
+        return runs[runs.size() / 2];
     }
-    std::sort(runs.begin(), runs.end());
-    return runs[runs.size() / 2];
-}
 
-void report(const std::string& name, double us) {
-    const double budget_us = 1e6 * static_cast<double>(k_block) / static_cast<double>(k_fs);
-    std::printf("%-28s %9.2f us/block   %6.2f %% of RT budget\n", name.c_str(), us,
-                100.0 * us / budget_us);
-}
+    void report(const std::string& name, double us) {
+        const double budget_us = 1e6 * static_cast<double>(k_block) / static_cast<double>(k_fs);
+        std::printf("%-28s %9.2f us/block   %6.2f %% of RT budget\n", name.c_str(), us,
+                    100.0 * us / budget_us);
+    }
 
 } // namespace
 
@@ -66,8 +65,8 @@ int main() {
                 k_block, k_fs / 1000.f, 1e6 * k_block / k_fs, k_runs, k_reps);
 
     for (int order : {1, 3, 5}) {
-        const size_t channels = ambitap::channel_count(order);
-        planar       hoa(channels, k_block, 0.25f);
+        const size_t       channels = ambitap::channel_count(order);
+        planar             hoa(channels, k_block, 0.25f);
         std::vector<float> mono(k_block, 0.5f);
 
         {

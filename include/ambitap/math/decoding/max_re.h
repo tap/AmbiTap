@@ -24,9 +24,8 @@ namespace ambitap {
     ///
     /// Reference: Zotter & Frank (2012), "All-Round Ambisonic Panning and Decoding".
     inline std::vector<float> max_re_weights(int order) {
-        const float theta = (137.9f * k_pi / 180.0f)
-                            / (static_cast<float>(order) + 1.51f);
-        const float x = std::cos(theta);
+        const float theta = (137.9f * k_pi / 180.0f) / (static_cast<float>(order) + 1.51f);
+        const float x     = std::cos(theta);
 
         std::vector<float> weights(order + 1);
 
@@ -40,9 +39,9 @@ namespace ambitap {
         }
 
         for (int n = 1; n < order; ++n) {
-            float p_next = (static_cast<float>(2 * n + 1) * x * p_curr
-                            - static_cast<float>(n) * p_prev)
-                           / static_cast<float>(n + 1);
+            float p_next =
+                (static_cast<float>(2 * n + 1) * x * p_curr - static_cast<float>(n) * p_prev)
+                / static_cast<float>(n + 1);
             p_prev         = p_curr;
             p_curr         = p_next;
             weights[n + 1] = p_next;

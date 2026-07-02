@@ -47,7 +47,8 @@ TEST(Normalization, Sn3dBasics) {
 TEST(Normalization, N3dRelations) {
     for (int n = 0; n <= max_order; ++n) {
         for (int m = 0; m <= n; ++m) {
-            EXPECT_NEAR(n3d_factor(n, m), sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
+            EXPECT_NEAR(n3d_factor(n, m),
+                        sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
         }
         EXPECT_NEAR(sn3d_to_n3d(n) * n3d_to_sn3d(n), 1.0f, 1e-6f);
     }
@@ -83,16 +84,16 @@ TEST(SphericalHarmonics, OrthonormalUnderTdesignQuadrature) {
     constexpr int order = 3;
     const size_t  C     = channel_count(order);
 
-    size_t count            = 0;
-    const float (*pts)[3]   = tdesign_for_order(order, count);
+    size_t count         = 0;
+    const float(*pts)[3] = tdesign_for_order(order, count);
     ASSERT_GT(count, 0u);
 
     std::vector<std::vector<float>> Y(count, std::vector<float>(C));
     float                           sh[max_channel_count];
     for (size_t v = 0; v < count; ++v) {
         const float az = std::atan2(pts[v][1], pts[v][0]);
-        const float el = std::atan2(pts[v][2],
-                                    std::sqrt(pts[v][0] * pts[v][0] + pts[v][1] * pts[v][1]));
+        const float el =
+            std::atan2(pts[v][2], std::sqrt(pts[v][0] * pts[v][0] + pts[v][1] * pts[v][1]));
         evaluate_sh(order, az, el, sh);
         for (size_t c = 0; c < C; ++c) {
             Y[v][c] = sh[c] * sn3d_to_n3d(acn_order(c));

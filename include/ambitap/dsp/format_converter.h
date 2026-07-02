@@ -53,10 +53,7 @@ namespace ambitap::dsp {
         // FuMa channel order: W, X, Y, Z, R, S, T, U, V, K, L, M, N, O, P, Q.
         // Maps FuMa index -> ACN index.
         static constexpr std::array<size_t, max_channels> k_fuma_to_acn = {
-            0,  3,  1,  2,
-            6,  7,  5,  8,  4,
-            12, 13, 11, 14, 10, 15, 9
-        };
+            0, 3, 1, 2, 6, 7, 5, 8, 4, 12, 13, 11, 14, 10, 15, 9};
 
         // Per-(n, |m|) factor multiplied when going FROM FuMa TO SN3D; the
         // inverse direction uses the reciprocal.
@@ -105,7 +102,7 @@ namespace ambitap::dsp {
         void process_frame(const float* in, float* out) const noexcept {
             for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
                 out[out_ch] = in[m_input_index[out_ch].load(std::memory_order_relaxed)]
-                            * m_input_gain[out_ch].load(std::memory_order_relaxed);
+                              * m_input_gain[out_ch].load(std::memory_order_relaxed);
             }
         }
 
@@ -132,8 +129,8 @@ namespace ambitap::dsp {
                 if (m_direction == format_direction::fuma_to_ambix) {
                     // Output is ACN-ordered; input is FuMa-ordered. Pull from
                     // FuMa position acn_to_fuma[out_ch] and scale up to SN3D.
-                    const int n           = acn_order(out_ch);
-                    const int abs_m       = std::abs(acn_degree(out_ch));
+                    const int n     = acn_order(out_ch);
+                    const int abs_m = std::abs(acn_degree(out_ch));
                     m_input_index[out_ch].store(acn_to_fuma[out_ch], std::memory_order_relaxed);
                     m_input_gain[out_ch].store(fuma_to_sn3d_gain(n, abs_m),
                                                std::memory_order_relaxed);

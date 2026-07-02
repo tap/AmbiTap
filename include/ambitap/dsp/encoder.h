@@ -51,11 +51,19 @@ namespace ambitap::dsp {
         size_t channels() const { return m_channels; }
 
         /// Source azimuth in radians. 0 = front, pi/2 = left.
-        void  set_azimuth(float radians) { m_azimuth = radians; recalculate(); publish(); }
+        void set_azimuth(float radians) {
+            m_azimuth = radians;
+            recalculate();
+            publish();
+        }
         float azimuth() const { return m_azimuth; }
 
         /// Source elevation in radians. 0 = horizon, pi/2 = zenith.
-        void  set_elevation(float radians) { m_elevation = radians; recalculate(); publish(); }
+        void set_elevation(float radians) {
+            m_elevation = radians;
+            recalculate();
+            publish();
+        }
         float elevation() const { return m_elevation; }
 
         /// Set both angles with a single coefficient recalculation.

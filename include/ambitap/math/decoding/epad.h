@@ -51,10 +51,9 @@ namespace ambitap {
     /// @param use_max_re  If true, apply energy-normalized max-rE column weighting.
     /// @return Decoder matrix (num_speakers x (order+1)^2); speaker_signals = D * hoa.
     /// @throws std::invalid_argument on out-of-range order or empty speaker list.
-    inline Eigen::MatrixXf
-    compute_epad_decoder(int                                 order,
-                         const std::vector<spherical_coord>& speakers,
-                         bool                                use_max_re = false) {
+    inline Eigen::MatrixXf compute_epad_decoder(int                                 order,
+                                                const std::vector<spherical_coord>& speakers,
+                                                bool use_max_re = false) {
         validated_order(order, "compute_epad_decoder");
         if (speakers.empty()) {
             throw std::invalid_argument("ambitap::compute_epad_decoder: empty speaker list");
@@ -86,7 +85,7 @@ namespace ambitap {
         Eigen::Index r = 0;
         while (r < S.size() && S(r) > 1e-3f * S(0)) ++r;
 
-        const float scale = 1.0f / std::sqrt(static_cast<float>(L));
+        const float     scale = 1.0f / std::sqrt(static_cast<float>(L));
         Eigen::MatrixXf D     = scale * (U.leftCols(r) * V.leftCols(r).transpose())
                             * n3d.asDiagonal(); // (L, C), SN3D input
 

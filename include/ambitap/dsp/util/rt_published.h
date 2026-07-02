@@ -43,8 +43,7 @@ namespace ambitap::dsp {
     ///     serialized internally.
     ///   - peek()/has_value(): any thread EXCEPT the real-time path — peek()
     ///     takes a mutex the reader never touches.
-    template <typename Product>
-    class rt_published {
+    template <typename Product> class rt_published {
       public:
         /// RAII read region for the reader thread. Wait-free: entry and exit
         /// are one atomic store each. get() may be called any number of times
@@ -103,7 +102,7 @@ namespace ambitap::dsp {
             std::shared_ptr<Product> old;
             {
                 std::lock_guard<std::mutex> lock(m_mtx);
-                old = std::move(m_latest);
+                old      = std::move(m_latest);
                 m_latest = std::move(fresh);
                 m_active.store(m_latest.get(), std::memory_order_seq_cst);
             }
@@ -115,8 +114,9 @@ namespace ambitap::dsp {
       private:
         void wait_for_grace() const {
             const auto e = m_epoch.load(std::memory_order_seq_cst);
-            if ((e & 1u) == 0) return; // reader outside: regions entered from
-                                       // now on will see the new pointer
+            if ((e & 1u) == 0)
+                return; // reader outside: regions entered from
+                        // now on will see the new pointer
             while (m_epoch.load(std::memory_order_acquire) == e) {
                 std::this_thread::sleep_for(std::chrono::microseconds(50));
             }

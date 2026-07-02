@@ -46,12 +46,12 @@ namespace ambitap {
     ///         the per-channel weights for one speaker; speaker_signals = D * hoa.
     /// @throws std::invalid_argument on out-of-range order or empty speaker list.
     inline Eigen::MatrixXf
-    compute_mode_matching_decoder(int                                 order,
-                                  const std::vector<spherical_coord>& speakers,
-                                  bool                                use_max_re = false) {
+    compute_mode_matching_decoder(int order, const std::vector<spherical_coord>& speakers,
+                                  bool use_max_re = false) {
         validated_order(order, "compute_mode_matching_decoder");
         if (speakers.empty()) {
-            throw std::invalid_argument("ambitap::compute_mode_matching_decoder: empty speaker list");
+            throw std::invalid_argument(
+                "ambitap::compute_mode_matching_decoder: empty speaker list");
         }
 
         const auto L = static_cast<Eigen::Index>(speakers.size());

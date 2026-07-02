@@ -19,7 +19,7 @@ TEST(DspDoppler, SilentUntilPrepared) {
     dsp::doppler dop(1);
     EXPECT_FALSE(dop.is_prepared());
 
-    float in[4] = {1.f, 1.f, 1.f, 1.f};
+    float in[4]  = {1.f, 1.f, 1.f, 1.f};
     float out[4] = {9.f, 9.f, 9.f, 9.f};
     dop.process_frame(in, out);
     for (float v : out) EXPECT_EQ(v, 0.f);
@@ -85,8 +85,8 @@ TEST(DspSpatialCompressor, GainAppliesUniformlyAcrossChannels) {
     dsp::spatial_compressor comp(2);
     comp.prepare(48000.f);
 
-    constexpr size_t   frames = 64;
-    const size_t       C      = comp.channels();
+    constexpr size_t                frames = 64;
+    const size_t                    C      = comp.channels();
     std::vector<std::vector<float>> in(C, std::vector<float>(frames, 0.5f)),
         out(C, std::vector<float>(frames));
     std::vector<const float*> ip;

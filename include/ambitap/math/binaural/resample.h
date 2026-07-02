@@ -19,17 +19,16 @@ namespace ambitap {
     ///
     /// Unity passband gain; when downsampling, the kernel cutoff is lowered
     /// to the output Nyquist to anti-alias.
-    inline std::vector<float> resample_fir(const float* in, size_t in_len,
-                                           float in_rate, float out_rate) {
+    inline std::vector<float> resample_fir(const float* in, size_t in_len, float in_rate,
+                                           float out_rate) {
         if (in_len == 0) return {};
         if (in_rate == out_rate) return {in, in + in_len};
 
         const double ratio   = static_cast<double>(out_rate) / static_cast<double>(in_rate);
-        const auto   out_len = static_cast<size_t>(
-            std::ceil(static_cast<double>(in_len) * ratio));
-        const double fc   = std::min(1.0, ratio); // input-Nyquist fraction
-        const int    half = 32;
-        const double pi   = 3.14159265358979323846;
+        const auto   out_len = static_cast<size_t>(std::ceil(static_cast<double>(in_len) * ratio));
+        const double fc      = std::min(1.0, ratio); // input-Nyquist fraction
+        const int    half    = 32;
+        const double pi      = 3.14159265358979323846;
 
         auto kernel = [&](double x) -> double {
             const double ax = std::abs(x);

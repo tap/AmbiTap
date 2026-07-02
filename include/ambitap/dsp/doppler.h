@@ -92,7 +92,7 @@ namespace ambitap::dsp {
         /// Target delay in samples, clamped to the buffer.
         float current_delay_samples() const {
             float s = m_distance.load(std::memory_order_relaxed)
-                    / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
+                      / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
             // Cap at buffer_size - 2 so the interpolation can read i and i+1.
             const float max_s = static_cast<float>(m_buffer_size) - 2.f;
             if (s < 0.f) s = 0.f;
@@ -144,13 +144,12 @@ namespace ambitap::dsp {
         }
 
       private:
-        static float read_interpolated(const std::vector<float>& buf,
-                                       size_t                    write_idx,
-                                       float                     delay_samples) {
-            const size_t N         = buf.size();
-            const float  idx_f     = static_cast<float>(write_idx) - delay_samples;
-            const float  wrapped_f = idx_f - std::floor(idx_f / static_cast<float>(N))
-                                    * static_cast<float>(N);
+        static float read_interpolated(const std::vector<float>& buf, size_t write_idx,
+                                       float delay_samples) {
+            const size_t N     = buf.size();
+            const float  idx_f = static_cast<float>(write_idx) - delay_samples;
+            const float  wrapped_f =
+                idx_f - std::floor(idx_f / static_cast<float>(N)) * static_cast<float>(N);
             const size_t i0   = static_cast<size_t>(wrapped_f) % N;
             const size_t i1   = (i0 + 1) % N;
             const float  frac = wrapped_f - std::floor(wrapped_f);

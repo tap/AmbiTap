@@ -11,7 +11,19 @@ AccessModifierOffset: -2
 NamespaceIndentation: All
 
 PointerAlignment: Left
-BreakBeforeBraces: Stroustrup
+BreakBeforeBinaryOperators: NonAssignment
+SpaceBeforeCpp11BracedList: true
+# House style: braces attach everywhere (including functions); only `else`
+# gets its own line.
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: false
+  AfterClass: false
+  AfterStruct: false
+  AfterNamespace: false
+  AfterControlStatement: Never
+  BeforeElse: true
+  BeforeCatch: true
 BreakConstructorInitializers: BeforeComma
 PackConstructorInitializers: Never
 

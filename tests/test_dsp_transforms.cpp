@@ -19,13 +19,13 @@ using namespace ambitap;
 
 namespace {
 
-std::vector<float> encode_at(int order, float az, float el) {
-    dsp::encoder enc(order);
-    enc.set_direction(az, el);
-    std::vector<float> v(enc.channels());
-    for (size_t ch = 0; ch < v.size(); ++ch) v[ch] = enc.coefficients()[ch];
-    return v;
-}
+    std::vector<float> encode_at(int order, float az, float el) {
+        dsp::encoder enc(order);
+        enc.set_direction(az, el);
+        std::vector<float> v(enc.channels());
+        for (size_t ch = 0; ch < v.size(); ++ch) v[ch] = enc.coefficients()[ch];
+        return v;
+    }
 
 } // namespace
 
@@ -42,11 +42,11 @@ TEST(DspMirror, MirrorsMatchReflectedEncoding) {
         float ref_az, ref_el;
     };
     const Case cases[] = {
-        {true, false, false, -az, el},          // LR: az -> -az
-        {false, true, false, pi - az, el},      // FB: az -> pi - az
-        {false, false, true, az, -el},          // UD: el -> -el
-        {true, true, false, az - pi, el},       // LR+FB: az -> az - pi (mod 2pi)
-        {true, false, true, -az, -el},          // LR+UD
+        {true, false, false, -az, el},     // LR: az -> -az
+        {false, true, false, pi - az, el}, // FB: az -> pi - az
+        {false, false, true, az, -el},     // UD: el -> -el
+        {true, true, false, az - pi, el},  // LR+FB: az -> az - pi (mod 2pi)
+        {true, false, true, -az, -el},     // LR+UD
     };
 
     for (const auto& c : cases) {
@@ -176,7 +176,7 @@ TEST(DspDirectionalLoudness, AchievesRequestedGainAtLookDirection) {
 // Sources well away from the look direction are far less affected than the
 // on-beam source: attenuating the beam must not gut the rest of the scene.
 TEST(DspDirectionalLoudness, OffBeamSourceLargelyUnaffected) {
-    constexpr int order = 3;
+    constexpr int             order = 3;
     dsp::directional_loudness dl(order);
     dl.set_direction(0.0f, 0.0f); // look at front
     dl.set_gain(0.0f);            // remove the front

@@ -83,12 +83,13 @@
 > (±9.6 dB / correct ear ordering at ±90°). `HrtfData.MaglsDatasetIsCausal`
 > is enabled and green; no disabled tests remain.
 >
-> **Remaining (needs the author):** pin
-> libmysofa to the v1.3.4 commit SHA (unreachable from the audit sandbox);
-> decide on the one-time `clang-format` reformat commit + CI gate. Deferred
-> with rationale: Q1 (rotation via least-squares fit — accurate to ~1e-6
-> through order 10, but the doc overstating it vs. Ivanic–Ruedenberg was
-> fixed), P3 polish items not otherwise picked up along the way.
+> **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
+> SHA (resolved by the author); the one-time `clang-format` reformat landed
+> with a config verified idempotent against the whole tree, and CI now
+> enforces formatting. Deferred with rationale: Q1 (rotation via
+> least-squares fit — accurate to ~1e-6 through order 10; the doc overstating
+> it vs. Ivanic–Ruedenberg was fixed), P3 polish items not otherwise picked
+> up along the way.
 
 **Date:** 2026-07-02
 **Scope:** every header under `include/ambitap/`, all tests, scripts, build system, and CI — reviewed line-by-line, with SampleRateTap as the quality/completeness bar.

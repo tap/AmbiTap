@@ -90,9 +90,9 @@ namespace ambitap {
         std::vector<face> faces;
         auto              add_face = [&](size_t a, size_t b, size_t c) {
             face f;
-            f.v[0]  = a;
-            f.v[1]  = b;
-            f.v[2]  = c;
+            f.v[0] = a;
+            f.v[1] = b;
+            f.v[2] = c;
             f.normal = (points[b] - points[a]).cross(points[c] - points[a]).normalized();
             f.alive = true;
             faces.push_back(f);
@@ -104,7 +104,8 @@ namespace ambitap {
             add_face(p0, p1, p3);
             add_face(p1, p2, p3);
             add_face(p0, p3, p2);
-        } else {
+        }
+        else {
             add_face(p0, p1, p2);
             add_face(p0, p3, p1);
             add_face(p1, p3, p2);
@@ -186,8 +187,9 @@ namespace ambitap {
             for (const auto& e : horizon) {
                 add_face(e.a, e.b, i);
                 // The new face should point away from origin (points lie on a sphere).
-                face&           f           = faces.back();
-                Eigen::Vector3f face_center = (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
+                face&           f = faces.back();
+                Eigen::Vector3f face_center =
+                    (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
                 if (face_center.dot(f.normal) < 0) {
                     std::swap(f.v[1], f.v[2]);
                     f.normal = -f.normal;

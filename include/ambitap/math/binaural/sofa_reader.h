@@ -37,15 +37,13 @@ namespace ambitap {
         float                                        sample_rate {0.f};
         std::vector<float>                           azimuth;   // radians
         std::vector<float>                           elevation; // radians
-        std::vector<std::vector<std::vector<float>>> hrir;      // [measurement][ear 0=L/1=R][sample]
+        std::vector<std::vector<std::vector<float>>> hrir; // [measurement][ear 0=L/1=R][sample]
 
         /// Project the measured HRIRs onto the SH basis at the given order.
         ///
         /// out_left and out_right are filled as [acn_channel][sample] of size
         /// (order+1)^2 x min(hrir_length, max_taps).
-        void decompose_sh(int                              order,
-                          size_t                           max_taps,
-                          std::vector<std::vector<float>>& out_left,
+        void decompose_sh(int order, size_t max_taps, std::vector<std::vector<float>>& out_left,
                           std::vector<std::vector<float>>& out_right) const {
             const size_t num_ch = channel_count(order);
             const size_t taps   = std::min(hrir_length, max_taps);
@@ -56,10 +54,8 @@ namespace ambitap {
             Eigen::MatrixXf Y(M, C);
             float           sh_buf[max_channel_count];
             for (Eigen::Index i = 0; i < M; ++i) {
-                evaluate_sh(order,
-                            azimuth[static_cast<size_t>(i)],
-                            elevation[static_cast<size_t>(i)],
-                            sh_buf);
+                evaluate_sh(order, azimuth[static_cast<size_t>(i)],
+                            elevation[static_cast<size_t>(i)], sh_buf);
                 for (Eigen::Index j = 0; j < C; ++j) {
                     Y(i, j) = sh_buf[j];
                 }

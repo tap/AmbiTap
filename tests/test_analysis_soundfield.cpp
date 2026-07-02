@@ -61,7 +61,7 @@ TEST(AnalysisSoundfieldGrid, LocalizesEncodedSource) {
 
     for (int b = 0; b < 200; ++b) sg.process(ptrs.data(), frames);
 
-    const auto img = sg.snapshot(40.f);
+    const auto img    = sg.snapshot(40.f);
     size_t     argmax = 0;
     for (size_t d = 1; d < img.data.size(); ++d) {
         if (img.data[d] > img.data[argmax]) argmax = d;

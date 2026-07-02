@@ -24,16 +24,16 @@ using namespace ambitap;
 
 namespace {
 
-// Duration knobs: large enough to interleave thousands of publishes with a
-// live audio loop, small enough to keep the suite fast.
-constexpr int k_setter_iterations = 2000;
+    // Duration knobs: large enough to interleave thousands of publishes with a
+    // live audio loop, small enough to keep the suite fast.
+    constexpr int k_setter_iterations = 2000;
 
-bool all_finite(const std::vector<float>& v) {
-    for (float x : v) {
-        if (!std::isfinite(x)) return false;
+    bool all_finite(const std::vector<float>& v) {
+        for (float x : v) {
+            if (!std::isfinite(x)) return false;
+        }
+        return true;
     }
-    return true;
-}
 
 } // namespace
 
@@ -120,12 +120,16 @@ TEST(DspThreads, DecoderSpeakerHammerVsProcess) {
 
     for (int i = 0; i < k_setter_iterations; ++i) {
         switch (i % 3) {
-            case 0: dec.set_speakers(layouts::cube()); break;
-            case 1: dec.set_speakers(layouts::octagon()); break;
-            case 2:
-                dec.set_algorithm((i % 2) ? dsp::decoder_algorithm::allrad
-                                          : dsp::decoder_algorithm::mode_match);
-                break;
+        case 0:
+            dec.set_speakers(layouts::cube());
+            break;
+        case 1:
+            dec.set_speakers(layouts::octagon());
+            break;
+        case 2:
+            dec.set_algorithm((i % 2) ? dsp::decoder_algorithm::allrad
+                                      : dsp::decoder_algorithm::mode_match);
+            break;
         }
     }
     dec.wait_for_settling();
