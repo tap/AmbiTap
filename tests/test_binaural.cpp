@@ -156,12 +156,9 @@ TEST(HrtfData, DatasetShapeAndContent) {
 // before the acoustic onset (circular wrap from a spectrum inconsistent with
 // a compact causal FIR), audible as pre-echo. A correctly designed dataset
 // (single phase-continued projection per bin) keeps pre-onset energy small.
-//
-// DISABLED until the dataset is regenerated: the fix is in the generator, but
-// regeneration needs the MIT KEMAR source SOFA, which must be fetched by a
-// human (see the generate_hrtf.py docstring). Re-enable together with the
-// regenerated hrtf_data.h.
-TEST(HrtfData, DISABLED_MaglsDatasetIsCausal) {
+// The embedded dataset was regenerated from the MIT KEMAR source SOFA with
+// the corrected generator (phase-trend extrapolation + causality gate).
+TEST(HrtfData, MaglsDatasetIsCausal) {
     // The KEMAR ear-canal onset sits near sample 29 at 44.1 kHz; anything in
     // the first 26 samples is pre-onset. The LS dataset satisfies this with
     // 0.0% today; allow a small MagLS allowance for phase relaxation.

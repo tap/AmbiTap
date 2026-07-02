@@ -76,8 +76,14 @@
 > `scripts/requirements.txt`, and fails with instructions instead of a
 > traceback when the SOFA file or dependencies are missing.
 >
-> **Remaining (needs the author):** regenerate the MagLS dataset against the
-> KEMAR source SOFA and enable `HrtfData.DISABLED_MaglsDatasetIsCausal`; pin
+> **B6 closed:** the author regenerated the dataset against the real MIT
+> KEMAR SOFA (SHA-256 e70359…, embedded in the header) with the corrected
+> generator — MagLS pre-onset energy is now 0.49% (was 35.8%), verified
+> independently from the embedded tables, with unchanged ILD/ITD signatures
+> (±9.6 dB / correct ear ordering at ±90°). `HrtfData.MaglsDatasetIsCausal`
+> is enabled and green; no disabled tests remain.
+>
+> **Remaining (needs the author):** pin
 > libmysofa to the v1.3.4 commit SHA (unreachable from the audit sandbox);
 > decide on the one-time `clang-format` reformat commit + CI gate. Deferred
 > with rationale: Q1 (rotation via least-squares fit — accurate to ~1e-6
