@@ -17,6 +17,29 @@
 > script per its docstring and re-enable `HrtfData.DISABLED_MaglsDatasetIsCausal`.
 > Suite: 87 tests green, ASan+UBSan clean. C3 (wait-free publishing) and the
 > remaining P1/P2 items are still open.
+>
+> **P1 remediation (same day, same branch):** C3 is fixed — publishing now goes
+> through `dsp/util/rt_published.h` (single-audio-reader RCU: raw atomic
+> pointer + epoch grace period; the audio thread never locks, allocates, or
+> frees — the worker does all freeing and absorbs the grace wait). B9/B10 are
+> fixed via `dsp/util/smoothing.h`: element-atomic target tables with
+> audio-side linear ramps (`k_smoothing_samples`), atomic scalars elsewhere,
+> and an atomic UI snapshot in `energy_vector`. B12 is fixed: rotator/decoder
+> matrices crossfade in over `k_fade_samples` (products carry their fade-from
+> matrix), encoder/mirror/virtual-mic/directional-loudness coefficients ramp,
+> doppler's delay glides (a real Doppler pitch glide), and binaural volume
+> ramps per block; `snap_parameters()` covers offline/exact use. B15's
+> `async_rebuilder` doc/API contradictions are resolved (`read_lock()` for the
+> audio path, `peek()` for UI/tests; `wait_for_settling` now also waits for
+> `on_publish`). Q2/Q5/Q13 addressed in passing (pitch/roll doc, denormal
+> guard in the compressor envelope, `uint64_t` sequence counters). Evidence:
+> `tests/test_dsp_threads.cpp` (setter-hammer and destroy-while-building
+> stress, torn/UAF product check) and `tests/test_rt_safety.cpp` (replaced
+> global `operator new`/`delete` proving the process paths allocation- and
+> free-free), plus ASan+UBSan and TSan legs in CI. 97 tests green under all
+> three sanitizers. Still open: P2 (CI matrix parity, install/export,
+> benchmarks, docs/examples, HRTF sample-rate handling) and the MagLS dataset
+> regeneration noted above.
 
 **Date:** 2026-07-02
 **Scope:** every header under `include/ambitap/`, all tests, scripts, build system, and CI — reviewed line-by-line, with SampleRateTap as the quality/completeness bar.

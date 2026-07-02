@@ -18,6 +18,26 @@
 
 using namespace ambitap;
 
+namespace {
+
+// Newly published matrices crossfade in over k_fade_samples; run the fade out
+// so subsequent assertions see the settled matrix exactly.
+void run_out_rotator_fade(const dsp::rotator& rot) {
+    std::vector<float> in(rot.channels(), 0.f), out(rot.channels());
+    for (size_t i = 0; i < dsp::rotator::k_fade_samples; ++i) {
+        rot.process_frame(in.data(), out.data());
+    }
+}
+
+void run_out_decoder_fade(const dsp::decoder& dec, size_t out_channels) {
+    std::vector<float> in(dec.input_channels(), 0.f), out(out_channels);
+    for (size_t i = 0; i < dsp::decoder::k_fade_samples; ++i) {
+        dec.process_frame(in.data(), out.data(), out_channels);
+    }
+}
+
+} // namespace
+
 TEST(DspRotator, PassthroughUntilFirstSetter) {
     dsp::rotator rot(2);
     EXPECT_FALSE(rot.is_active());
@@ -39,6 +59,7 @@ TEST(DspRotator, RotatedEncodingMatchesEncodedRotation) {
     rot.set_rotation(yaw, 0.f, 0.f);
     rot.wait_for_settling();
     ASSERT_TRUE(rot.is_active());
+    run_out_rotator_fade(rot);
 
     dsp::encoder enc(order);
     enc.set_direction(az, el);
@@ -96,7 +117,8 @@ TEST(DspDecoder, MatchesDirectConstruction) {
         }
     }
 
-    // process_frame applies the matrix.
+    // process_frame applies the matrix (after the adoption crossfade).
+    run_out_decoder_fade(dec, 8);
     dsp::encoder enc(order);
     enc.set_direction(speakers[2].azimuth, speakers[2].elevation);
     std::vector<float> in(enc.coefficients(), enc.coefficients() + enc.channels());

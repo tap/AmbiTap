@@ -27,9 +27,11 @@ TEST(DspDoppler, SilentUntilPrepared) {
 
 TEST(DspDoppler, IntegerDelayPassesImpulse) {
     dsp::doppler dop(1);
-    dop.prepare(48000.f);
     // 343 m at 343 m/s = 1 s = 48000 samples > default 50 m buffer; use 0.1 s.
+    // Distance changes glide (Doppler slew); setting it before prepare() makes
+    // prepare() snap the delay so the impulse timing below is exact.
     dop.set_distance(34.3f); // 0.1 s -> 4800 samples
+    dop.prepare(48000.f);
     ASSERT_TRUE(dop.is_prepared());
     EXPECT_NEAR(dop.current_delay_samples(), 4800.f, 0.01f);
 
@@ -111,6 +113,7 @@ TEST(AnalysisEnergyVector, ConvergesToSourceDirection) {
     // A constant source encoded at the front: W = X = 1, Y = Z = 0.
     dsp::encoder enc(1);
     enc.set_direction(0.f, 0.f);
+    enc.snap_parameters();
     float frame[4], out[3] = {};
     enc.process_sample(1.f, frame);
 
@@ -122,6 +125,7 @@ TEST(AnalysisEnergyVector, ConvergesToSourceDirection) {
 
     // Left-pointing source: azimuth pi/2 -> y axis.
     enc.set_direction(static_cast<float>(M_PI) * 0.5f, 0.f);
+    enc.snap_parameters();
     enc.process_sample(1.f, frame);
     ev.reset();
     for (int i = 0; i < 48000; ++i) ev.process_frame(frame, out);

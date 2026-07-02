@@ -42,6 +42,7 @@ TEST(DspEncoder, ProcessAppliesCoefficientsAndGain) {
     dsp::encoder enc(1);
     enc.set_direction(0.5f, 0.2f);
     enc.set_gain(2.0f);
+    enc.snap_parameters(); // parameter changes ramp; test wants exact values
 
     constexpr size_t   frames = 8;
     std::vector<float> in     = {1.0f, -0.5f, 0.25f, 0.0f, 0.75f, -1.0f, 0.1f, 0.9f};

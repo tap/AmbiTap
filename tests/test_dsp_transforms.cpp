@@ -54,6 +54,7 @@ TEST(DspMirror, MirrorsMatchReflectedEncoding) {
         m.set_flip_lr(c.lr);
         m.set_flip_fb(c.fb);
         m.set_flip_ud(c.ud);
+        m.snap_parameters(); // sign changes crossfade; test wants exact values
 
         std::vector<float> out(m.channels());
         m.process_frame(src.data(), out.data());
@@ -108,6 +109,7 @@ TEST(DspFormatConverter, WChannelGain) {
 TEST(DspVirtualMic, FirstOrderCardioid) {
     dsp::virtual_mic mic(1);
     mic.set_direction(0.9f, 0.3f);
+    mic.snap_parameters(); // coefficient changes ramp; test wants exact values
 
     // Source at the look direction: W*W + dir·dir = 1 + 1 = 2.
     const auto at_look = encode_at(1, 0.9f, 0.3f);
@@ -158,6 +160,7 @@ TEST(DspDirectionalLoudness, AchievesRequestedGainAtLookDirection) {
             dsp::directional_loudness dl(order);
             dl.set_direction(az, el);
             dl.set_gain(gain);
+            dl.snap_parameters(); // ramps off: assert the settled gain exactly
 
             std::vector<float> out(dl.channels());
             dl.process_frame(in.data(), out.data());
@@ -177,6 +180,7 @@ TEST(DspDirectionalLoudness, OffBeamSourceLargelyUnaffected) {
     dsp::directional_loudness dl(order);
     dl.set_direction(0.0f, 0.0f); // look at front
     dl.set_gain(0.0f);            // remove the front
+    dl.snap_parameters();
 
     const auto         in = encode_at(order, static_cast<float>(M_PI), 0.0f); // rear source
     std::vector<float> out(dl.channels());

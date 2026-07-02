@@ -10,6 +10,7 @@
 #include "../math/core/validate.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 
@@ -26,18 +27,22 @@ namespace ambitap::dsp {
     /// Lifecycle: construct with the ambisonics order, call prepare() with the
     /// sample rate (recomputes the envelope coefficients; defaults assume
     /// 48 kHz). process() is real-time safe.
+    ///
+    /// Threading: setters run on one control thread (atomic stores — no torn
+    /// values), the process methods on one audio thread.
     class spatial_compressor {
         size_t m_channels;
-        float  m_fs {48000.f};
-        float  m_threshold_db {-12.f};
-        float  m_ratio {4.f};
+        float  m_fs {48000.f}; // control thread only (prepare)
         float  m_attack_s {0.005f};
         float  m_release_s {0.1f};
-        float  m_makeup_db {0.f};
 
-        float m_envelope {0.f};
-        float m_attack_coef {0.f};
-        float m_release_coef {0.f};
+        std::atomic<float> m_threshold_db {-12.f};
+        std::atomic<float> m_ratio {4.f};
+        std::atomic<float> m_makeup_db {0.f};
+        std::atomic<float> m_attack_coef {0.f};
+        std::atomic<float> m_release_coef {0.f};
+
+        float m_envelope {0.f}; // audio-thread state
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
@@ -56,12 +61,12 @@ namespace ambitap::dsp {
         }
 
         /// Compression threshold in dB.
-        void  set_threshold_db(float db) { m_threshold_db = db; }
-        float threshold_db() const { return m_threshold_db; }
+        void  set_threshold_db(float db) { m_threshold_db.store(db, std::memory_order_relaxed); }
+        float threshold_db() const { return m_threshold_db.load(std::memory_order_relaxed); }
 
         /// Compression ratio. 1 = no compression.
-        void  set_ratio(float ratio) { m_ratio = ratio; }
-        float ratio() const { return m_ratio; }
+        void  set_ratio(float ratio) { m_ratio.store(ratio, std::memory_order_relaxed); }
+        float ratio() const { return m_ratio.load(std::memory_order_relaxed); }
 
         /// Envelope-follower attack time in seconds.
         void  set_attack(float seconds) { m_attack_s = seconds; recalculate(); }
@@ -72,26 +77,30 @@ namespace ambitap::dsp {
         float release() const { return m_release_s; }
 
         /// Makeup gain applied after compression, in dB.
-        void  set_makeup_gain_db(float db) { m_makeup_db = db; }
-        float makeup_gain_db() const { return m_makeup_db; }
+        void  set_makeup_gain_db(float db) { m_makeup_db.store(db, std::memory_order_relaxed); }
+        float makeup_gain_db() const { return m_makeup_db.load(std::memory_order_relaxed); }
 
         /// Update the envelope follower with one W sample, then return the
         /// linear gain to apply to every channel (compression + makeup).
-        float process_envelope(float w_sample) {
+        float process_envelope(float w_sample) noexcept {
             const float abs_w = std::abs(w_sample);
-            const float coef  = (abs_w > m_envelope) ? m_attack_coef : m_release_coef;
+            const float coef  = (abs_w > m_envelope)
+                                    ? m_attack_coef.load(std::memory_order_relaxed)
+                                    : m_release_coef.load(std::memory_order_relaxed);
             m_envelope += (abs_w - m_envelope) * coef;
+            if (m_envelope < 1e-30f) m_envelope = 0.f; // denormal guard
 
             const float env_db    = 20.f * std::log10(std::max(m_envelope, 1e-12f));
-            const float over      = env_db - m_threshold_db;
-            const float reduce_db = (over > 0.f) ? -over * (1.f - 1.f / m_ratio) : 0.f;
-            const float total_db  = reduce_db + m_makeup_db;
+            const float over      = env_db - m_threshold_db.load(std::memory_order_relaxed);
+            const float ratio     = m_ratio.load(std::memory_order_relaxed);
+            const float reduce_db = (over > 0.f) ? -over * (1.f - 1.f / ratio) : 0.f;
+            const float total_db  = reduce_db + m_makeup_db.load(std::memory_order_relaxed);
             return std::pow(10.f, total_db / 20.f);
         }
 
         /// Process a block of planar channel buffers (W = channel 0).
         /// Output may alias input.
-        void process(const float* const* in, float* const* out, size_t frame_count) {
+        void process(const float* const* in, float* const* out, size_t frame_count) noexcept {
             for (size_t i = 0; i < frame_count; ++i) {
                 const float gain = process_envelope(in[0][i]);
                 for (size_t ch = 0; ch < m_channels; ++ch) {
@@ -105,10 +114,10 @@ namespace ambitap::dsp {
 
       private:
         void recalculate() {
-            const float a  = std::max(1e-6f, m_attack_s);
-            const float r  = std::max(1e-6f, m_release_s);
-            m_attack_coef  = 1.f - std::exp(-1.f / (a * m_fs));
-            m_release_coef = 1.f - std::exp(-1.f / (r * m_fs));
+            const float a = std::max(1e-6f, m_attack_s);
+            const float r = std::max(1e-6f, m_release_s);
+            m_attack_coef.store(1.f - std::exp(-1.f / (a * m_fs)), std::memory_order_relaxed);
+            m_release_coef.store(1.f - std::exp(-1.f / (r * m_fs)), std::memory_order_relaxed);
         }
     };
 

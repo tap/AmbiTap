@@ -62,7 +62,9 @@ namespace ambitap::dsp {
         int    m_order;
         size_t m_channels;
         size_t m_block_size {0};
-        float  m_volume {1.0f};
+
+        std::atomic<float> m_volume {1.0f};
+        float              m_volume_current {1.0f}; // audio-thread ramp state
 
         hrtf_projection m_projection {hrtf_projection::ls};
 
@@ -110,9 +112,10 @@ namespace ambitap::dsp {
             rebuild_convolvers();
         }
 
-        /// Linear output gain (post-convolution). RT-safe.
-        void  set_volume(float linear) { m_volume = linear; }
-        float volume() const { return m_volume; }
+        /// Linear output gain (post-convolution). RT-safe and race-free
+        /// (atomic store); the audio thread ramps to it across one block.
+        void  set_volume(float linear) { m_volume.store(linear, std::memory_order_relaxed); }
+        float volume() const { return m_volume.load(std::memory_order_relaxed); }
 
         /// Select the built-in HRTF projection. Rebuilds convolvers when
         /// prepared (not RT-safe). Ignored while a custom HRTF set is loaded.
@@ -196,7 +199,7 @@ namespace ambitap::dsp {
         /// block_size frames; left/right = block_size output samples each.
         /// Emits silence until prepare() has been called (or if frame_count
         /// doesn't match the prepared block size).
-        void process(const float* const* in, float* left, float* right, size_t frame_count) {
+        void process(const float* const* in, float* left, float* right, size_t frame_count) noexcept {
             if (m_conv_left.empty() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);
@@ -222,11 +225,19 @@ namespace ambitap::dsp {
                 for (size_t i = 0; i < frame_count; ++i) right[i] += m_temp[i];
             }
 
-            if (m_volume != 1.f) {
+            // Volume: linear ramp from the previous value to the target
+            // across this block (click-free, race-free).
+            const float target = m_volume.load(std::memory_order_relaxed);
+            if (target != 1.f || m_volume_current != target) {
+                const float start = m_volume_current;
+                const float step  = (target - start) / static_cast<float>(frame_count);
+                float       g     = start;
                 for (size_t i = 0; i < frame_count; ++i) {
-                    left[i] *= m_volume;
-                    right[i] *= m_volume;
+                    g += step;
+                    left[i] *= g;
+                    right[i] *= g;
                 }
+                m_volume_current = target;
             }
         }
 

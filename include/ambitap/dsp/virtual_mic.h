@@ -10,6 +10,7 @@
 #include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/decoding/max_re.h"
+#include "util/smoothing.h"
 
 #include <array>
 #include <cstddef>
@@ -24,6 +25,11 @@ namespace ambitap::dsp {
     /// weighting (smoother sidelobes at the cost of slightly less directivity).
     ///
     /// At order 1 this gives a cardioid response; higher orders narrow the beam.
+    ///
+    /// Threading: setters run on one control thread, the process methods on
+    /// one audio thread. Coefficient changes ramp over k_smoothing_samples;
+    /// call snap_parameters() for offline/exact use. The audio path is
+    /// wait-free.
     class virtual_mic {
         int    m_order;
         size_t m_channels;
@@ -33,6 +39,8 @@ namespace ambitap::dsp {
 
         std::array<float, max_channel_count> m_coefficients {};
 
+        smoothed_table<max_channel_count> m_smooth;
+
       public:
         /// @param order  Ambisonics order in [1, max_order].
         /// @throws std::invalid_argument on out-of-range order.
@@ -40,44 +48,54 @@ namespace ambitap::dsp {
             : m_order(validated_order(order, "dsp::virtual_mic"))
             , m_channels(channel_count(order)) {
             recalculate();
+            m_smooth.init(m_coefficients.data(), m_channels);
         }
 
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
 
-        void  set_azimuth(float radians) { m_azimuth = radians; recalculate(); }
+        void  set_azimuth(float radians) { m_azimuth = radians; recalculate(); publish(); }
         float azimuth() const { return m_azimuth; }
 
-        void  set_elevation(float radians) { m_elevation = radians; recalculate(); }
+        void  set_elevation(float radians) { m_elevation = radians; recalculate(); publish(); }
         float elevation() const { return m_elevation; }
 
         void set_direction(float azimuth_radians, float elevation_radians) {
             m_azimuth   = azimuth_radians;
             m_elevation = elevation_radians;
             recalculate();
+            publish();
         }
 
-        void set_max_re(bool enabled) { m_max_re = enabled; recalculate(); }
+        void set_max_re(bool enabled) { m_max_re = enabled; recalculate(); publish(); }
         bool max_re() const { return m_max_re; }
+
+        /// Skip the coefficient ramp: the audio thread jumps straight to the
+        /// latest targets on its next call. Offline rendering / tests.
+        void snap_parameters() { m_smooth.snap(); }
 
         float        coefficient(size_t channel) const { return m_coefficients[channel]; }
         const float* coefficients() const { return m_coefficients.data(); }
 
         /// Extract one mono sample from one frame of channels() input samples.
-        float process_frame(const float* in) const {
-            float acc = 0.f;
+        /// Audio thread only; wait-free.
+        float process_frame(const float* in) const noexcept {
+            const float* c   = m_smooth.tick(m_channels);
+            float        acc = 0.f;
             for (size_t ch = 0; ch < m_channels; ++ch) {
-                acc += in[ch] * m_coefficients[ch];
+                acc += in[ch] * c[ch];
             }
             return acc;
         }
 
         /// Extract a mono block from planar channel buffers.
-        void process(const float* const* in, float* out, size_t frame_count) const {
+        /// Audio thread only; wait-free.
+        void process(const float* const* in, float* out, size_t frame_count) const noexcept {
             for (size_t i = 0; i < frame_count; ++i) {
-                float acc = 0.f;
+                const float* c   = m_smooth.tick(m_channels);
+                float        acc = 0.f;
                 for (size_t ch = 0; ch < m_channels; ++ch) {
-                    acc += in[ch][i] * m_coefficients[ch];
+                    acc += in[ch][i] * c[ch];
                 }
                 out[i] = acc;
             }
@@ -100,6 +118,8 @@ namespace ambitap::dsp {
                 }
             }
         }
+
+        void publish() { m_smooth.set(m_coefficients.data(), m_channels); }
     };
 
 } // namespace ambitap::dsp

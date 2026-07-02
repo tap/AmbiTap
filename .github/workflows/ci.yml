@@ -12,11 +12,41 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  sanitize:
+    # ASan+UBSan and TSan legs. TSan is what guards the wait-free publish
+    # path (rt_published / async_rebuilder) and the setter/process stress
+    # tests in tests/test_dsp_threads.cpp.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: asan-ubsan
+            flags: "-fsanitize=address,undefined -fno-sanitize-recover=all"
+          - name: tsan
+            flags: "-fsanitize=thread -fno-sanitize-recover=all -O1"
+    name: sanitize (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="${{ matrix.flags }}"
 
       - name: Build
         run: cmake --build build --parallel

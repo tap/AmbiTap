@@ -6,6 +6,7 @@
 #ifndef AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 #define AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 
+#include "../dsp/util/rt_published.h"
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
@@ -37,11 +38,12 @@ namespace ambitap::analysis {
     /// column 0 = -pi (back-left wrap), centre column = 0 (front). Edge-sampled
     /// so cardinal angles land on grid cells whenever azimuth_steps divides 4.
     ///
-    /// Threading: process() is real-time safe and runs on the audio thread.
+    /// Threading: process() is real-time safe (wait-free; never locks,
+    /// allocates, or frees) and runs on exactly one audio thread.
     /// set_azimuth_steps() rebuilds the SH table synchronously on the calling
-    /// (control) thread and publishes it via an atomic shared_ptr swap, so it
-    /// is safe to call while audio runs. snapshot() may be called from any
-    /// thread.
+    /// (control) thread and publishes it wait-free for the audio thread; it
+    /// may block for roughly one audio callback while the old table is
+    /// retired. snapshot() may be called from any non-real-time thread.
     class soundfield_grid {
       public:
         /// Display-ready snapshot: row-major rows x cols values in [0, 1],
@@ -58,8 +60,10 @@ namespace ambitap::analysis {
             int                             az_steps;
             int                             el_steps; // == az_steps / 2
             int                             directions;
-            std::vector<float>              Y; ///< (D x C) row-major SH table
-            std::vector<std::atomic<float>> energy; ///< length D, smoothed
+            std::vector<float> Y; ///< (D x C) row-major SH table
+            /// Length D, smoothed. Written by the audio thread through the
+            /// published-const product, hence mutable.
+            mutable std::vector<std::atomic<float>> energy;
 
             grid(int az, size_t channels)
                 : az_steps(az)
@@ -73,10 +77,10 @@ namespace ambitap::analysis {
 
         int    m_order;
         size_t m_channels;
-        float  m_fs {48000.f};
-        float  m_smoothing_ms {200.f};
+        std::atomic<float> m_fs {48000.f};
+        std::atomic<float> m_smoothing_ms {200.f};
 
-        std::shared_ptr<grid> m_grid; // published via atomic shared_ptr
+        dsp::rt_published<const grid> m_grid; // wait-free for the audio thread
 
         // Per-block C x C covariance scratch. Heap-allocated member (not an
         // audio-thread stack array) — order 10 is 121 x 121 floats (~58 KB).
@@ -97,11 +101,15 @@ namespace ambitap::analysis {
         size_t channels() const { return m_channels; }
 
         /// Set the sample rate (drives the smoothing coefficient).
-        void prepare(float sample_rate) { m_fs = sample_rate; }
+        void prepare(float sample_rate) { m_fs.store(sample_rate, std::memory_order_relaxed); }
 
         /// One-pole smoothing time constant for per-direction energy, in ms.
-        void  set_smoothing_time_ms(float ms) { m_smoothing_ms = ms; }
-        float smoothing_time_ms() const { return m_smoothing_ms; }
+        void set_smoothing_time_ms(float ms) {
+            m_smoothing_ms.store(ms, std::memory_order_relaxed);
+        }
+        float smoothing_time_ms() const {
+            return m_smoothing_ms.load(std::memory_order_relaxed);
+        }
 
         /// Rebuild the SH table at a new resolution (elevation resolution is
         /// azimuth_steps / 2) and publish atomically. Resets energies. Cheap
@@ -117,27 +125,29 @@ namespace ambitap::analysis {
                                 fresh->Y.data() + static_cast<size_t>(d) * m_channels);
                 }
             }
-            std::atomic_store_explicit(&m_grid, std::move(fresh), std::memory_order_release);
+            m_grid.publish(std::move(fresh));
         }
 
         int azimuth_steps() const {
-            auto g = std::atomic_load_explicit(&m_grid, std::memory_order_acquire);
+            auto g = m_grid.peek();
             return g ? g->az_steps : 0;
         }
         int elevation_steps() const {
-            auto g = std::atomic_load_explicit(&m_grid, std::memory_order_acquire);
+            auto g = m_grid.peek();
             return g ? g->el_steps : 0;
         }
 
         /// Accumulate one block of planar HOA channel buffers into the smoothed
         /// per-direction energies. Real-time safe.
-        void process(const float* const* in, size_t frame_count) {
-            auto g = std::atomic_load_explicit(&m_grid, std::memory_order_acquire);
+        void process(const float* const* in, size_t frame_count) noexcept {
+            auto        guard = m_grid.read_lock();
+            const grid* g     = guard.get();
             if (!g || g->directions == 0 || frame_count == 0) return;
 
             // One-pole alpha per block: alpha_block = 1 - exp(-dt / tau).
-            const float dt_ms  = (static_cast<float>(frame_count) / m_fs) * 1000.f;
-            const float tau_ms = std::max(m_smoothing_ms, 0.01f);
+            const float fs     = m_fs.load(std::memory_order_relaxed);
+            const float dt_ms  = (static_cast<float>(frame_count) / fs) * 1000.f;
+            const float tau_ms = std::max(m_smoothing_ms.load(std::memory_order_relaxed), 0.01f);
             const float alpha  = 1.f - std::exp(-dt_ms / tau_ms);
             const float inv_n  = 1.f / static_cast<float>(frame_count);
 
@@ -176,7 +186,7 @@ namespace ambitap::analysis {
         /// [0, 1] over `dynamic_range_db` below the peak. Any thread.
         image snapshot(float dynamic_range_db) const {
             image out;
-            auto  g = std::atomic_load_explicit(&m_grid, std::memory_order_acquire);
+            auto  g = m_grid.peek();
             if (!g || g->directions == 0) return out;
 
             out.rows = g->el_steps;

@@ -72,6 +72,15 @@ TEST(DspBinaural, VolumeScalesOutput) {
     b.prepare(block);
     b.set_volume(0.5f);
 
+    // Volume ramps to its target across one block; run a silent block through
+    // both renderers so the comparison below sees the settled gain.
+    {
+        planar             silence(4, block);
+        std::vector<float> l(block), r(block);
+        a.process(silence.ptrs.data(), l.data(), r.data(), block);
+        b.process(silence.ptrs.data(), l.data(), r.data(), block);
+    }
+
     planar in(4, block);
     in.bufs[0][0] = 1.f;
     in.bufs[3][0] = 0.7f;
@@ -138,6 +147,15 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
     bin.prepare(block);
     bin.set_head_orientation(static_cast<float>(M_PI) * 0.5f, 0.f, 0.f); // look left
     bin.wait_for_settling();
+
+    // Run out the rotation-adoption crossfade with silence before exciting.
+    {
+        planar             silence(16, block);
+        std::vector<float> l(block), r(block);
+        for (size_t i = 0; i < dsp::rotator::k_fade_samples / block + 1; ++i) {
+            bin.process(silence.ptrs.data(), l.data(), r.data(), block);
+        }
+    }
 
     // Front source, impulse excitation.
     planar in(16, block);

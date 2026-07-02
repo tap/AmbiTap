@@ -10,6 +10,7 @@
 #include "../math/core/validate.h"
 
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -42,9 +43,12 @@ namespace ambitap::dsp {
         size_t           m_channels;
         format_direction m_direction {format_direction::ambix_to_fuma};
 
-        // Per-output-channel (input_index, gain) tables, recomputed on direction change.
-        std::array<size_t, max_channels> m_input_index {};
-        std::array<float, max_channels>  m_input_gain {};
+        // Per-output-channel (input_index, gain) tables, recomputed on
+        // direction change. Element-atomic so a concurrent set_direction()
+        // cannot tear an entry; routing changes are structural, so unlike the
+        // gain processors they switch per element rather than ramp.
+        std::array<std::atomic<size_t>, max_channels> m_input_index {};
+        std::array<std::atomic<float>, max_channels>  m_input_gain {};
 
         // FuMa channel order: W, X, Y, Z, R, S, T, U, V, K, L, M, N, O, P, Q.
         // Maps FuMa index -> ACN index.
@@ -88,22 +92,29 @@ namespace ambitap::dsp {
         format_direction direction() const { return m_direction; }
 
         /// For output channel `out_ch`, the input channel it is sourced from.
-        size_t input_index(size_t out_ch) const { return m_input_index[out_ch]; }
+        size_t input_index(size_t out_ch) const {
+            return m_input_index[out_ch].load(std::memory_order_relaxed);
+        }
         /// For output channel `out_ch`, the gain applied to that input channel.
-        float input_gain(size_t out_ch) const { return m_input_gain[out_ch]; }
+        float input_gain(size_t out_ch) const {
+            return m_input_gain[out_ch].load(std::memory_order_relaxed);
+        }
 
         /// Convert one frame of channels() samples. Output must not alias input.
-        void process_frame(const float* in, float* out) const {
+        /// Audio thread; wait-free.
+        void process_frame(const float* in, float* out) const noexcept {
             for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
-                out[out_ch] = in[m_input_index[out_ch]] * m_input_gain[out_ch];
+                out[out_ch] = in[m_input_index[out_ch].load(std::memory_order_relaxed)]
+                            * m_input_gain[out_ch].load(std::memory_order_relaxed);
             }
         }
 
         /// Convert a block of planar channel buffers. Output must not alias input.
-        void process(const float* const* in, float* const* out, size_t frame_count) const {
+        /// Audio thread; wait-free.
+        void process(const float* const* in, float* const* out, size_t frame_count) const noexcept {
             for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
-                const float* src = in[m_input_index[out_ch]];
-                const float  g   = m_input_gain[out_ch];
+                const float* src = in[m_input_index[out_ch].load(std::memory_order_relaxed)];
+                const float  g   = m_input_gain[out_ch].load(std::memory_order_relaxed);
                 float*       dst = out[out_ch];
                 for (size_t i = 0; i < frame_count; ++i) {
                     dst[i] = src[i] * g;
@@ -123,8 +134,9 @@ namespace ambitap::dsp {
                     // FuMa position acn_to_fuma[out_ch] and scale up to SN3D.
                     const int n           = acn_order(out_ch);
                     const int abs_m       = std::abs(acn_degree(out_ch));
-                    m_input_index[out_ch] = acn_to_fuma[out_ch];
-                    m_input_gain[out_ch]  = fuma_to_sn3d_gain(n, abs_m);
+                    m_input_index[out_ch].store(acn_to_fuma[out_ch], std::memory_order_relaxed);
+                    m_input_gain[out_ch].store(fuma_to_sn3d_gain(n, abs_m),
+                                               std::memory_order_relaxed);
                 }
                 else {
                     // Output is FuMa-ordered; input is ACN-ordered. The output
@@ -133,8 +145,9 @@ namespace ambitap::dsp {
                     const size_t input_acn = k_fuma_to_acn[out_ch];
                     const int    n         = acn_order(input_acn);
                     const int    abs_m     = std::abs(acn_degree(input_acn));
-                    m_input_index[out_ch]  = input_acn;
-                    m_input_gain[out_ch]   = 1.f / fuma_to_sn3d_gain(n, abs_m);
+                    m_input_index[out_ch].store(input_acn, std::memory_order_relaxed);
+                    m_input_gain[out_ch].store(1.f / fuma_to_sn3d_gain(n, abs_m),
+                                               std::memory_order_relaxed);
                 }
             }
         }

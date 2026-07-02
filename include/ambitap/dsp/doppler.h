@@ -10,6 +10,8 @@
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
+#include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -31,12 +33,24 @@ namespace ambitap::dsp {
     ///
     /// Reads use linear interpolation between adjacent samples for smooth
     /// modulation.
+    ///
+    /// Threading: setters run on one control thread, the process methods on
+    /// one audio thread. The delay glides toward the target distance with a
+    /// one-pole slew (time constant ~1000 samples), so distance jumps produce
+    /// the Doppler pitch glide rather than a click; the slew also makes
+    /// set_distance() race-free (it is a single atomic store).
     class doppler {
-        size_t m_channels;
-        float  m_fs {48000.0f};
-        float  m_distance {1.0f};
-        float  m_speed_of_sound {343.0f};
-        float  m_max_distance {50.0f};
+        /// One-pole coefficient of the per-sample delay slew.
+        static constexpr float k_delay_slew = 1.0f / 1024.0f;
+
+        size_t             m_channels;
+        float              m_fs {48000.0f};
+        std::atomic<float> m_distance {1.0f};
+        std::atomic<float> m_speed_of_sound {343.0f};
+        float              m_max_distance {50.0f};
+
+        // Audio-thread state: the smoothed delay actually applied.
+        float m_delay_current {0.f};
 
         size_t                          m_buffer_size {0};
         std::vector<std::vector<float>> m_buffers; // [channel][circular sample]
@@ -57,13 +71,16 @@ namespace ambitap::dsp {
             allocate();
         }
 
-        /// Source-to-listener distance in meters. Modulate for Doppler. RT-safe.
-        void  set_distance(float meters) { m_distance = meters; }
-        float distance() const { return m_distance; }
+        /// Source-to-listener distance in meters. Modulate for Doppler.
+        /// RT-safe and race-free (single atomic store).
+        void  set_distance(float meters) { m_distance.store(meters, std::memory_order_relaxed); }
+        float distance() const { return m_distance.load(std::memory_order_relaxed); }
 
         /// Speed of sound in m/s. RT-safe (does not resize the buffer).
-        void  set_speed_of_sound(float meters_per_second) { m_speed_of_sound = meters_per_second; }
-        float speed_of_sound() const { return m_speed_of_sound; }
+        void set_speed_of_sound(float meters_per_second) {
+            m_speed_of_sound.store(meters_per_second, std::memory_order_relaxed);
+        }
+        float speed_of_sound() const { return m_speed_of_sound.load(std::memory_order_relaxed); }
 
         /// Maximum allowed distance — sizes the delay buffer. Reallocates.
         void set_max_distance(float meters) {
@@ -72,9 +89,10 @@ namespace ambitap::dsp {
         }
         float max_distance() const { return m_max_distance; }
 
-        /// Current delay in samples, clamped to the buffer.
+        /// Target delay in samples, clamped to the buffer.
         float current_delay_samples() const {
-            float s = m_distance / m_speed_of_sound * m_fs;
+            float s = m_distance.load(std::memory_order_relaxed)
+                    / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
             // Cap at buffer_size - 2 so the interpolation can read i and i+1.
             const float max_s = static_cast<float>(m_buffer_size) - 2.f;
             if (s < 0.f) s = 0.f;
@@ -84,41 +102,45 @@ namespace ambitap::dsp {
 
         /// Process one frame of channels() samples. Output may alias input.
         /// Outputs silence until prepare() has been called.
-        void process_frame(const float* in, float* out) {
+        void process_frame(const float* in, float* out) noexcept {
             if (m_buffer_size == 0) {
                 for (size_t ch = 0; ch < m_channels; ++ch) out[ch] = 0.f;
                 return;
             }
-            const float delay_samples = current_delay_samples();
+            const float target = current_delay_samples();
+            m_delay_current += (target - m_delay_current) * k_delay_slew;
             for (size_t ch = 0; ch < m_channels; ++ch) {
                 m_buffers[ch][m_write_idx] = in[ch];
-                out[ch] = read_interpolated(m_buffers[ch], m_write_idx, delay_samples);
+                out[ch] = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
             }
             m_write_idx = (m_write_idx + 1) % m_buffer_size;
         }
 
         /// Process a block of planar channel buffers. Output may alias input.
-        void process(const float* const* in, float* const* out, size_t frame_count) {
+        void process(const float* const* in, float* const* out, size_t frame_count) noexcept {
             if (m_buffer_size == 0) {
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     for (size_t i = 0; i < frame_count; ++i) out[ch][i] = 0.f;
                 }
                 return;
             }
-            const float delay_samples = current_delay_samples();
+            const float target = current_delay_samples();
             for (size_t i = 0; i < frame_count; ++i) {
+                m_delay_current += (target - m_delay_current) * k_delay_slew;
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     m_buffers[ch][m_write_idx] = in[ch][i];
-                    out[ch][i] = read_interpolated(m_buffers[ch], m_write_idx, delay_samples);
+                    out[ch][i] = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
                 }
                 m_write_idx = (m_write_idx + 1) % m_buffer_size;
             }
         }
 
-        /// Clear the delay lines; keep the allocation.
+        /// Clear the delay lines; keep the allocation. Also snaps the delay
+        /// slew to the current target.
         void reset() {
             for (auto& buf : m_buffers) std::fill(buf.begin(), buf.end(), 0.f);
-            m_write_idx = 0;
+            m_write_idx     = 0;
+            m_delay_current = current_delay_samples();
         }
 
       private:
@@ -143,7 +165,8 @@ namespace ambitap::dsp {
 
             m_buffer_size = needed;
             m_buffers.assign(m_channels, std::vector<float>(m_buffer_size, 0.f));
-            m_write_idx = 0;
+            m_write_idx     = 0;
+            m_delay_current = current_delay_samples();
         }
     };
 
