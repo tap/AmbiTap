@@ -7,7 +7,7 @@
 #ifndef AMBITAP_DSP_BINAURAL_CORE_H
 #define AMBITAP_DSP_BINAURAL_CORE_H
 
-#include "../math/binaural/convolution.h"
+#include "../math/binaural/convolver_bank.h"
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
@@ -29,9 +29,11 @@ namespace ambitap::dsp {
     /// live in the renderer (desktop) or on the host/control side (embedded;
     /// pair with dsp::matrix_applier for externally-computed rotation).
     ///
-    /// Internals are float32 throughout (partitioned_convolver32): on FPUs
-    /// without hardware doubles (Cortex-M55, Hexagon) the double convolver
-    /// is software floating point.
+    /// Internals are float32 throughout (convolver_bank32): on FPUs without
+    /// hardware doubles (Cortex-M55, Hexagon) the double convolver is
+    /// software floating point. The bank shares input spectra across ears —
+    /// channels() + 2 FFTs per block instead of a forward + inverse round
+    /// trip per channel per ear.
     ///
     /// Freestanding: builds with -fno-exceptions/-fno-rtti; no locks, no
     /// threads, no Eigen. prepare() allocates (init/control time);
@@ -40,9 +42,7 @@ namespace ambitap::dsp {
         size_t m_channels;
         size_t m_block_size {0};
 
-        std::vector<partitioned_convolver32> m_left;
-        std::vector<partitioned_convolver32> m_right;
-        std::vector<float>                   m_temp;
+        convolver_bank32 m_bank;
 
         std::atomic<float> m_volume {1.0f};
         float              m_volume_current {1.0f}; // audio-thread ramp state
@@ -55,7 +55,7 @@ namespace ambitap::dsp {
 
         size_t channels() const { return m_channels; }
         size_t block_size() const { return m_block_size; }
-        bool   is_prepared() const { return !m_left.empty(); }
+        bool   is_prepared() const { return m_bank.is_prepared(); }
 
         /// (Re)build the convolver bank. Allocates — init/control time only.
         ///
@@ -67,23 +67,16 @@ namespace ambitap::dsp {
         /// @return false (leaving the core unprepared) on bad arguments.
         bool prepare(size_t block_size, const float* const* left_firs,
                      const float* const* right_firs, size_t taps) {
-            m_left.clear();
-            m_right.clear();
             m_block_size = 0;
-            if (!left_firs || !right_firs || taps == 0 || block_size < 4
-                || (block_size & (block_size - 1)) != 0) {
-                return false;
-            }
+            if (!left_firs || !right_firs) return false;
+
+            // Bank IR layout: row-major [ear][channel].
+            std::vector<const float*> irs(2 * m_channels);
             for (size_t ch = 0; ch < m_channels; ++ch) {
-                if (!left_firs[ch] || !right_firs[ch]) {
-                    m_left.clear();
-                    m_right.clear();
-                    return false;
-                }
-                m_left.emplace_back(block_size, left_firs[ch], taps);
-                m_right.emplace_back(block_size, right_firs[ch], taps);
+                irs[ch]              = left_firs[ch];
+                irs[m_channels + ch] = right_firs[ch];
             }
-            m_temp.assign(block_size, 0.f);
+            if (!m_bank.prepare(block_size, m_channels, 2, irs.data(), taps)) return false;
             m_block_size = block_size;
             return true;
         }
@@ -99,22 +92,14 @@ namespace ambitap::dsp {
         /// Audio thread only; wait-free.
         void process(const float* const* in, float* left, float* right,
                      size_t frame_count) noexcept {
-            if (m_left.empty() || frame_count != m_block_size) {
+            if (!m_bank.is_prepared() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);
                 return;
             }
 
-            std::fill(left, left + frame_count, 0.f);
-            std::fill(right, right + frame_count, 0.f);
-
-            for (size_t ch = 0; ch < m_channels; ++ch) {
-                m_left[ch].process(in[ch], m_temp.data());
-                for (size_t i = 0; i < frame_count; ++i) left[i] += m_temp[i];
-
-                m_right[ch].process(in[ch], m_temp.data());
-                for (size_t i = 0; i < frame_count; ++i) right[i] += m_temp[i];
-            }
+            float* ears[2] = {left, right};
+            m_bank.process(in, ears);
 
             // Volume: linear ramp from the previous value to the target
             // across this block (click-free, race-free).
@@ -133,10 +118,7 @@ namespace ambitap::dsp {
         }
 
         /// Clear convolver input history; keep the FIRs and allocation.
-        void reset() {
-            for (auto& c : m_left) c.reset();
-            for (auto& c : m_right) c.reset();
-        }
+        void reset() { m_bank.reset(); }
     };
 
 } // namespace ambitap::dsp

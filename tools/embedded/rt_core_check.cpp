@@ -12,12 +12,13 @@
 /// process path is allocation-free and wait-free — enforced on the host by
 /// tests/test_rt_safety.cpp):
 ///   encoder, mirror, virtual_mic, directional_loudness, spatial_compressor,
-///   doppler, format_converter, matrix_applier (drive it with precomputed
-///   rotation/decode matrices), binaural_core (float32 convolution), and
+///   doppler, format_converter, matrix_applier (rotation matrices built
+///   on-device via compute_sh_rotation, decode matrices precomputed),
+///   binaural_core (float32 shared-spectrum convolver bank), and
 ///   analysis::energy_vector.
 ///
-/// NOT in the profile (host/control side): decoder & rotator matrix
-/// construction (Eigen), async_rebuilder (std::thread), binaural_renderer's
+/// NOT in the profile (host/control side): decode-matrix construction
+/// (Eigen), async_rebuilder (std::thread), binaural_renderer's
 /// resampling/orientation layer, soundfield_grid, the SOFA reader.
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
@@ -34,6 +35,7 @@
 #include <ambitap/dsp/virtual_mic.h>
 #include <ambitap/math/binaural/hrtf_data.h>
 #include <ambitap/math/core/fast_math.h>
+#include <ambitap/math/core/rotation_recurrence.h>
 
 #include <cstddef>
 
@@ -121,11 +123,14 @@ int main() {
         acc += g_out[0][0];
     }
     {
-        // Precomputed-matrix path: identity in, identity prev.
+        // On-device head-tracking: build the SH rotation matrix with the
+        // Ivanic-Ruedenberg recurrence (no Eigen) and apply it click-free.
         static float mat[k_chans * k_chans];
-        for (size_t d = 0; d < k_chans; ++d) mat[d * k_chans + d] = 1.f;
+        static float prev[k_chans * k_chans];
+        compute_sh_rotation(k_order, 0.4f, -0.1f, 0.05f, mat);
+        compute_sh_rotation(k_order, 0.3f, -0.1f, 0.05f, prev);
         dsp::matrix_applier applier;
-        applier.apply(mat, mat, mat, k_chans, k_chans, in, out, k_block, false);
+        applier.apply(mat, mat, prev, k_chans, k_chans, in, out, k_block, false);
         acc += g_out[0][0];
     }
     {

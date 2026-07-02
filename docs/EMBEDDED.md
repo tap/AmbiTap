@@ -18,11 +18,12 @@ newlib-nano + nosys. Everything it instantiates is embedded-clean:
 | In the profile (audio side) | Stays on the host/control side |
 |---|---|
 | `dsp::encoder`, `mirror`, `virtual_mic`, `directional_loudness` | decode-matrix construction (Eigen SVD) — precompute and ship |
-| `dsp::spatial_compressor` (fast_math, no per-sample libm) | rotation-matrix construction (`sh_rotation`, Eigen LSQ) |
-| `dsp::doppler`, `dsp::format_converter` | `async_rebuilder` / worker threads (`std::thread`) |
-| `dsp::matrix_applier` — crossfading application of *precomputed* rotation/decode matrices | `binaural_renderer`'s resampling + orientation layer |
-| `dsp::binaural_core` — float32 HRTF convolver bank + volume | `analysis::soundfield_grid` (O(C²·D) per block; a UI feature) |
-| `analysis::energy_vector` | SOFA reader |
+| `dsp::spatial_compressor` (fast_math, no per-sample libm) | `async_rebuilder` / worker threads (`std::thread`) |
+| `dsp::doppler`, `dsp::format_converter` | `binaural_renderer`'s resampling + dataset-selection layer |
+| `compute_sh_rotation` — on-device rotation-matrix construction (Ivanic–Ruedenberg recurrence, `math/core/rotation_recurrence.h`) | `analysis::soundfield_grid` (O(C²·D) per block; a UI feature) |
+| `dsp::matrix_applier` — crossfading application of rotation/decode matrices | SOFA reader |
+| `dsp::binaural_core` — float32 shared-spectrum HRTF convolver bank + volume | |
+| `analysis::energy_vector` | |
 
 Ground rules, same as the desktop RT contract plus two:
 
@@ -54,25 +55,28 @@ and vectorized MACs (~3–4× on these kernels).
 |---|---|---|
 | encode + matrix_applier decode (8 spk) | ≈ 11 MHz scalar | ≈ 30 MHz scalar |
 | head-track rotation (dense C×C) | ≈ 16 MHz scalar | ≈ 80 MHz scalar |
-| binaural, **current** per-ear convolvers (4C FFTs/block) | ≈ 180 MHz scalar | ≈ 405 MHz scalar — **does not fit** |
-| binaural, **shared-spectrum bank** (C+2 FFTs/block) | ≈ 77 MHz scalar / ~25 MHz Helium | ≈ 167 MHz scalar / ~60 MHz Helium |
+| binaural (`binaural_core`: shared-spectrum bank, C+2 FFTs/block) | ≈ 77 MHz scalar / ~25 MHz Helium | ≈ 167 MHz scalar / ~60 MHz Helium |
 
-Memory (order 5 binaural): ≈ 330 KB RAM as-is, ≈ 170 KB with the shared
-bank; HRTF tables are 72 KiB of flash (both ears, LS + MagLS is 144 KiB;
-ship one projection, or an order-trimmed table, on smaller parts). The CI
-gate's order-3 check binary — every profile processor including binaural —
-is **80 KB flash / 10 KB static RAM** total.
+(The bank shares each channel's input spectrum across ears; the earlier
+per-ear-convolver arrangement cost 4C transforms per block — ≈ 405 MHz at
+order 5, which did not fit. The switch measured **2.7× faster** on the
+desktop bench: order-5 binaural 67.9 → 25.0 µs/block.)
+
+Memory (order 5 binaural): ≈ 170 KB RAM; HRTF tables are 72 KiB of flash
+(both ears, LS + MagLS is 144 KiB; ship one projection, or an
+order-trimmed table, on smaller parts). The CI gate's order-3 check binary
+— every profile processor including binaural and on-device rotation — is
+**80 KB flash / 11 KB static RAM** total.
 
 Conclusions:
 
-- **Order-3 binaural fits an M55 today**, scalar, without optimization.
-- **Order-5 binaural on M55 requires the shared-spectrum convolver bank**
-  (one forward FFT per channel + one inverse per ear, accumulating in the
-  frequency domain — instead of a full FFT round-trip per channel *per
-  ear*). That is a ~2–4× win and the single highest-value optimization in
-  the library; it helps every platform, desktop included.
-- After that, the FFT is the hot spot: `real_fft32` is the seam where a
-  Helium-optimized FFT (CMSIS-DSP) drops in per-target.
+- **Order-3 binaural fits an M55 today**, scalar, with a wide margin.
+- **Order-5 binaural fits at ~400 MHz scalar** and comfortably with a
+  Helium FFT: `real_fft32` is the seam where a CMSIS-DSP-class FFT drops
+  in per-target — it is now the dominant cost.
+- Head-tracking is fully on-device: `compute_sh_rotation`
+  (Ivanic–Ruedenberg, exact, no Eigen) builds the C×C matrix on the
+  control core and `matrix_applier` crossfades it in.
 - The dense rotation applier at order 5 is worth a block-diagonal variant
   (SH rotation only couples within an order: Σ(2n+1)² = 286 vs 1296
   MACs/sample — 4.5×).
@@ -95,13 +99,18 @@ Conclusions:
 
 ## Known gaps / next steps
 
-1. **Shared-spectrum convolver bank** — required for order-5 binaural on
-   M55; see budget above.
-2. **On-device rotation construction without Eigen** (Ivanic–Ruedenberg
-   recurrence) — needed for *head-tracked* binaural on bare-metal M55,
-   where there is no host to compute the C×C matrix. Until then, rotation
-   matrices come from the control side.
-3. **Measured numbers** — run the profile on the Corstone-300 FVP and
+1. **Measured numbers** — run the profile on the Corstone-300 FVP and
    replace the analytical table with cycle counts.
-4. **HRTF table trimming** — a generator option for order-limited /
+2. **HRTF table trimming** — a generator option for order-limited /
    single-projection tables on flash-constrained parts.
+3. **Block-diagonal matrix applier** — 4.5× on order-5 rotation
+   application (see above); pair with `compute_sh_rotation`, which already
+   produces block-diagonal data.
+4. **Helium FFT integration** — swap `real_fft32` for CMSIS-DSP on M55
+   builds once FVP profiling confirms it is the remaining hot spot.
+
+Closed since first written: the shared-spectrum convolver bank
+(`convolver_bank`, shipped inside `binaural_core`; 2.7× measured) and
+on-device rotation construction (`compute_sh_rotation`,
+Ivanic–Ruedenberg; also now the backend of the desktop `sh_rotation`,
+replacing the least-squares approximation — audit item Q1).
