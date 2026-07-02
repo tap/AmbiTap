@@ -125,9 +125,8 @@ if(AMBITAP_ENABLE_SOFA)
     include(FetchContent)
     FetchContent_Declare(libmysofa
         GIT_REPOSITORY https://github.com/hoene/libmysofa.git
-        # TODO: replace with the tag's commit SHA (git ls-remote ... v1.3.4^{})
-        # — tags can be re-pointed; Eigen/GTest above are hash-pinned already.
-        GIT_TAG        v1.3.4
+        # Commit pin, not the movable v1.3.4 tag: tags can be re-pointed.
+        GIT_TAG        7a0c07111a3d7230ec534e08925c24a7525f33c0 # v1.3.4
     )
     # libmysofa's CMake exposes a generic BUILD_TESTS option; scope the
     # override to its subtree instead of clobbering the consumer's cache.
