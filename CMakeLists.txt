@@ -130,9 +130,14 @@ if(AMBITAP_ENABLE_SOFA)
     )
     # libmysofa's CMake exposes a generic BUILD_TESTS option; scope the
     # override to its subtree instead of clobbering the consumer's cache.
+    # Its pre-3.10 cmake_minimum_required leaves CMP0077 unset, so option()
+    # would CLEAR a plain normal variable — default the policy to NEW for the
+    # fetched subtree so the variable is honored.
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(BUILD_TESTS OFF)
     FetchContent_MakeAvailable(libmysofa)
     unset(BUILD_TESTS)
+    unset(CMAKE_POLICY_DEFAULT_CMP0077)
 
     target_compile_definitions(ambitap INTERFACE $<BUILD_INTERFACE:AMBITAP_HAS_SOFA>)
     target_link_libraries(ambitap INTERFACE $<BUILD_INTERFACE:mysofa-static>)

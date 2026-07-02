@@ -116,8 +116,7 @@ TEST(ConvexHull, DegenerateInputsReturnEmpty) {
     auto ring = [](size_t n) {
         std::vector<Eigen::Vector3f> pts;
         for (size_t i = 0; i < n; ++i) {
-            const float a =
-                2.0f * static_cast<float>(M_PI) * static_cast<float>(i) / static_cast<float>(n);
+            const float a = 2.0f * k_pi * static_cast<float>(i) / static_cast<float>(n);
             pts.push_back({std::cos(a), std::sin(a), 0.0f});
         }
         return pts;
@@ -137,7 +136,7 @@ TEST(SpeakerLayout, PairwisePanningOn5_1) {
     ASSERT_TRUE(layout.is_pairwise());
     ASSERT_EQ(layout.num_triangles(), 0u);
 
-    const float deg = static_cast<float>(M_PI) / 180.0f;
+    const float deg = k_pi / 180.0f;
 
     // A source between C (0°) and L (+30°) activates exactly that pair, with
     // the 2D VBAP (tangent-law) split and unit energy.

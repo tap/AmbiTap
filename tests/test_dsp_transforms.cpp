@@ -33,7 +33,7 @@ namespace {
 TEST(DspMirror, MirrorsMatchReflectedEncoding) {
     constexpr int   order = 3;
     constexpr float az = 0.7f, el = 0.4f;
-    const float     pi = static_cast<float>(M_PI);
+    const float     pi = k_pi;
 
     const auto src = encode_at(order, az, el);
 
@@ -116,7 +116,7 @@ TEST(DspVirtualMic, FirstOrderCardioid) {
     EXPECT_NEAR(mic.process_frame(at_look.data()), 2.0f, 1e-5f);
 
     // Source at the antipode: 1 - 1 = 0 (cardioid null).
-    const float pi      = static_cast<float>(M_PI);
+    const float pi      = k_pi;
     const auto  at_back = encode_at(1, 0.9f - pi, -0.3f);
     EXPECT_NEAR(mic.process_frame(at_back.data()), 0.0f, 1e-5f);
 }
@@ -182,7 +182,7 @@ TEST(DspDirectionalLoudness, OffBeamSourceLargelyUnaffected) {
     dl.set_gain(0.0f);            // remove the front
     dl.snap_parameters();
 
-    const auto         in = encode_at(order, static_cast<float>(M_PI), 0.0f); // rear source
+    const auto         in = encode_at(order, k_pi, 0.0f); // rear source
     std::vector<float> out(dl.channels());
     dl.process_frame(in.data(), out.data());
 

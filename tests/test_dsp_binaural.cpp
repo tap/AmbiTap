@@ -117,13 +117,13 @@ TEST(DspBinaural, HeadTrackingChangesOutput) {
     dsp::binaural_renderer still(3), turned(3);
     still.prepare(block);
     turned.prepare(block);
-    turned.set_head_orientation(static_cast<float>(M_PI) * 0.5f, 0.f, 0.f);
+    turned.set_head_orientation(k_pi * 0.5f, 0.f, 0.f);
     turned.wait_for_settling();
 
     // A lateral source (left) so rotation has an audible effect.
     planar in(16, block);
     float  sh[max_channel_count];
-    evaluate_sh(3, static_cast<float>(M_PI) * 0.5f, 0.f, sh);
+    evaluate_sh(3, k_pi * 0.5f, 0.f, sh);
     for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = sh[ch];
 
     std::vector<float> l1(block), r1(block), l2(block), r2(block);
@@ -145,7 +145,7 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
 
     dsp::binaural_renderer bin(order);
     bin.prepare(block);
-    bin.set_head_orientation(static_cast<float>(M_PI) * 0.5f, 0.f, 0.f); // look left
+    bin.set_head_orientation(k_pi * 0.5f, 0.f, 0.f); // look left
     bin.wait_for_settling();
 
     // Run out the rotation-adoption crossfade with silence before exciting.

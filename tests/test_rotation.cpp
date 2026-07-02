@@ -37,7 +37,7 @@ TEST(Rotation, IdentityIsIdentity) {
 
 TEST(Rotation, FullTurnYawIsIdentity) {
     constexpr int order = 4;
-    sh_rotation   rot(order, 2.0f * static_cast<float>(M_PI), 0.0f, 0.0f);
+    sh_rotation   rot(order, 2.0f * k_pi, 0.0f, 0.0f);
     EXPECT_TRUE(rot.matrix().isApprox(
         Eigen::MatrixXf::Identity(rot.matrix().rows(), rot.matrix().cols()), 1e-3f));
 }

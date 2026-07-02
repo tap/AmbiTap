@@ -27,7 +27,7 @@ namespace ambitap {
         const float theta = (137.9f * k_pi / 180.0f) / (static_cast<float>(order) + 1.51f);
         const float x     = std::cos(theta);
 
-        std::vector<float> weights(order + 1);
+        std::vector<float> weights(static_cast<size_t>(order) + 1);
 
         // Legendre polynomials via recurrence: P_0(x)=1, P_1(x)=x,
         // (n+1) P_{n+1}(x) = (2n+1) x P_n(x) - n P_{n-1}(x)
@@ -42,9 +42,9 @@ namespace ambitap {
             float p_next =
                 (static_cast<float>(2 * n + 1) * x * p_curr - static_cast<float>(n) * p_prev)
                 / static_cast<float>(n + 1);
-            p_prev         = p_curr;
-            p_curr         = p_next;
-            weights[n + 1] = p_next;
+            p_prev                              = p_curr;
+            p_curr                              = p_next;
+            weights[static_cast<size_t>(n) + 1] = p_next;
         }
 
         return weights;

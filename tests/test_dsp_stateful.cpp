@@ -124,7 +124,7 @@ TEST(AnalysisEnergyVector, ConvergesToSourceDirection) {
     EXPECT_NEAR(out[2], 0.f, 1e-3f); // z
 
     // Left-pointing source: azimuth pi/2 -> y axis.
-    enc.set_direction(static_cast<float>(M_PI) * 0.5f, 0.f);
+    enc.set_direction(k_pi * 0.5f, 0.f);
     enc.snap_parameters();
     enc.process_sample(1.f, frame);
     ev.reset();

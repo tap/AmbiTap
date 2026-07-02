@@ -27,6 +27,10 @@
 #include <new>
 #include <vector>
 
+#if defined(_WIN32)
+#include <malloc.h>
+#endif
+
 namespace {
 
     std::atomic<long> g_allocs {0};
@@ -45,6 +49,25 @@ namespace {
         long frees() const { return g_frees.load() - f0; }
     };
 
+    // MSVC has no posix_memalign; _aligned_malloc memory must be released with
+    // _aligned_free, so the aligned delete overloads below route here instead
+    // of through the plain (free-based) operator delete.
+    void* aligned_alloc_portable(std::size_t al, std::size_t size) {
+#if defined(_WIN32)
+        return _aligned_malloc(size ? size : 1, al);
+#else
+        void* p = nullptr;
+        return posix_memalign(&p, al, size ? size : 1) == 0 ? p : nullptr;
+#endif
+    }
+    void aligned_free_portable(void* p) {
+#if defined(_WIN32)
+        _aligned_free(p);
+#else
+        std::free(p);
+#endif
+    }
+
 } // namespace
 
 // GCC pairs allocation/deallocation functions by inspection and cannot see
@@ -61,11 +84,8 @@ void* operator new(std::size_t size) {
 }
 void* operator new(std::size_t size, std::align_val_t al) {
     if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
-    void* p = nullptr;
-    if (posix_memalign(&p, static_cast<std::size_t>(al), size ? size : 1) != 0) {
-        throw std::bad_alloc();
-    }
-    return p;
+    if (void* p = aligned_alloc_portable(static_cast<std::size_t>(al), size)) return p;
+    throw std::bad_alloc();
 }
 void* operator new[](std::size_t size) {
     return ::operator new(size);
@@ -82,8 +102,7 @@ void* operator new[](std::size_t size, const std::nothrow_t& t) noexcept {
 }
 void* operator new(std::size_t size, std::align_val_t al, const std::nothrow_t&) noexcept {
     if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
-    void* p = nullptr;
-    return posix_memalign(&p, static_cast<std::size_t>(al), size ? size : 1) == 0 ? p : nullptr;
+    return aligned_alloc_portable(static_cast<std::size_t>(al), size);
 }
 void* operator new[](std::size_t size, std::align_val_t al, const std::nothrow_t& t) noexcept {
     return ::operator new(size, al, t);
@@ -96,10 +115,11 @@ void operator delete(void* p, std::size_t) noexcept {
     ::operator delete(p);
 }
 void operator delete(void* p, std::align_val_t) noexcept {
-    ::operator delete(p);
+    if (g_armed) g_frees.fetch_add(1, std::memory_order_relaxed);
+    aligned_free_portable(p);
 }
-void operator delete(void* p, std::size_t, std::align_val_t) noexcept {
-    ::operator delete(p);
+void operator delete(void* p, std::size_t, std::align_val_t al) noexcept {
+    ::operator delete(p, al);
 }
 void operator delete[](void* p) noexcept {
     ::operator delete(p);
@@ -107,11 +127,11 @@ void operator delete[](void* p) noexcept {
 void operator delete[](void* p, std::size_t) noexcept {
     ::operator delete(p);
 }
-void operator delete[](void* p, std::align_val_t) noexcept {
-    ::operator delete(p);
+void operator delete[](void* p, std::align_val_t al) noexcept {
+    ::operator delete(p, al);
 }
-void operator delete[](void* p, std::size_t, std::align_val_t) noexcept {
-    ::operator delete(p);
+void operator delete[](void* p, std::size_t, std::align_val_t al) noexcept {
+    ::operator delete(p, al);
 }
 void operator delete(void* p, const std::nothrow_t&) noexcept {
     ::operator delete(p);
@@ -119,11 +139,11 @@ void operator delete(void* p, const std::nothrow_t&) noexcept {
 void operator delete[](void* p, const std::nothrow_t&) noexcept {
     ::operator delete(p);
 }
-void operator delete(void* p, std::align_val_t, const std::nothrow_t&) noexcept {
-    ::operator delete(p);
+void operator delete(void* p, std::align_val_t al, const std::nothrow_t&) noexcept {
+    ::operator delete(p, al);
 }
-void operator delete[](void* p, std::align_val_t, const std::nothrow_t&) noexcept {
-    ::operator delete(p);
+void operator delete[](void* p, std::align_val_t al, const std::nothrow_t&) noexcept {
+    ::operator delete(p, al);
 }
 
 using namespace ambitap;
