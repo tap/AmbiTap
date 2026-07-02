@@ -7,6 +7,7 @@
 #include "ambitap/dsp/binaural_core.h"
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap/dsp/util/matrix_applier.h"
+#include "ambitap/dsp/util/sh_block_applier.h"
 #include "ambitap/math/binaural/convolution.h"
 #include "ambitap/math/binaural/convolver_bank.h"
 #include "ambitap/math/binaural/hrtf_data.h"
@@ -215,6 +216,54 @@ TEST(MatrixApplier, LinearCrossfadeAndSettle) {
     const float mat2[] = {2.f, 0.f, 0.f, 2.f};
     applier.apply(mat2, mat2, prev, 2, 2, in, out, n, false);
     EXPECT_NEAR(out0[0], 1.f + 1.f / static_cast<float>(n), 1e-6f);
+}
+
+// ---------------------------------------------------------------------------
+// sh_block_applier: identical output to the dense matrix_applier on
+// rotation-shaped matrices — during the fade and after it settles.
+// ---------------------------------------------------------------------------
+
+TEST(ShBlockApplier, MatchesDenseApplierOnRotationMatrices) {
+    constexpr int    order = 5;
+    const size_t     C     = channel_count(order);
+    constexpr size_t block = 64;
+
+    std::vector<float> mat(C * C), prev(C * C);
+    compute_sh_rotation(order, 0.8f, -0.3f, 0.2f, mat.data());
+    compute_sh_rotation(order, 0.6f, -0.3f, 0.2f, prev.data());
+
+    std::mt19937                          rng(31);
+    std::uniform_real_distribution<float> dist(-1.f, 1.f);
+    std::vector<std::vector<float>>       in(C, std::vector<float>(block));
+    std::vector<const float*>             in_ptrs;
+    for (auto& b : in) in_ptrs.push_back(b.data());
+
+    std::vector<std::vector<float>> out_dense(C, std::vector<float>(block));
+    std::vector<std::vector<float>> out_block(C, std::vector<float>(block));
+    std::vector<float*>             dense_ptrs, block_ptrs;
+    for (auto& b : out_dense) dense_ptrs.push_back(b.data());
+    for (auto& b : out_block) block_ptrs.push_back(b.data());
+
+    dsp::matrix_applier   dense;
+    dsp::sh_block_applier blocked;
+
+    // Enough blocks to cover the whole crossfade and settled operation.
+    for (int b = 0; b < 8; ++b) {
+        for (auto& buf : in)
+            for (auto& v : buf) v = dist(rng);
+
+        dense.apply(mat.data(), mat.data(), prev.data(), C, C, in_ptrs.data(), dense_ptrs.data(),
+                    block, false);
+        blocked.apply(mat.data(), mat.data(), prev.data(), order, in_ptrs.data(), block_ptrs.data(),
+                      block, false);
+
+        for (size_t ch = 0; ch < C; ++ch) {
+            for (size_t i = 0; i < block; ++i) {
+                ASSERT_NEAR(out_block[ch][i], out_dense[ch][i], 1e-6f)
+                    << "channel " << ch << " block " << b << " sample " << i;
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -163,11 +163,15 @@ Options:
 
 The real-time paths run on embedded processors (Cortex-M55, Hexagon
 AudioReach): the RT profile — every `process()` path, including a float32
-binaural engine (`dsp::binaural_core`) and precomputed-matrix application
-(`dsp::matrix_applier`) — builds with no exceptions, no threads, no Eigen,
-and no hardware doubles, and CI cross-compiles it for bare-metal Cortex-M55
-on every push. Profile definition, per-order cycle/memory budgets, and
-AudioReach integration notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
+shared-spectrum binaural engine (`dsp::binaural_core`), on-device rotation
+construction (`compute_sh_rotation`, Ivanic–Ruedenberg), and click-free
+matrix application (`dsp::matrix_applier` / `sh_block_applier`) — builds
+with no exceptions, no threads, no Eigen, and no hardware doubles. On every
+push, CI cross-compiles it for bare-metal Cortex-M55 **and runs its
+per-processor self-checks on QEMU's Cortex-M55 machine**, for both the full
+HRTF tables and a `tools/hrtf_trim` order-trimmed build. Profile
+definition, per-order cycle/memory budgets, and AudioReach integration
+notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
 
 ## Audit
 

@@ -10,7 +10,7 @@
 #include "../math/core/rotation.h"
 #include "../math/core/validate.h"
 #include "util/async_rebuilder.h"
-#include "util/matrix_applier.h"
+#include "util/sh_block_applier.h"
 
 #include <atomic>
 #include <cstddef>
@@ -39,7 +39,7 @@ namespace ambitap::dsp {
     class rotator {
       public:
         /// Crossfade length applied when a new rotation matrix is adopted.
-        static constexpr size_t k_fade_samples = matrix_applier::k_fade_samples;
+        static constexpr size_t k_fade_samples = sh_block_applier::k_fade_samples;
 
         /// Published product: the new matrix plus the matrix to fade from.
         struct product {
@@ -55,8 +55,9 @@ namespace ambitap::dsp {
         std::atomic<float> m_pitch {0.0f};
         std::atomic<float> m_roll {0.0f};
 
-        // Crossfading application; owned by the (single) audio thread.
-        mutable matrix_applier m_applier;
+        // Crossfading block-diagonal application (SH rotation never mixes
+        // orders); owned by the (single) audio thread.
+        mutable sh_block_applier m_applier;
 
         // Worker-only: copy of the last matrix this worker built, used as the
         // fade-from matrix of the next product.
@@ -148,8 +149,8 @@ namespace ambitap::dsp {
                 return;
             }
 
-            m_applier.apply(p, p->m.data(), p->prev.data(), m_channels, m_channels, in, out,
-                            frame_count, frame_layout);
+            m_applier.apply(p, p->m.data(), p->prev.data(), m_order, in, out, frame_count,
+                            frame_layout);
         }
 
         std::shared_ptr<const product> build() const {
