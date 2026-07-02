@@ -1,0 +1,6 @@
+# Dependencies for scripts/generate_hrtf.py (and generate_tdesigns.py, which
+# needs only the standard library). Minimum versions known to work; newer is
+# fine — the generator's built-in causality gate catches regressions.
+numpy>=1.24
+scipy>=1.10
+sofar>=1.1

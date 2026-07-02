@@ -63,6 +63,19 @@
 > helper); README contradictions (B14) fixed and the RT contract documented.
 > 99 tests green under plain, ASan+UBSan, and TSan.
 >
+> **B6 follow-up:** an end-to-end dry run of the generator against a synthetic
+> KEMAR-like SOFA file exposed a second, deeper cause of the time-aliasing:
+> reusing the previous bin's phase (even single-projection) freezes the phase
+> trend, collapsing group delay to zero above the cutoff and aliasing the
+> measurements' ~30-tap bulk delay into pre-onset energy (67% on the synthetic
+> set). The generator now continues the phase trend by linear extrapolation
+> from the previous two bins (exact for a pure delay; 67% → 2% pre-onset with
+> identical magnitude accuracy on the dry run), refuses to write any dataset
+> with > 5% pre-onset energy, embeds the source file's SHA-256 for provenance,
+> ships a step-by-step regeneration procedure in its docstring plus
+> `scripts/requirements.txt`, and fails with instructions instead of a
+> traceback when the SOFA file or dependencies are missing.
+>
 > **Remaining (needs the author):** regenerate the MagLS dataset against the
 > KEMAR source SOFA and enable `HrtfData.DISABLED_MaglsDatasetIsCausal`; pin
 > libmysofa to the v1.3.4 commit SHA (unreachable from the audit sandbox);

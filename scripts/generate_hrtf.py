@@ -13,16 +13,53 @@ using two different projection schemes:
           LS below the SH aliasing frequency. Above it, the per-direction phase
           is allowed to drift while the magnitude is matched to the target,
           which dramatically improves high-frequency localization. Implemented
-          as a single projection per bin with phase continuity carried from the
-          previous bin, exactly as published. (Running further alternating
-          projections per bin — as an earlier revision of this script did —
-          converges each bin to an arbitrary phase fixed point, severing the
-          bin-to-bin phase continuity; the resulting spectrum is inconsistent
-          with a compact causal FIR and the IFFT time-aliases ~36% of the
-          energy ahead of the acoustic onset. See docs/AUDIT.md finding B6.)
+          as a single projection per bin, with the phase TREND continued by
+          linear extrapolation from the previous two bins — exact for a pure
+          delay, so the measurements' bulk time-of-arrival carries through and
+          the FIRs stay compact and causal. (Two historical failure modes are
+          guarded by the built-in causality gate: running many alternating
+          projections per bin converges to an arbitrary phase fixed point, and
+          merely REUSING the previous bin's phase freezes the trend and
+          collapses the group delay to zero, aliasing the bulk delay into
+          pre-onset energy. See docs/AUDIT.md finding B6.)
 
 Both datasets are written into the same header so the runtime can switch
 between them via a runtime parameter.
+
+Regeneration procedure
+----------------------
+
+1. Install the Python dependencies (a venv is fine):
+
+       python3 -m pip install -r scripts/requirements.txt
+
+2. Download the MIT KEMAR (normal pinna) HRTF set in SOFA format — the
+   measurements of W. G. Gardner and K. D. Martin (MIT Media Lab, 1994),
+   distributed free of charge on the condition that the authors are credited
+   (see THIRD_PARTY_NOTICES.md):
+
+       curl -L -o /tmp/mit_kemar.sofa \
+           https://sofacoustics.org/data/database/mit/mit_kemar_normal_pinna.sofa
+
+   (Alternatively convert the original MIT distribution from
+   https://sound.media.mit.edu/resources/KEMAR.html to SOFA.)
+
+3. Run the generator from the repository root:
+
+       python3 scripts/generate_hrtf.py /tmp/mit_kemar.sofa
+
+   It rewrites include/ambitap/math/binaural/hrtf_data.h, embedding the
+   source file's SHA-256 in the header comment for provenance, and FAILS
+   (without writing) if the MagLS dataset comes out time-aliased — the
+   regression this procedure exists to fix (audit finding B6).
+
+4. Re-enable the guarding test: in tests/test_binaural.cpp rename
+   HrtfData.DISABLED_MaglsDatasetIsCausal to HrtfData.MaglsDatasetIsCausal
+   (delete the DISABLED_ prefix), then rebuild and run the suite:
+
+       cmake --build build && ctest --test-dir build --output-on-failure
+
+5. Commit hrtf_data.h and the test rename together.
 
 Usage:
     python3 scripts/generate_hrtf.py [sofa_file] [max_order] [output_path]
@@ -32,32 +69,30 @@ Defaults:
     max_order:   5
     output_path: include/ambitap/math/binaural/hrtf_data.h
 
-The SOFA file is the MIT KEMAR (normal pinna) HRTF set of W. G. Gardner and
-K. D. Martin (MIT Media Lab, 1994), distributed free of charge on the condition
-that the authors are credited. A SOFA-format copy is available from the SOFA
-project (e.g. https://www.sofacoustics.org/data/database/mit/), or convert the
-original MIT distribution (https://sound.media.mit.edu/resources/KEMAR.html).
-Record the exact source file you used here when you regenerate, so the embedded
-coefficients stay reproducible. See THIRD_PARTY_NOTICES.md for the credit text.
-
 Copyright 2025-2026 Timothy Place. Distributed under the MIT License.
 """
 
+import hashlib
 import os
 import sys
-import numpy as np
 from math import factorial
-from scipy.special import lpmv
+
+try:
+    import numpy as np
+    from scipy.special import lpmv
+except ImportError as exc:  # pragma: no cover
+    sys.exit(f"error: missing dependency ({exc.name}). Install them with:\n"
+             "    python3 -m pip install -r scripts/requirements.txt")
 
 
 SPEED_OF_SOUND = 343.0
 HEAD_RADIUS_M  = 0.0875  # MIT KEMAR; close enough for any human-head HRTF
 
-# Extra alternating-projection iterations per bin AFTER the phase-continuation
-# projection. Keep this at 0: the published MagLS uses exactly one projection
-# per bin with the phase seeded from the previous bin, which is what keeps the
-# resulting FIRs compact and causal. Iterating further destroys the phase
-# continuity and time-aliases the IRs (audit finding B6).
+# Extra alternating-projection iterations per bin AFTER the phase-trend
+# projection. Keep this at 0: iterating further converges each bin to an
+# arbitrary phase fixed point, severing the bin-to-bin continuity that keeps
+# the FIRs compact and causal (audit finding B6). The causality gate in
+# main() refuses to write a time-aliased dataset regardless.
 MAGLS_ITERS    = 0
 
 
@@ -88,7 +123,11 @@ def evaluate_sh_at(order, azimuth, elevation):
 
 
 def load_sofa(path):
-    import sofar
+    try:
+        import sofar
+    except ImportError:  # pragma: no cover
+        sys.exit("error: missing dependency 'sofar'. Install it with:\n"
+                 "    python3 -m pip install -r scripts/requirements.txt")
     sofa = sofar.read_sofa(path)
     positions = np.array(sofa.SourcePosition)
     az = np.radians(positions[:, 0])
@@ -161,15 +200,29 @@ def compute_sh_hrtf_magls(Y, Y_pinv, hrir_data, fft_len, sample_rate,
         # Below alias (including DC): plain LS.
         H_sh_freq[:, :f_alias_bin] = Y_pinv @ H_freq[:, ear, :f_alias_bin]
 
-        # Above alias: alternating projection with phase continuity.
+        # Above alias: magnitude matching with the phase TREND continued by
+        # linear extrapolation from the previous two bins:
+        #     phase_b = 2 * phase_{b-1} - phase_{b-2}
+        # computed in complex arithmetic (r1^2 * conj(r2)) to avoid
+        # unwrapping. For a pure delay this extrapolation is exact, so the
+        # measurement's bulk time-of-arrival (~30 taps for raw KEMAR)
+        # continues through the MagLS region and the IRs stay compact and
+        # causal. Merely REUSING the previous bin's phase — as an earlier
+        # revision did — freezes the phase, which collapses the group delay
+        # to zero above the cutoff and time-aliases the bulk delay into
+        # pre-onset energy (audit finding B6; the built-in causality gate
+        # below guards this).
         for b in range(f_alias_bin, num_bins):
             target = H_freq[:, ear, b]
             target_mag = np.abs(target)
 
-            # Seed with the previous bin's reconstructed phase to keep the
-            # IRs causal-ish and avoid bin-to-bin phase jumps.
-            recon = Y @ H_sh_freq[:, b - 1]
-            phase = np.angle(recon)
+            r1 = Y @ H_sh_freq[:, b - 1]
+            if b >= 2:
+                r2 = Y @ H_sh_freq[:, b - 2]
+                seed = r1 * r1 * np.conj(r2)
+            else:
+                seed = r1
+            phase = np.angle(seed)
             modified = target_mag * np.exp(1j * phase)
             H_sh_freq[:, b] = Y_pinv @ modified
 
@@ -202,7 +255,8 @@ def emit_array(lines, name, data, num_ch, fft_len):
     lines.append("")
 
 
-def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
+def generate_header(sh_ls, sh_magls, sample_rate, order, output_path,
+                    source_name="(unrecorded)", source_sha256="(unrecorded)"):
     """Write the LS + MagLS datasets as a single C++ header."""
     num_ears, num_ch, fft_len = sh_ls.shape
 
@@ -210,6 +264,9 @@ def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
         "/// AmbiTap: target-independent ambisonics library",
         "/// Built-in SH-domain HRTF dataset for binaural rendering.",
         "/// Auto-generated from MIT KEMAR (normal pinna) via SOFA + scripts/generate_hrtf.py.",
+        "///",
+        f"/// Provenance: generated from {source_name}",
+        f"///             (SHA-256 {source_sha256})",
         "///",
         "/// Source measurements: W. G. Gardner and K. D. Martin, \"HRTF Measurements of",
         "/// a KEMAR Dummy-Head Microphone,\" MIT Media Lab Perceptual Computing Technical",
@@ -262,6 +319,15 @@ def generate_header(sh_ls, sh_magls, sample_rate, order, output_path):
     print(f"  Embedded data size: {embedded_bytes / 1024:.1f} KB (both datasets)")
 
 
+def pre_onset_energy_fraction(sh_hrtf, onset_guard=26):
+    """Fraction of total energy in the first onset_guard taps, across all
+    channels and ears. The KEMAR ear-canal onset sits near tap 29 at 44.1 kHz;
+    a healthy causal dataset has essentially nothing before it, while the
+    time-aliased datasets of audit finding B6 carried ~36% there."""
+    e = np.square(sh_hrtf)
+    return float(e[:, :, :onset_guard].sum() / e.sum())
+
+
 def main():
     sofa_path = sys.argv[1] if len(sys.argv) > 1 else "/tmp/mit_kemar.sofa"
     max_order = int(sys.argv[2]) if len(sys.argv) > 2 else 5
@@ -269,7 +335,24 @@ def main():
     default_out = os.path.join(here, "include", "ambitap", "math", "binaural", "hrtf_data.h")
     output_path = sys.argv[3] if len(sys.argv) > 3 else default_out
 
+    if not os.path.isfile(sofa_path):
+        sys.exit(
+            f"error: SOFA file not found: {sofa_path}\n"
+            "\n"
+            "Download the MIT KEMAR (normal pinna) measurements in SOFA format\n"
+            "first — see the 'Regeneration procedure' in this script's docstring:\n"
+            "\n"
+            "    curl -L -o /tmp/mit_kemar.sofa \\\n"
+            "        https://sofacoustics.org/data/database/mit/mit_kemar_normal_pinna.sofa\n"
+            "\n"
+            "then re-run:\n"
+            "\n"
+            f"    python3 scripts/generate_hrtf.py {sofa_path}")
+
+    with open(sofa_path, "rb") as f:
+        source_sha256 = hashlib.sha256(f.read()).hexdigest()
     print(f"Loading SOFA: {sofa_path}")
+    print(f"  SHA-256: {source_sha256}")
     az, el, hrir_data, sr = load_sofa(sofa_path)
 
     fft_len = 128
@@ -305,8 +388,23 @@ def main():
     print(f"  LS:    {mag_err_ls:.4e}")
     print(f"  MagLS: {mag_err_magls:.4e}   ({mag_err_magls/mag_err_ls*100:.1f}% of LS)")
 
+    # Causality gate (audit finding B6): a correctly designed MagLS dataset
+    # keeps almost no energy ahead of the acoustic onset; the broken
+    # alternating-projection datasets carried ~36% there. Refuse to write a
+    # regressed dataset.
+    ls_pre = pre_onset_energy_fraction(sh_ls)
+    magls_pre = pre_onset_energy_fraction(sh_magls)
+    print(f"\nPre-onset energy (first 26 taps):")
+    print(f"  LS:    {ls_pre * 100:.2f}%")
+    print(f"  MagLS: {magls_pre * 100:.2f}%   (must stay below 5%)")
+    if magls_pre > 0.05:
+        sys.exit("error: MagLS dataset is time-aliased (pre-onset energy above 5%).\n"
+                 "Header NOT written. See audit finding B6 and the MAGLS_ITERS\n"
+                 "comment in this script.")
+
     print(f"\nWriting header...")
-    generate_header(sh_ls, sh_magls, sr, max_order, output_path)
+    generate_header(sh_ls, sh_magls, sr, max_order, output_path,
+                    os.path.basename(sofa_path), source_sha256)
 
 
 if __name__ == "__main__":
