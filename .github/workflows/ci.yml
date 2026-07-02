@@ -129,18 +129,22 @@ jobs:
     # subset (tools/embedded/rt_core_check.cpp documents it) cross-compiles
     # for Cortex-M55 with no exceptions, no RTTI, no threads, no Eigen, and
     # no hardware doubles (-Wdouble-promotion catches accidental promotion
-    # in the per-sample paths). Links against newlib-nano + nosys to prove
-    # nothing hidden is pulled in.
-    name: embedded (cortex-m55 RT-profile gate)
+    # in the per-sample paths) — and then actually RUNS, with per-processor
+    # self-checks, on QEMU's Cortex-M55 machine (mps3-an547, semihosting).
+    # The nosys link proves nothing hidden is pulled in; the trimmed-table
+    # variant proves tools/hrtf_trim output is a working drop-in.
+    name: embedded (cortex-m55 RT-profile gate + QEMU run)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install the Arm bare-metal toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+      - name: Install the Arm bare-metal toolchain and QEMU
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y gcc-arm-none-eabi qemu-system-arm
 
-      - name: Cross-compile the RT profile for Cortex-M55
+      - name: Cross-compile the RT profile for Cortex-M55 (bare-metal link)
         run: |
           arm-none-eabi-g++ -std=c++20 -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             -fno-exceptions -fno-rtti -Os \
@@ -153,6 +157,40 @@ jobs:
             --specs=nosys.specs --specs=nano.specs \
             rt_core_check.o fftsg_float.o -o rt_core_check.elf
           arm-none-eabi-size rt_core_check.elf
+
+      - name: Run the RT profile self-checks on QEMU (mps3-an547)
+        run: |
+          set -o pipefail
+          arm-none-eabi-gcc -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -Os -Wall \
+            -c tools/embedded/qemu/startup_an547.c -o startup_an547.o
+          arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
+            --specs=rdimon.specs --specs=nano.specs -nostartfiles \
+            -T tools/embedded/qemu/mps3_an547.ld -Wl,--no-warn-rwx-segments \
+            rt_core_check.o startup_an547.o fftsg_float.o -o rt_core_qemu.elf
+          timeout 120 qemu-system-arm -machine mps3-an547 -semihosting -nographic \
+            -kernel rt_core_qemu.elf | tee qemu.log
+          grep -q "RT-PROFILE-PASS" qemu.log
+
+      - name: Trimmed HRTF table is a working drop-in (tools/hrtf_trim)
+        run: |
+          set -o pipefail
+          g++ -std=c++20 -O1 -Iinclude tools/hrtf_trim/hrtf_trim.cpp -o hrtf_trim
+          mkdir -p trimmed/ambitap/math/binaural
+          ./hrtf_trim --order 3 --projection ls \
+            --out trimmed/ambitap/math/binaural/hrtf_data.h
+          arm-none-eabi-g++ -std=c++20 -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
+            -fno-exceptions -fno-rtti -Os \
+            -Wall -Wextra -Werror -Wdouble-promotion \
+            -Itrimmed -Iinclude \
+            -c tools/embedded/rt_core_check.cpp -o rt_trim.o
+          arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
+            --specs=rdimon.specs --specs=nano.specs -nostartfiles \
+            -T tools/embedded/qemu/mps3_an547.ld -Wl,--no-warn-rwx-segments \
+            rt_trim.o startup_an547.o fftsg_float.o -o rt_trim_qemu.elf
+          arm-none-eabi-size rt_trim_qemu.elf
+          timeout 120 qemu-system-arm -machine mps3-an547 -semihosting -nographic \
+            -kernel rt_trim_qemu.elf | tee qemu_trim.log
+          grep -q "RT-PROFILE-PASS" qemu_trim.log
 
   install:
     # find_package(AmbiTap) must actually work: install to a prefix, then

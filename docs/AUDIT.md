@@ -114,17 +114,28 @@
 > per-sample `log10f`/`powf` were replaced with polynomial `fast_log2` /
 > `fast_exp2` (measured error < 1e-4 dB, verified against the exact libm
 > formula in tests) plus a compare-only below-threshold fast path. Budgets
-> and the remaining embedded gaps (shared-spectrum convolver bank for
-> order-5 binaural on M55, Eigen-free rotation construction) are tracked in
-> docs/EMBEDDED.md. 108 tests green.
+> and the remaining embedded gaps are tracked in docs/EMBEDDED.md.
+> Both headline gaps are now closed: the **shared-spectrum convolver bank**
+> (`convolver_bank`, one forward FFT per channel + one inverse per ear)
+> replaced the per-ear convolver arrangement inside `binaural_core` —
+> measured 2.7× (order-5 binaural 67.9 → 25.0 µs/block) and the enabler
+> for order-5 binaural on M55 — and **`compute_sh_rotation`**
+> (`math/core/rotation_recurrence.h`, Ivanic–Ruedenberg with erratum,
+> freestanding) builds rotation matrices on-device. The recurrence also
+> replaced the sampling/least-squares backend of the desktop `sh_rotation`
+> — exact up to roundoff, dependency-free, faster to build — **closing
+> deferred item Q1**; it was validated against the LSQ construction
+> (≤ 1.2e-6 disagreement through order 10) before the swap, and the
+> in-tree tests gate on the defining property Y(R·d) = R·Y(d) directly.
+> 113 tests green.
 >
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed
 > with a config verified idempotent against the whole tree, and CI now
-> enforces formatting. Deferred with rationale: Q1 (rotation via
-> least-squares fit — accurate to ~1e-6 through order 10; the doc overstating
-> it vs. Ivanic–Ruedenberg was fixed), P3 polish items not otherwise picked
-> up along the way.
+> enforces formatting. Deferred with rationale: P3 polish items not
+> otherwise picked up along the way. (Q1 — rotation via least-squares fit —
+> was deferred here originally and has since been closed by the
+> Ivanic–Ruedenberg recurrence; see the embedded-profile note above.)
 
 **Date:** 2026-07-02
 **Scope:** every header under `include/ambitap/`, all tests, scripts, build system, and CI — reviewed line-by-line, with SampleRateTap as the quality/completeness bar.

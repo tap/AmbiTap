@@ -7,9 +7,13 @@
 #include "ambitap/dsp/binaural_core.h"
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap/dsp/util/matrix_applier.h"
+#include "ambitap/dsp/util/sh_block_applier.h"
 #include "ambitap/math/binaural/convolution.h"
+#include "ambitap/math/binaural/convolver_bank.h"
 #include "ambitap/math/binaural/hrtf_data.h"
 #include "ambitap/math/core/fast_math.h"
+#include "ambitap/math/core/rotation_recurrence.h"
+#include "ambitap/math/core/spherical_harmonics.h"
 
 #include <gtest/gtest.h>
 
@@ -106,6 +110,80 @@ TEST(Convolver32, MatchesDoubleConvolver) {
 }
 
 // ---------------------------------------------------------------------------
+// Shared-spectrum convolver bank: must equal a bank of independent
+// partitioned_convolvers summed per output (same precision, so the only
+// difference is frequency-domain accumulation order).
+// ---------------------------------------------------------------------------
+
+TEST(ConvolverBank, RejectsBadPrepare) {
+    convolver_bank32 bank;
+    float            ir[8]  = {1.f};
+    const float*     irs[4] = {ir, ir, ir, nullptr};
+    EXPECT_FALSE(bank.prepare(63, 2, 2, irs, 8)); // not a power of two
+    EXPECT_FALSE(bank.prepare(64, 2, 2, nullptr, 8));
+    EXPECT_FALSE(bank.prepare(64, 2, 2, irs, 0));
+    EXPECT_FALSE(bank.prepare(64, 2, 2, irs, 8)); // null IR pointer
+    EXPECT_FALSE(bank.is_prepared());
+    irs[3] = ir;
+    EXPECT_TRUE(bank.prepare(64, 2, 2, irs, 8));
+    EXPECT_TRUE(bank.is_prepared());
+    EXPECT_EQ(bank.num_partitions(), 1u);
+}
+
+TEST(ConvolverBank, MatchesIndependentConvolvers) {
+    constexpr size_t inputs  = 5;
+    constexpr size_t outputs = 2;
+    constexpr size_t block   = 64;
+    constexpr size_t taps    = 139; // odd: exercises the partial partition
+
+    std::mt19937                          rng(23);
+    std::uniform_real_distribution<float> dist(-1.f, 1.f);
+
+    std::vector<std::vector<float>> irs(inputs * outputs, std::vector<float>(taps));
+    std::vector<const float*>       ir_ptrs;
+    for (auto& ir : irs) {
+        for (auto& v : ir) v = dist(rng);
+        ir_ptrs.push_back(ir.data());
+    }
+
+    convolver_bank bank; // double precision: matches the reference tightly
+    ASSERT_TRUE(bank.prepare(block, inputs, outputs, ir_ptrs.data(), taps));
+
+    std::vector<partitioned_convolver> ref;
+    for (size_t o = 0; o < outputs; ++o) {
+        for (size_t c = 0; c < inputs; ++c) {
+            ref.emplace_back(block, ir_ptrs[o * inputs + c], taps);
+        }
+    }
+
+    std::vector<std::vector<float>> in(inputs, std::vector<float>(block));
+    std::vector<const float*>       in_ptrs;
+    for (auto& b : in) in_ptrs.push_back(b.data());
+    std::vector<float> out0(block), out1(block), tmp(block);
+    float*             out_ptrs[2] = {out0.data(), out1.data()};
+
+    for (int b = 0; b < 24; ++b) {
+        for (auto& buf : in)
+            for (auto& v : buf) v = dist(rng);
+
+        bank.process(in_ptrs.data(), out_ptrs);
+
+        for (size_t o = 0; o < outputs; ++o) {
+            std::vector<float> expected(block, 0.f);
+            for (size_t c = 0; c < inputs; ++c) {
+                ref[o * inputs + c].process(in_ptrs[c], tmp.data());
+                for (size_t i = 0; i < block; ++i) expected[i] += tmp[i];
+            }
+            const float* got = (o == 0) ? out0.data() : out1.data();
+            for (size_t i = 0; i < block; ++i) {
+                ASSERT_NEAR(got[i], expected[i], 1e-5f)
+                    << "output " << o << " block " << b << " sample " << i;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // matrix_applier: linear crossfade, restart on new key, settled application.
 // ---------------------------------------------------------------------------
 
@@ -138,6 +216,142 @@ TEST(MatrixApplier, LinearCrossfadeAndSettle) {
     const float mat2[] = {2.f, 0.f, 0.f, 2.f};
     applier.apply(mat2, mat2, prev, 2, 2, in, out, n, false);
     EXPECT_NEAR(out0[0], 1.f + 1.f / static_cast<float>(n), 1e-6f);
+}
+
+// ---------------------------------------------------------------------------
+// sh_block_applier: identical output to the dense matrix_applier on
+// rotation-shaped matrices — during the fade and after it settles.
+// ---------------------------------------------------------------------------
+
+TEST(ShBlockApplier, MatchesDenseApplierOnRotationMatrices) {
+    constexpr int    order = 5;
+    const size_t     C     = channel_count(order);
+    constexpr size_t block = 64;
+
+    std::vector<float> mat(C * C), prev(C * C);
+    compute_sh_rotation(order, 0.8f, -0.3f, 0.2f, mat.data());
+    compute_sh_rotation(order, 0.6f, -0.3f, 0.2f, prev.data());
+
+    std::mt19937                          rng(31);
+    std::uniform_real_distribution<float> dist(-1.f, 1.f);
+    std::vector<std::vector<float>>       in(C, std::vector<float>(block));
+    std::vector<const float*>             in_ptrs;
+    for (auto& b : in) in_ptrs.push_back(b.data());
+
+    std::vector<std::vector<float>> out_dense(C, std::vector<float>(block));
+    std::vector<std::vector<float>> out_block(C, std::vector<float>(block));
+    std::vector<float*>             dense_ptrs, block_ptrs;
+    for (auto& b : out_dense) dense_ptrs.push_back(b.data());
+    for (auto& b : out_block) block_ptrs.push_back(b.data());
+
+    dsp::matrix_applier   dense;
+    dsp::sh_block_applier blocked;
+
+    // Enough blocks to cover the whole crossfade and settled operation.
+    for (int b = 0; b < 8; ++b) {
+        for (auto& buf : in)
+            for (auto& v : buf) v = dist(rng);
+
+        dense.apply(mat.data(), mat.data(), prev.data(), C, C, in_ptrs.data(), dense_ptrs.data(),
+                    block, false);
+        blocked.apply(mat.data(), mat.data(), prev.data(), order, in_ptrs.data(), block_ptrs.data(),
+                      block, false);
+
+        for (size_t ch = 0; ch < C; ++ch) {
+            for (size_t i = 0; i < block; ++i) {
+                ASSERT_NEAR(out_block[ch][i], out_dense[ch][i], 1e-6f)
+                    << "channel " << ch << " block " << b << " sample " << i;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Rotation recurrence (Ivanic-Ruedenberg): ground truth is the defining
+// property Y(R d) = R_sh Y(d), checked with evaluate_sh directly — no other
+// rotation construction involved.
+// ---------------------------------------------------------------------------
+
+TEST(RotationRecurrence, SatisfiesRotationProperty) {
+    std::mt19937                          rng(5);
+    std::uniform_real_distribution<float> ang(-3.1f, 3.1f);
+
+    for (int order : {1, 2, 3, 5, max_order}) {
+        const size_t       C = channel_count(order);
+        std::vector<float> M(C * C);
+        for (int trial = 0; trial < 6; ++trial) {
+            const float yaw = ang(rng), pitch = 0.5f * ang(rng), roll = ang(rng);
+            compute_sh_rotation(order, yaw, pitch, roll, M.data());
+
+            // The same Cartesian rotation, built the same way.
+            const float cy = std::cos(yaw), sy = std::sin(yaw);
+            const float cp = std::cos(pitch), sp = std::sin(pitch);
+            const float cr = std::cos(roll), sr = std::sin(roll);
+            const float R[9] = {
+                cy * cp,
+                cy * sp * sr - sy * cr,
+                cy * sp * cr + sy * sr,
+                sy * cp,
+                sy * sp * sr + cy * cr,
+                sy * sp * cr - cy * sr,
+                -sp,
+                cp * sr,
+                cp * cr,
+            };
+
+            for (int k = 0; k < 8; ++k) {
+                const float az = ang(rng), el = 0.5f * ang(rng);
+                const float d[3] = {std::cos(el) * std::cos(az), std::cos(el) * std::sin(az),
+                                    std::sin(el)};
+                float       rd[3];
+                for (int r = 0; r < 3; ++r) {
+                    rd[r] = R[r * 3] * d[0] + R[r * 3 + 1] * d[1] + R[r * 3 + 2] * d[2];
+                }
+
+                float sh_d[max_channel_count], sh_rd[max_channel_count];
+                evaluate_sh(order, az, el, sh_d);
+                evaluate_sh(order, std::atan2(rd[1], rd[0]),
+                            std::atan2(rd[2], std::hypot(rd[0], rd[1])), sh_rd);
+
+                for (size_t i = 0; i < C; ++i) {
+                    float acc = 0.f;
+                    for (size_t j = 0; j < C; ++j) acc += M[i * C + j] * sh_d[j];
+                    ASSERT_NEAR(acc, sh_rd[i], 1e-5f)
+                        << "order " << order << " channel " << i << " trial " << trial;
+                }
+            }
+        }
+    }
+}
+
+TEST(RotationRecurrence, MatricesAreOrthogonal) {
+    std::mt19937                          rng(17);
+    std::uniform_real_distribution<float> ang(-3.1f, 3.1f);
+
+    for (int order : {3, max_order}) {
+        const size_t       C = channel_count(order);
+        std::vector<float> M(C * C);
+        compute_sh_rotation(order, ang(rng), 0.5f * ang(rng), ang(rng), M.data());
+        for (size_t i = 0; i < C; ++i) {
+            for (size_t j = 0; j < C; ++j) {
+                float acc = 0.f;
+                for (size_t k = 0; k < C; ++k) acc += M[i * C + k] * M[j * C + k];
+                ASSERT_NEAR(acc, i == j ? 1.f : 0.f, 1e-5f) << "order " << order;
+            }
+        }
+    }
+}
+
+TEST(RotationRecurrence, YawOnlyMatchesClosedForm) {
+    // A pure yaw rotates each (l, |m|) pair by cos/sin(m*yaw); spot-check a
+    // few well-known entries at order 1.
+    const float        yaw = 0.7f;
+    std::vector<float> M(16 * 16);
+    compute_sh_rotation(3, yaw, 0.f, 0.f, M.data());
+    const size_t C = 16;
+    EXPECT_NEAR(M[acn_index(1, 0) * C + acn_index(1, 0)], 1.f, 1e-6f);           // Z fixed
+    EXPECT_NEAR(M[acn_index(1, 1) * C + acn_index(1, 1)], std::cos(yaw), 1e-6f); // X
+    EXPECT_NEAR(M[acn_index(1, -1) * C + acn_index(1, 1)], std::sin(yaw), 1e-6f);
 }
 
 // ---------------------------------------------------------------------------
