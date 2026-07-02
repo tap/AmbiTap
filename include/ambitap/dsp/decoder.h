@@ -13,6 +13,7 @@
 #include "../math/decoding/epad.h"
 #include "../math/decoding/mode_matching.h"
 #include "util/async_rebuilder.h"
+#include "util/matrix_applier.h"
 
 #include <cstddef>
 #include <memory>
@@ -46,7 +47,7 @@ namespace ambitap::dsp {
     class decoder {
       public:
         /// Crossfade length applied when a new decode matrix is adopted.
-        static constexpr size_t k_fade_samples = 256;
+        static constexpr size_t k_fade_samples = matrix_applier::k_fade_samples;
 
         /// Published product: the matrix, its dimensions, and the matrix to
         /// fade from (zeros after a dimension change or before the first build).
@@ -68,9 +69,8 @@ namespace ambitap::dsp {
         decoder_algorithm            m_algorithm {decoder_algorithm::mode_match};
         bool                         m_max_re {false};
 
-        // Crossfade state; owned by the (single) audio thread.
-        mutable const matrix* m_fade_ref {nullptr};
-        mutable size_t        m_fade_pos {k_fade_samples};
+        // Crossfading application; owned by the (single) audio thread.
+        mutable matrix_applier m_applier;
 
         // Declared after everything the build callback reads (see async_rebuilder).
         async_rebuilder<const matrix> m_rebuilder;
@@ -166,37 +166,8 @@ namespace ambitap::dsp {
                 return;
             }
 
-            if (m != m_fade_ref) { // new matrix adopted: restart the crossfade
-                m_fade_ref = m;
-                m_fade_pos = 0;
-            }
-
-            const float* mat  = m->data.data();
-            const float* prev = m->prev.data();
-
-            for (size_t i = 0; i < frame_count; ++i) {
-                const bool  fading = m_fade_pos < k_fade_samples;
-                const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                 / static_cast<float>(k_fade_samples)
-                                            : 1.f;
-                for (size_t s = 0; s < m->speakers; ++s) {
-                    float acc_new = 0.f;
-                    float acc_old = 0.f;
-                    for (size_t c = 0; c < m->channels; ++c) {
-                        const float x = frame_layout ? in[0][c] : in[c][i];
-                        acc_new += mat[s * m->channels + c] * x;
-                        if (fading) acc_old += prev[s * m->channels + c] * x;
-                    }
-                    const float y = fading ? acc_old + (acc_new - acc_old) * alpha : acc_new;
-                    if (frame_layout) {
-                        out[0][s] = y;
-                    }
-                    else {
-                        out[s][i] = y;
-                    }
-                }
-                if (fading) ++m_fade_pos;
-            }
+            m_applier.apply(m, m->data.data(), m->prev.data(), m->speakers, m->channels, in, out,
+                            frame_count, frame_layout);
         }
 
         std::shared_ptr<const matrix> build() const {

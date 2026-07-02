@@ -6,13 +6,13 @@
 #ifndef AMBITAP_DSP_BINAURAL_RENDERER_H
 #define AMBITAP_DSP_BINAURAL_RENDERER_H
 
-#include "../math/binaural/convolution.h"
 #include "../math/binaural/hrtf_data.h"
 #include "../math/binaural/ooura_fft.h"
 #include "../math/binaural/resample.h"
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/core/validate.h"
+#include "binaural_core.h"
 #include "rotator.h"
 
 #include <Eigen/Dense>
@@ -72,18 +72,14 @@ namespace ambitap::dsp {
         size_t m_block_size {0};
         float  m_sample_rate {builtin_hrtf_sample_rate};
 
-        std::atomic<float> m_volume {1.0f};
-        float              m_volume_current {1.0f}; // audio-thread ramp state
-
         hrtf_projection m_projection {hrtf_projection::ls};
 
         // Custom (e.g. SOFA-loaded) SH-domain HRTFs; empty -> built-in dataset.
         std::vector<std::vector<float>> m_custom_left;
         std::vector<std::vector<float>> m_custom_right;
 
-        std::vector<std::unique_ptr<partitioned_convolver>> m_conv_left;
-        std::vector<std::unique_ptr<partitioned_convolver>> m_conv_right;
-        std::vector<float>                                  m_temp;
+        // Convolver bank + volume ramp (the freestanding audio-path engine).
+        binaural_core m_core;
 
         std::vector<std::vector<float>> m_rotated;     // planar rotation scratch
         std::vector<float*>             m_rotated_out; // pointers into m_rotated
@@ -105,12 +101,13 @@ namespace ambitap::dsp {
         explicit binaural_renderer(int order)
             : m_order(validated_order(order, 1, max_order, "dsp::binaural_renderer"))
             , m_channels(channel_count(order))
+            , m_core(order)
             , m_head(order) {}
 
         int    order() const { return m_order; }
         size_t channels() const { return m_channels; }
         size_t block_size() const { return m_block_size; }
-        bool   is_prepared() const { return !m_conv_left.empty(); }
+        bool   is_prepared() const { return m_core.is_prepared(); }
 
         /// Set the processing block size and host sample rate, then (re)build
         /// the convolvers. The built-in HRTFs are resampled from 44.1 kHz to
@@ -131,8 +128,8 @@ namespace ambitap::dsp {
 
         /// Linear output gain (post-convolution). RT-safe and race-free
         /// (atomic store); the audio thread ramps to it across one block.
-        void  set_volume(float linear) { m_volume.store(linear, std::memory_order_relaxed); }
-        float volume() const { return m_volume.load(std::memory_order_relaxed); }
+        void  set_volume(float linear) { m_core.set_volume(linear); }
+        float volume() const { return m_core.volume(); }
 
         /// Select the built-in HRTF projection. Rebuilds convolvers when
         /// prepared (not RT-safe). Ignored while a custom HRTF set is loaded.
@@ -227,7 +224,7 @@ namespace ambitap::dsp {
         /// doesn't match the prepared block size).
         void process(const float* const* in, float* left, float* right,
                      size_t frame_count) noexcept {
-            if (m_conv_left.empty() || frame_count != m_block_size) {
+            if (!m_core.is_prepared() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);
                 return;
@@ -241,31 +238,7 @@ namespace ambitap::dsp {
                 src = m_rotated_src.data();
             }
 
-            std::fill(left, left + frame_count, 0.f);
-            std::fill(right, right + frame_count, 0.f);
-
-            for (size_t ch = 0; ch < m_channels; ++ch) {
-                m_conv_left[ch]->process(src[ch], m_temp.data());
-                for (size_t i = 0; i < frame_count; ++i) left[i] += m_temp[i];
-
-                m_conv_right[ch]->process(src[ch], m_temp.data());
-                for (size_t i = 0; i < frame_count; ++i) right[i] += m_temp[i];
-            }
-
-            // Volume: linear ramp from the previous value to the target
-            // across this block (click-free, race-free).
-            const float target = m_volume.load(std::memory_order_relaxed);
-            if (target != 1.f || m_volume_current != target) {
-                const float start = m_volume_current;
-                const float step  = (target - start) / static_cast<float>(frame_count);
-                float       g     = start;
-                for (size_t i = 0; i < frame_count; ++i) {
-                    g += step;
-                    left[i] *= g;
-                    right[i] *= g;
-                }
-                m_volume_current = target;
-            }
+            m_core.process(src, left, right, frame_count);
         }
 
         /// Reconstruct the HRTF impulse response at a probe direction for each
@@ -362,39 +335,36 @@ namespace ambitap::dsp {
 
         void rebuild_convolvers() {
             require_hrtf_coverage("prepare");
-            m_conv_left.clear();
-            m_conv_right.clear();
             if (m_block_size == 0) return;
-            m_conv_left.reserve(m_channels);
-            m_conv_right.reserve(m_channels);
 
             // Built-in FIRs are stored at 44.1 kHz; adapt them to the host
             // rate here (control thread; allocation is fine). Custom FIRs are
             // the caller's responsibility and pass through untouched.
             const bool resample = !has_custom_hrtf() && m_sample_rate != builtin_hrtf_sample_rate;
 
+            std::vector<std::vector<float>> resampled_l, resampled_r;
+            std::vector<const float*>       left_ptrs(m_channels), right_ptrs(m_channels);
+            size_t                          taps = 0;
             for (size_t ch = 0; ch < m_channels; ++ch) {
                 size_t       len_l = 0, len_r = 0;
                 const float* left  = hrtf_fir(0, ch, len_l);
                 const float* right = hrtf_fir(1, ch, len_r);
                 if (resample) {
-                    const auto rl =
-                        resample_fir(left, len_l, builtin_hrtf_sample_rate, m_sample_rate);
-                    const auto rr =
-                        resample_fir(right, len_r, builtin_hrtf_sample_rate, m_sample_rate);
-                    m_conv_left.emplace_back(std::make_unique<partitioned_convolver>(
-                        m_block_size, rl.data(), rl.size()));
-                    m_conv_right.emplace_back(std::make_unique<partitioned_convolver>(
-                        m_block_size, rr.data(), rr.size()));
+                    resampled_l.push_back(
+                        resample_fir(left, len_l, builtin_hrtf_sample_rate, m_sample_rate));
+                    resampled_r.push_back(
+                        resample_fir(right, len_r, builtin_hrtf_sample_rate, m_sample_rate));
+                    left_ptrs[ch]  = resampled_l.back().data();
+                    right_ptrs[ch] = resampled_r.back().data();
+                    taps           = resampled_l.back().size();
                 }
                 else {
-                    m_conv_left.emplace_back(
-                        std::make_unique<partitioned_convolver>(m_block_size, left, len_l));
-                    m_conv_right.emplace_back(
-                        std::make_unique<partitioned_convolver>(m_block_size, right, len_r));
+                    left_ptrs[ch]  = left;
+                    right_ptrs[ch] = right;
+                    taps           = len_l;
                 }
             }
-            m_temp.assign(m_block_size, 0.f);
+            m_core.prepare(m_block_size, left_ptrs.data(), right_ptrs.data(), taps);
 
             m_rotated.assign(m_channels, std::vector<float>(m_block_size, 0.f));
             m_rotated_out.clear();

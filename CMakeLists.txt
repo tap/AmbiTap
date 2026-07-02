@@ -19,6 +19,7 @@ endif()
 option(AMBITAP_BUILD_TESTS "Build AmbiTap unit tests" ${_ambitap_dev_default})
 option(AMBITAP_BUILD_EXAMPLES "Build AmbiTap example programs" ${_ambitap_dev_default})
 option(AMBITAP_BUILD_BENCH "Build AmbiTap benchmarks" OFF)
+option(AMBITAP_BUILD_CAPI "Build the C ABI shared library (language bindings, notebooks)" OFF)
 
 # ------------------------------------------------------------------------------
 # Warnings (applied to this project's own executables — tests, examples,
@@ -90,7 +91,7 @@ endif()
 # (host applications, Max externals, Pd externals) can link it.
 # ------------------------------------------------------------------------------
 
-add_library(ambitap_fft STATIC third_party/ooura/fftsg.c)
+add_library(ambitap_fft STATIC third_party/ooura/fftsg.c third_party/ooura/fftsg_float.c)
 add_library(AmbiTap::fft ALIAS ambitap_fft)
 set_target_properties(ambitap_fft PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -203,4 +204,7 @@ if(AMBITAP_BUILD_EXAMPLES)
 endif()
 if(AMBITAP_BUILD_BENCH)
     add_subdirectory(bench)
+endif()
+if(AMBITAP_BUILD_CAPI)
+    add_subdirectory(tools/capi)
 endif()

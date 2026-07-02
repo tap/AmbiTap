@@ -62,6 +62,37 @@ Example programs live in `examples/` (`encode_rotate_decode`,
 `binaural_render` — writes a WAV of a source orbiting the head) and a
 dependency-free micro-benchmark in `bench/` (`-DAMBITAP_BUILD_BENCH=ON`).
 
+For a visual tour and executable verification of the algorithms, see the
+Jupyter notebooks in `notebooks/` — they drive the actual C++ implementation
+through the C ABI (`tools/capi/`, `-DAMBITAP_BUILD_CAPI=ON`) via ctypes, and
+their `assert` cells re-check the audit's key properties on every run:
+
+- [`notebooks/ambitap_demo.ipynb`](notebooks/ambitap_demo.ipynb) — SH basis
+  maps (cross-checked against SciPy), rotation, 3D + 2D pairwise VBAP, and an
+  audible binaural orbit.
+- [`notebooks/decoder_analysis.ipynb`](notebooks/decoder_analysis.ipynb) —
+  energy / rE-vector / angular-error maps for mode-matching vs ALLRAD vs EPAD
+  across layouts, absolute-gain and rank-truncation gates, and a NumPy
+  pseudoinverse cross-check.
+- [`notebooks/hrtf_analysis.ipynb`](notebooks/hrtf_analysis.ipynb) — LS vs
+  MagLS causality (the audit's B6 picture), ILD/ITD against the Woodworth
+  model, the HRTF resampler's response, and the partitioned convolver vs
+  direct convolution.
+- [`notebooks/dsp_behavior.ipynb`](notebooks/dsp_behavior.ipynb) — the
+  real-time contract made visible: the encoder's 128-sample parameter ramps,
+  the decoder's 256-sample matrix crossfade, the Doppler shift measured
+  against 1 ± v/c (and the delay-slew pitch glide on distance jumps), and the
+  spatial compressor's static curve and attack/release clocks.
+- [`notebooks/soundfield_analysis.ipynb`](notebooks/soundfield_analysis.ipynb)
+  — the `analysis/` layer against ground truth (soundfield-heatmap source
+  positions and levels, energy-vector DOA tracking of a moving source) and a
+  "which order do I need?" study: max-rE beamwidth and decoder |rE| across
+  orders 1–5.
+
+Python needs `numpy`, `scipy`, and `matplotlib`
+(`pip install -r notebooks/requirements.txt`); the first cell builds the
+shared library if missing.
+
 ## Consuming
 
 ```cmake
@@ -127,6 +158,16 @@ Options:
   <http://neilsloane.com/sphdesigns/>. The point coordinates are mathematical
   facts taken from that catalogue rather than from any redistribution-licensed
   repackaging.
+
+## Embedded targets
+
+The real-time paths run on embedded processors (Cortex-M55, Hexagon
+AudioReach): the RT profile — every `process()` path, including a float32
+binaural engine (`dsp::binaural_core`) and precomputed-matrix application
+(`dsp::matrix_applier`) — builds with no exceptions, no threads, no Eigen,
+and no hardware doubles, and CI cross-compiles it for bare-metal Cortex-M55
+on every push. Profile definition, per-order cycle/memory budgets, and
+AudioReach integration notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
 
 ## Audit
 

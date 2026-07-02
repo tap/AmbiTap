@@ -1,0 +1,6 @@
+# Dependencies for the verification notebooks (ambitap_py.py additionally
+# needs cmake in PATH to build tools/capi on first import).
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+jupyter

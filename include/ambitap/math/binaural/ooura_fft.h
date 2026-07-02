@@ -17,6 +17,10 @@
 extern "C" {
 void rdft(int n, int isgn, double* a, int* ip, double* w);
 void cdft(int n, int isgn, double* a, int* ip, double* w);
+// Single-precision instantiation (third_party/ooura/fftsg_float.c), for the
+// embedded real-time profile where doubles are software floats.
+void rdft_f(int n, int isgn, float* a, int* ip, float* w);
+void cdft_f(int n, int isgn, float* a, int* ip, float* w);
 }
 
 namespace ambitap {
@@ -76,6 +80,36 @@ namespace ambitap {
         /// In-place inverse FFT on a double buffer (no float conversion, no scaling).
         /// Caller must scale by 2/size for a normalized inverse.
         void inverse_inplace(double* data) { rdft(m_size, -1, data, m_ip.data(), m_w.data()); }
+    };
+
+    /// Single-precision real FFT — the same Ooura algorithm instantiated for
+    /// float (fftsg_float.c). This is the embedded real-time profile's FFT:
+    /// on FPUs without hardware doubles (e.g. Cortex-M55) the double path
+    /// above falls back to software floating point. Packing convention and
+    /// scaling match real_fft exactly.
+    class real_fft32 {
+        int                m_size;
+        std::vector<int>   m_ip;
+        std::vector<float> m_w;
+
+      public:
+        explicit real_fft32(size_t size)
+            : m_size(static_cast<int>(size))
+            , m_ip(2 + static_cast<size_t>(std::sqrt(static_cast<double>(size) / 2.0)) + 1)
+            , m_w(size / 2) {
+            assert(size >= 4 && (size & (size - 1)) == 0);
+            m_ip[0] = 0; // triggers Ooura table init on first call
+        }
+
+        size_t size() const { return static_cast<size_t>(m_size); }
+        size_t num_bins() const { return static_cast<size_t>(m_size / 2 + 1); }
+
+        /// In-place forward FFT on a float buffer.
+        void forward_inplace(float* data) { rdft_f(m_size, 1, data, m_ip.data(), m_w.data()); }
+
+        /// In-place inverse FFT on a float buffer (no scaling; caller scales
+        /// by 2/size for a normalized inverse).
+        void inverse_inplace(float* data) { rdft_f(m_size, -1, data, m_ip.data(), m_w.data()); }
     };
 
 } // namespace ambitap

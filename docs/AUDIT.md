@@ -83,6 +83,41 @@
 > (±9.6 dB / correct ear ordering at ±90°). `HrtfData.MaglsDatasetIsCausal`
 > is enabled and green; no disabled tests remain.
 >
+> **Notebooks parity (follow-up):** the last SampleRateTap parity gap is
+> closed — `tools/capi/` (a minimal C ABI shared library, ctypes-loadable)
+> plus three executed verification notebooks in `notebooks/` whose assert
+> cells re-run the audit's key checks against the real C++ implementation:
+> SH-vs-SciPy, rotation property, VBAP energy normalization, decoder
+> rE/energy/error gates, absolute-gain and EPAD-rank gates, a NumPy
+> pseudoinverse cross-check, HRTF causality/ILD/ITD, resampler response, and
+> convolver-vs-direct equivalence. Two further notebooks extend coverage to
+> the remaining layers: `dsp_behavior.ipynb` verifies the real-time contract
+> end-to-end (128-sample encoder ramps, 256-sample decoder matrix crossfade,
+> Doppler shift within 1% of 1 ± v/c plus the delay-slew glide on distance
+> jumps, compressor static-curve slopes exactly 1 and 1/ratio with configured
+> attack/release clocks), and `soundfield_analysis.ipynb` verifies the
+> `analysis/` layer against ground truth (heatmap peaks within one grid cell
+> at the correct relative level; energy-vector DOA median error 1.4° on a
+> moving source) and adds an order-1–5 sharpness study (max-rE beamwidth
+> 224° → 74°, ALLRAD |rE| monotone to > 0.9).
+>
+> **Embedded profile (follow-up):** the RT paths now build for bare-metal
+> Cortex-M55 and Hexagon AudioReach targets, machine-checked by a CI
+> cross-compile gate (`tools/embedded/rt_core_check.cpp`; -fno-exceptions,
+> -fno-rtti, -Wdouble-promotion, newlib-nano link). Enabling work: the
+> crossfading matrix application was extracted from rotator/decoder into
+> freestanding `dsp::matrix_applier`; the binaural convolver bank + volume
+> ramp into freestanding `dsp::binaural_core` on a new float32 convolver
+> path (`partitioned_convolver32` / `real_fft32` / fftsg_float.c — the
+> double path is software floating point on these FPUs); `validated_order`
+> gained an assert/clamp no-exceptions mode; and the spatial compressor's
+> per-sample `log10f`/`powf` were replaced with polynomial `fast_log2` /
+> `fast_exp2` (measured error < 1e-4 dB, verified against the exact libm
+> formula in tests) plus a compare-only below-threshold fast path. Budgets
+> and the remaining embedded gaps (shared-spectrum convolver bank for
+> order-5 binaural on M55, Eigen-free rotation construction) are tracked in
+> docs/EMBEDDED.md. 108 tests green.
+>
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed
 > with a config verified idempotent against the whole tree, and CI now

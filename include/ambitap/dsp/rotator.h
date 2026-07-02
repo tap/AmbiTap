@@ -10,6 +10,7 @@
 #include "../math/core/rotation.h"
 #include "../math/core/validate.h"
 #include "util/async_rebuilder.h"
+#include "util/matrix_applier.h"
 
 #include <atomic>
 #include <cstddef>
@@ -38,7 +39,7 @@ namespace ambitap::dsp {
     class rotator {
       public:
         /// Crossfade length applied when a new rotation matrix is adopted.
-        static constexpr size_t k_fade_samples = 256;
+        static constexpr size_t k_fade_samples = matrix_applier::k_fade_samples;
 
         /// Published product: the new matrix plus the matrix to fade from.
         struct product {
@@ -54,9 +55,8 @@ namespace ambitap::dsp {
         std::atomic<float> m_pitch {0.0f};
         std::atomic<float> m_roll {0.0f};
 
-        // Crossfade state; owned by the (single) audio thread.
-        mutable const product* m_fade_ref {nullptr};
-        mutable size_t         m_fade_pos {k_fade_samples};
+        // Crossfading application; owned by the (single) audio thread.
+        mutable matrix_applier m_applier;
 
         // Worker-only: copy of the last matrix this worker built, used as the
         // fade-from matrix of the next product.
@@ -148,37 +148,8 @@ namespace ambitap::dsp {
                 return;
             }
 
-            if (p != m_fade_ref) { // new matrix adopted: restart the crossfade
-                m_fade_ref = p;
-                m_fade_pos = 0;
-            }
-
-            const float* mat  = p->m.data();
-            const float* prev = p->prev.data();
-
-            for (size_t i = 0; i < frame_count; ++i) {
-                const bool  fading = m_fade_pos < k_fade_samples;
-                const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                 / static_cast<float>(k_fade_samples)
-                                            : 1.f;
-                for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
-                    float acc_new = 0.f;
-                    float acc_old = 0.f;
-                    for (size_t in_ch = 0; in_ch < m_channels; ++in_ch) {
-                        const float x = frame_layout ? in[0][in_ch] : in[in_ch][i];
-                        acc_new += mat[out_ch * m_channels + in_ch] * x;
-                        if (fading) acc_old += prev[out_ch * m_channels + in_ch] * x;
-                    }
-                    const float y = fading ? acc_old + (acc_new - acc_old) * alpha : acc_new;
-                    if (frame_layout) {
-                        out[0][out_ch] = y;
-                    }
-                    else {
-                        out[out_ch][i] = y;
-                    }
-                }
-                if (fading) ++m_fade_pos;
-            }
+            m_applier.apply(p, p->m.data(), p->prev.data(), m_channels, m_channels, in, out,
+                            frame_count, frame_layout);
         }
 
         std::shared_ptr<const product> build() const {
