@@ -231,3 +231,70 @@ TEST(Tdesigns, PointsAreOnUnitSphere) {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Hull convexity and the VBAP velocity-vector invariant. Regression tests for
+// the coplanar-face bug found by cross-library comparison (spaudiopy, see
+// notebooks/library_comparison.ipynb): the incremental hull mis-stitched the
+// cube's square faces, folding triangles through the interior, and ~20% of
+// directions snapped to a single speaker up to 52 degrees away.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+    // No input point may lie strictly outside any hull face. Tolerance covers
+    // the deterministic radius lift used to break coplanar ties (<= 1e-4).
+    void expect_convex(const speaker_layout& layout, const char* name) {
+        for (const auto& t : layout.triangles()) {
+            const Eigen::Vector3f n = (layout.cartesian()[t.b] - layout.cartesian()[t.a])
+                                          .cross(layout.cartesian()[t.c] - layout.cartesian()[t.a])
+                                          .normalized();
+            for (size_t i = 0; i < layout.cartesian().size(); ++i) {
+                EXPECT_LE((layout.cartesian()[i] - layout.cartesian()[t.a]).dot(n), 5e-4f)
+                    << name << ": point " << i << " outside a hull face";
+            }
+        }
+    }
+
+    // For sources inside the coverage, the VBAP velocity vector must point at
+    // the source exactly (Pulkki's defining property).
+    void expect_velocity_exact(const speaker_layout& layout, float el_lo, float el_hi,
+                               const char* name) {
+        std::mt19937                          rng(29);
+        std::uniform_real_distribution<float> ua(-k_pi, k_pi);
+        std::uniform_real_distribution<float> ue(el_lo, el_hi);
+        for (int k = 0; k < 500; ++k) {
+            const float     az = ua(rng);
+            const float     el = ue(rng);
+            const auto      g  = layout.vbap_gains({az, el});
+            Eigen::Vector3d v  = Eigen::Vector3d::Zero();
+            for (size_t s = 0; s < g.size(); ++s) {
+                v += static_cast<double>(g[s]) * layout.cartesian()[s].cast<double>();
+            }
+            ASSERT_GT(v.norm(), 1e-6) << name;
+            const double dot = v.normalized().dot(spherical_to_cartesian(az, el).cast<double>());
+            // 0.1 degree: far above float32 solve noise (~0.02 deg observed),
+            // far below the 50-degree failures of the coplanar-face bug.
+            EXPECT_GT(dot, std::cos(0.1 * 3.14159265358979 / 180.0))
+                << name << ": velocity vector off at az=" << az << " el=" << el;
+        }
+    }
+
+} // namespace
+
+TEST(SpeakerLayout, HullsAreConvexOnAllPresets) {
+    expect_convex(speaker_layout(layouts::cube()), "cube");
+    expect_convex(speaker_layout(layouts::surround_7_1_4()), "7.1.4");
+    auto oct_z = layouts::octagon();
+    oct_z.push_back({0.f, k_pi / 2});
+    oct_z.push_back({0.f, -k_pi / 2});
+    expect_convex(speaker_layout(oct_z), "octagon+zenith+nadir");
+}
+
+TEST(SpeakerLayout, VbapVelocityVectorIsExactInsideCoverage) {
+    // The cube covers the whole sphere; its square faces are the coplanar
+    // worst case for the hull.
+    expect_velocity_exact(speaker_layout(layouts::cube()), -1.4f, 1.4f, "cube");
+    // 7.1.4 has no bottom speakers: test the covered band only.
+    expect_velocity_exact(speaker_layout(layouts::surround_7_1_4()), 0.05f, 0.45f, "7.1.4");
+}
