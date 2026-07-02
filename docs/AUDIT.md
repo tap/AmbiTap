@@ -90,7 +90,16 @@
 > SH-vs-SciPy, rotation property, VBAP energy normalization, decoder
 > rE/energy/error gates, absolute-gain and EPAD-rank gates, a NumPy
 > pseudoinverse cross-check, HRTF causality/ILD/ITD, resampler response, and
-> convolver-vs-direct equivalence.
+> convolver-vs-direct equivalence. Two further notebooks extend coverage to
+> the remaining layers: `dsp_behavior.ipynb` verifies the real-time contract
+> end-to-end (128-sample encoder ramps, 256-sample decoder matrix crossfade,
+> Doppler shift within 1% of 1 ± v/c plus the delay-slew glide on distance
+> jumps, compressor static-curve slopes exactly 1 and 1/ratio with configured
+> attack/release clocks), and `soundfield_analysis.ipynb` verifies the
+> `analysis/` layer against ground truth (heatmap peaks within one grid cell
+> at the correct relative level; energy-vector DOA median error 1.4° on a
+> moving source) and adds an order-1–5 sharpness study (max-rE beamwidth
+> 224° → 74°, ALLRAD |rE| monotone to > 0.9).
 >
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed

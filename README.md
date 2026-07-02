@@ -78,6 +78,16 @@ their `assert` cells re-check the audit's key properties on every run:
   MagLS causality (the audit's B6 picture), ILD/ITD against the Woodworth
   model, the HRTF resampler's response, and the partitioned convolver vs
   direct convolution.
+- [`notebooks/dsp_behavior.ipynb`](notebooks/dsp_behavior.ipynb) — the
+  real-time contract made visible: the encoder's 128-sample parameter ramps,
+  the decoder's 256-sample matrix crossfade, the Doppler shift measured
+  against 1 ± v/c (and the delay-slew pitch glide on distance jumps), and the
+  spatial compressor's static curve and attack/release clocks.
+- [`notebooks/soundfield_analysis.ipynb`](notebooks/soundfield_analysis.ipynb)
+  — the `analysis/` layer against ground truth (soundfield-heatmap source
+  positions and levels, energy-vector DOA tracking of a moving source) and a
+  "which order do I need?" study: max-rE beamwidth and decoder |rE| across
+  orders 1–5.
 
 Python needs `numpy`, `scipy`, and `matplotlib`
 (`pip install -r notebooks/requirements.txt`); the first cell builds the

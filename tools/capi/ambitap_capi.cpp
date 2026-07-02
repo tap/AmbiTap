@@ -15,6 +15,19 @@ using namespace ambitap;
 
 namespace {
 
+    bool algorithm_by_name(const char* name, dsp::decoder_algorithm& out) {
+        const std::string n = name ? name : "";
+        if (n == "mode_match")
+            out = dsp::decoder_algorithm::mode_match;
+        else if (n == "allrad")
+            out = dsp::decoder_algorithm::allrad;
+        else if (n == "epad")
+            out = dsp::decoder_algorithm::epad;
+        else
+            return false;
+        return true;
+    }
+
     bool layout_by_name(const char* name, std::vector<spherical_coord>& out) {
         const std::string n = name ? name : "";
         if (n == "stereo")
@@ -237,6 +250,178 @@ int ambitap_binaural_render(int order, float sample_rate, int magls, const float
             std::memcpy(left + start, l_block.data(), len * sizeof(float));
             std::memcpy(right + start, r_block.data(), len * sizeof(float));
         }
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_encoder_ramp(int order, float az0, float el0, float az1, float el1, int change_at,
+                         int n_frames, float* out) {
+    if (!out || n_frames <= 0 || change_at < 0 || change_at >= n_frames) return -1;
+    try {
+        dsp::encoder enc(order);
+        enc.set_direction(az0, el0);
+        enc.snap_parameters();
+
+        const size_t       channels = enc.channels();
+        std::vector<float> frame(channels);
+        const auto         n = static_cast<size_t>(n_frames);
+        for (size_t i = 0; i < n; ++i) {
+            if (i == static_cast<size_t>(change_at)) enc.set_direction(az1, el1);
+            enc.process_sample(1.f, frame.data());
+            for (size_t ch = 0; ch < channels; ++ch) out[ch * n + i] = frame[ch];
+        }
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_decoder_crossfade(int order, int n_speakers, const float* az, const float* el,
+                              const char* from_algorithm, const char* to_algorithm, int use_max_re,
+                              const float* hoa, int n_frames, float* out) {
+    dsp::decoder_algorithm from {};
+    dsp::decoder_algorithm to {};
+    if (!az || !el || !hoa || !out || n_speakers <= 0 || n_frames <= 0
+        || !algorithm_by_name(from_algorithm, from) || !algorithm_by_name(to_algorithm, to)) {
+        return -1;
+    }
+    try {
+        std::vector<spherical_coord> speakers;
+        speakers.reserve(static_cast<size_t>(n_speakers));
+        for (int i = 0; i < n_speakers; ++i) speakers.push_back({az[i], el[i]});
+
+        dsp::decoder dec(order);
+        dec.set_max_re(use_max_re != 0);
+        dec.set_speakers(speakers);
+        dec.set_algorithm(from);
+        dec.wait_for_settling();
+
+        // Run past the initial fade-in from silence so the capture below
+        // starts from the settled `from` matrix.
+        const auto         n_out = static_cast<size_t>(n_speakers);
+        std::vector<float> frame(n_out);
+        for (size_t i = 0; i < 2 * dsp::decoder::k_fade_samples; ++i) {
+            dec.process_frame(hoa, frame.data(), n_out);
+        }
+
+        // Adopt the new matrix; the crossfade begins on the next process call.
+        dec.set_algorithm(to);
+        dec.wait_for_settling();
+
+        const auto n = static_cast<size_t>(n_frames);
+        for (size_t i = 0; i < n; ++i) {
+            dec.process_frame(hoa, frame.data(), n_out);
+            for (size_t s = 0; s < n_out; ++s) out[s * n + i] = frame[s];
+        }
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_doppler_process(float sample_rate, float max_distance, const float* mono,
+                            const float* dist, int n_frames, float* out) {
+    if (!mono || !dist || !out || n_frames <= 0 || sample_rate <= 0.f || max_distance <= 0.f) {
+        return -1;
+    }
+    try {
+        dsp::doppler dop(1);
+        dop.set_distance(dist[0]);
+        dop.set_max_distance(max_distance);
+        dop.prepare(sample_rate);
+        dop.reset(); // snap the delay slew to the initial distance
+
+        const size_t       channels = dop.channels();
+        std::vector<float> fin(channels, 0.f);
+        std::vector<float> fout(channels, 0.f);
+        for (int i = 0; i < n_frames; ++i) {
+            dop.set_distance(dist[i]);
+            fin[0] = mono[i];
+            dop.process_frame(fin.data(), fout.data());
+            out[i] = fout[0];
+        }
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_compressor_gain(float sample_rate, float threshold_db, float ratio, float attack_s,
+                            float release_s, float makeup_db, const float* w, int n_frames,
+                            float* out) {
+    if (!w || !out || n_frames <= 0 || sample_rate <= 0.f || ratio < 1.f) return -1;
+    try {
+        dsp::spatial_compressor comp(1);
+        comp.prepare(sample_rate);
+        comp.set_threshold_db(threshold_db);
+        comp.set_ratio(ratio);
+        comp.set_attack(attack_s);
+        comp.set_release(release_s);
+        comp.set_makeup_gain_db(makeup_db);
+        for (int i = 0; i < n_frames; ++i) out[i] = comp.process_envelope(w[i]);
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_soundfield_grid(int order, int az_steps, float sample_rate, float smoothing_ms,
+                            const float* hoa, int n_frames, int block_size, float dynamic_range_db,
+                            float* out, float* peak_db) {
+    if (!hoa || !out || n_frames <= 0 || block_size <= 0 || az_steps < 4 || sample_rate <= 0.f
+        || dynamic_range_db <= 0.f) {
+        return -1;
+    }
+    try {
+        analysis::soundfield_grid grid(order, az_steps);
+        grid.prepare(sample_rate);
+        grid.set_smoothing_time_ms(smoothing_ms);
+
+        const size_t              channels = grid.channels();
+        const auto                n        = static_cast<size_t>(n_frames);
+        std::vector<const float*> ptrs(channels);
+        for (int start = 0; start < n_frames; start += block_size) {
+            const auto len = static_cast<size_t>(std::min(block_size, n_frames - start));
+            for (size_t c = 0; c < channels; ++c) {
+                ptrs[c] = hoa + c * n + static_cast<size_t>(start);
+            }
+            grid.process(ptrs.data(), len);
+        }
+
+        const auto img = grid.snapshot(dynamic_range_db);
+        if (img.data.empty()) return -1;
+        std::memcpy(out, img.data.data(), img.data.size() * sizeof(float));
+        if (peak_db) *peak_db = img.peak_db;
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_energy_vector(int order, float sample_rate, float smoothing_s, const float* hoa,
+                          int n_frames, float* out) {
+    if (!hoa || !out || n_frames <= 0 || order < 1 || order > max_order || sample_rate <= 0.f) {
+        return -1;
+    }
+    try {
+        analysis::energy_vector ev;
+        ev.prepare(sample_rate);
+        ev.set_smoothing_time(smoothing_s);
+
+        const auto                n        = static_cast<size_t>(n_frames);
+        const auto                channels = channel_count(order);
+        std::vector<const float*> in(channels);
+        for (size_t c = 0; c < channels; ++c) in[c] = hoa + c * n;
+        float* xyz[3] = {out, out + n, out + 2 * n};
+        ev.process(in.data(), xyz, n);
         return 0;
     }
     catch (...) {

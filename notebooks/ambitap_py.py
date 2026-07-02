@@ -78,6 +78,23 @@ def load() -> ctypes.CDLL:
         "ambitap_binaural_render": (
             [ctypes.c_int, ctypes.c_float, ctypes.c_int, f32p, ctypes.c_int, f32p, f32p,
              ctypes.c_float, ctypes.c_float, ctypes.c_float, f32p, f32p], ctypes.c_int),
+        "ambitap_encoder_ramp": (
+            [ctypes.c_int, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float,
+             ctypes.c_int, ctypes.c_int, f32p], ctypes.c_int),
+        "ambitap_decoder_crossfade": (
+            [ctypes.c_int, ctypes.c_int, f32p, f32p, ctypes.c_char_p, ctypes.c_char_p,
+             ctypes.c_int, f32p, ctypes.c_int, f32p], ctypes.c_int),
+        "ambitap_doppler_process": (
+            [ctypes.c_float, ctypes.c_float, f32p, f32p, ctypes.c_int, f32p], ctypes.c_int),
+        "ambitap_compressor_gain": (
+            [ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_float,
+             ctypes.c_float, f32p, ctypes.c_int, f32p], ctypes.c_int),
+        "ambitap_soundfield_grid": (
+            [ctypes.c_int, ctypes.c_int, ctypes.c_float, ctypes.c_float, f32p, ctypes.c_int,
+             ctypes.c_int, ctypes.c_float, f32p, f32p], ctypes.c_int),
+        "ambitap_energy_vector": (
+            [ctypes.c_int, ctypes.c_float, ctypes.c_float, f32p, ctypes.c_int, f32p],
+            ctypes.c_int),
     }
     for name, (argtypes, restype) in sigs.items():
         fn = getattr(lib, name)
@@ -210,6 +227,87 @@ def binaural_render(mono: np.ndarray, az: np.ndarray, el: np.ndarray, *, order: 
                                         float(head[1]), float(head[2]), _ptr(left),
                                         _ptr(right)), "binaural_render")
     return left, right
+
+
+def encoder_ramp(order: int, az0: float, el0: float, az1: float, el1: float,
+                 change_at: int, n_frames: int) -> np.ndarray:
+    """dsp::encoder output (C, n_frames) for a DC-1 input with a direction
+    change at sample change_at — the parameter-smoothing ramp, verbatim."""
+    c = channel_count(order)
+    out = np.empty(c * n_frames, dtype=np.float32)
+    _check(_LIB.ambitap_encoder_ramp(order, float(az0), float(el0), float(az1), float(el1),
+                                     change_at, n_frames, _ptr(out)), "encoder_ramp")
+    return out.reshape(c, n_frames)
+
+
+def decoder_crossfade(order: int, az: np.ndarray, el: np.ndarray, from_alg: str, to_alg: str,
+                      hoa: np.ndarray, n_frames: int, use_max_re: bool = False) -> np.ndarray:
+    """dsp::decoder per-speaker output (L, n_frames) for a constant HOA frame,
+    starting at the first sample of the from_alg -> to_alg matrix crossfade."""
+    az, el, hoa = _f32(az), _f32(el), _f32(hoa)
+    L = len(az)
+    assert len(hoa) == channel_count(order)
+    out = np.empty(L * n_frames, dtype=np.float32)
+    _check(_LIB.ambitap_decoder_crossfade(order, L, _ptr(az), _ptr(el), from_alg.encode(),
+                                          to_alg.encode(), int(use_max_re), _ptr(hoa),
+                                          n_frames, _ptr(out)), "decoder_crossfade")
+    return out.reshape(L, n_frames)
+
+
+def doppler_process(mono: np.ndarray, dist: np.ndarray, *, sample_rate: float,
+                    max_distance: float) -> np.ndarray:
+    """dsp::doppler applied to a mono signal along a per-sample distance
+    trajectory (meters); returns the delayed signal (Doppler pitch shift)."""
+    mono, dist = _f32(mono), _f32(dist)
+    assert len(dist) == len(mono)
+    out = np.empty(len(mono), dtype=np.float32)
+    _check(_LIB.ambitap_doppler_process(float(sample_rate), float(max_distance), _ptr(mono),
+                                        _ptr(dist), len(mono), _ptr(out)), "doppler_process")
+    return out
+
+
+def compressor_gain(w: np.ndarray, *, sample_rate: float, threshold_db: float, ratio: float,
+                    attack_s: float = 0.005, release_s: float = 0.1,
+                    makeup_db: float = 0.0) -> np.ndarray:
+    """dsp::spatial_compressor per-sample linear gain for the W signal."""
+    w = _f32(w)
+    out = np.empty(len(w), dtype=np.float32)
+    _check(_LIB.ambitap_compressor_gain(float(sample_rate), float(threshold_db), float(ratio),
+                                        float(attack_s), float(release_s), float(makeup_db),
+                                        _ptr(w), len(w), _ptr(out)), "compressor_gain")
+    return out
+
+
+def soundfield_grid(hoa: np.ndarray, *, order: int, az_steps: int = 64,
+                    sample_rate: float = 48000.0, smoothing_ms: float = 200.0,
+                    block_size: int = 256,
+                    dynamic_range_db: float = 30.0) -> tuple[np.ndarray, float]:
+    """analysis::soundfield_grid heatmap for planar HOA (C, n_frames): the
+    normalized (el_steps, az_steps) image (row 0 = zenith, col 0 = az -pi)
+    and the absolute peak in dB."""
+    hoa = _f32(hoa)
+    c, n = hoa.shape
+    assert c == channel_count(order)
+    out = np.empty((az_steps // 2) * az_steps, dtype=np.float32)
+    peak = ctypes.c_float()
+    _check(_LIB.ambitap_soundfield_grid(order, az_steps, float(sample_rate),
+                                        float(smoothing_ms), _ptr(hoa), n, block_size,
+                                        float(dynamic_range_db), _ptr(out),
+                                        ctypes.byref(peak)), "soundfield_grid")
+    return out.reshape(az_steps // 2, az_steps), peak.value
+
+
+def energy_vector(hoa: np.ndarray, *, order: int, sample_rate: float = 48000.0,
+                  smoothing_s: float = 0.01) -> np.ndarray:
+    """analysis::energy_vector trajectory (3, n_frames) — smoothed active
+    intensity x/y/z (x = front, y = left, z = up) — for planar HOA (C, n)."""
+    hoa = _f32(hoa)
+    c, n = hoa.shape
+    assert c == channel_count(order)
+    out = np.empty(3 * n, dtype=np.float32)
+    _check(_LIB.ambitap_energy_vector(order, float(sample_rate), float(smoothing_s),
+                                      _ptr(hoa), n, _ptr(out)), "energy_vector")
+    return out.reshape(3, n)
 
 
 def direction_grid(n_az: int = 121, n_el: int = 61):
