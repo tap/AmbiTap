@@ -7,6 +7,7 @@
 #define AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
 
 #include <algorithm>
@@ -84,8 +85,9 @@ namespace ambitap::analysis {
       public:
         /// @param order          Ambisonics order in [0, max_order].
         /// @param azimuth_steps  Initial grid azimuth resolution (columns).
+        /// @throws std::invalid_argument on out-of-range order.
         explicit soundfield_grid(int order, int azimuth_steps = 32)
-            : m_order(order)
+            : m_order(validated_order(order, "analysis::soundfield_grid"))
             , m_channels(channel_count(order))
             , m_cov(channel_count(order) * channel_count(order), 0.f) {
             set_azimuth_steps(azimuth_steps);

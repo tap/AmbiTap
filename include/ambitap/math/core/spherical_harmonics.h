@@ -10,6 +10,8 @@
 #include "indexing.h"
 #include "normalization.h"
 
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -30,6 +32,13 @@ namespace ambitap {
     ///   Zotter, F. (2009). "Analysis and Synthesis of Sound-Radiation with Spherical Arrays".
     /// Implemented directly from the published formulas; no third-party SH code is used.
     inline void evaluate_sh(int order, float azimuth, float elevation, float* out) {
+        // The plm table below (and the caller's out array) are sized for
+        // max_order; an out-of-range order would silently corrupt the stack.
+        // Public entry points validate their order arguments (validate.h), so
+        // this clamp is a last-resort memory-safety guard, not an API.
+        assert(order >= 0 && order <= max_order);
+        order = std::clamp(order, 0, max_order);
+
         const float sin_el = std::sin(elevation);
         const float cos_el = std::cos(elevation);
 

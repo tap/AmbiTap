@@ -11,12 +11,18 @@
 #include "../math/binaural/ooura_fft.h"
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
 #include "rotator.h"
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -72,13 +78,21 @@ namespace ambitap::dsp {
         std::vector<float*>             m_rotated_out; // pointers into m_rotated
         std::vector<const float*>       m_rotated_src;
 
-        rotator m_head; // head-tracking; owns its worker thread
+        // Head orientation as last set; the scene rotator below is driven with
+        // the INVERSE of this so sources stay fixed in the world frame.
+        float m_head_yaw {0.0f};
+        float m_head_pitch {0.0f};
+        float m_head_roll {0.0f};
+
+        rotator m_head; // head-tracking (counter-rotation); owns its worker thread
 
       public:
-        /// @param order  Ambisonics order; [1, builtin_hrtf_order] for the
-        ///               built-in dataset, higher only with set_custom_hrtf().
+        /// @param order  Ambisonics order in [1, max_order]. Orders above
+        ///               builtin_hrtf_order require set_custom_hrtf() before
+        ///               prepare(); prepare() throws otherwise.
+        /// @throws std::invalid_argument on out-of-range order.
         explicit binaural_renderer(int order)
-            : m_order(order)
+            : m_order(validated_order(order, 1, max_order, "dsp::binaural_renderer"))
             , m_channels(channel_count(order))
             , m_head(order) {}
 
@@ -89,6 +103,8 @@ namespace ambitap::dsp {
 
         /// Set the processing block size and (re)build the convolvers.
         /// @param block_size  Power of two, >= 4. Not RT-safe.
+        /// @throws std::invalid_argument when order() > builtin_hrtf_order and
+        ///         no custom HRTF set has been supplied.
         void prepare(size_t block_size) {
             m_block_size = block_size;
             rebuild_convolvers();
@@ -108,8 +124,25 @@ namespace ambitap::dsp {
 
         /// Supply SH-domain HRTF FIRs (channels() filters per ear, equal length),
         /// e.g. loaded from a SOFA file. Rebuilds convolvers when prepared.
+        /// @throws std::invalid_argument when either ear does not have exactly
+        ///         channels() FIRs, any FIR is empty, or lengths are unequal.
         void set_custom_hrtf(std::vector<std::vector<float>> left,
                              std::vector<std::vector<float>> right) {
+            if (left.size() != m_channels || right.size() != m_channels) {
+                throw std::invalid_argument(
+                    "ambitap::dsp::binaural_renderer::set_custom_hrtf: need exactly "
+                    "channels() FIRs per ear");
+            }
+            const size_t taps = left.front().size();
+            for (const auto* ear : {&left, &right}) {
+                for (const auto& fir : *ear) {
+                    if (fir.empty() || fir.size() != taps) {
+                        throw std::invalid_argument(
+                            "ambitap::dsp::binaural_renderer::set_custom_hrtf: all FIRs "
+                            "must be non-empty and equal length");
+                    }
+                }
+            }
             m_custom_left  = std::move(left);
             m_custom_right = std::move(right);
             if (is_prepared()) rebuild_convolvers();
@@ -125,13 +158,20 @@ namespace ambitap::dsp {
         bool has_custom_hrtf() const { return !m_custom_left.empty(); }
 
         /// Head-tracking orientation (radians; yaw about +Z applied first, pitch
-        /// about +Y second, roll about +X last). Submits an async matrix rebuild.
+        /// about +Y second, roll about +X last — the same convention as
+        /// math/core/rotation.h). The scene is counter-rotated by the INVERSE of
+        /// this orientation so sources stay fixed in the world frame: turn your
+        /// head left and a front source moves to your right ear. Submits an
+        /// async matrix rebuild.
         void set_head_orientation(float yaw, float pitch, float roll) {
-            m_head.set_rotation(yaw, pitch, roll);
+            m_head_yaw   = yaw;
+            m_head_pitch = pitch;
+            m_head_roll  = roll;
+            apply_head_orientation();
         }
-        void set_yaw(float radians) { m_head.set_yaw(radians); }
-        void set_pitch(float radians) { m_head.set_pitch(radians); }
-        void set_roll(float radians) { m_head.set_roll(radians); }
+        void set_yaw(float radians) { m_head_yaw = radians; apply_head_orientation(); }
+        void set_pitch(float radians) { m_head_pitch = radians; apply_head_orientation(); }
+        void set_roll(float radians) { m_head_roll = radians; apply_head_orientation(); }
 
         /// Block until pending head-tracking rebuilds finish (tests/offline).
         void wait_for_settling() { m_head.wait_for_settling(); }
@@ -140,8 +180,9 @@ namespace ambitap::dsp {
         /// its tap count: custom data when present, else built-in per projection().
         const float* hrtf_fir(int ear, size_t channel, size_t& length) const {
             if (has_custom_hrtf()) {
-                length = m_custom_left[0].size();
-                return (ear == 0 ? m_custom_left : m_custom_right)[channel].data();
+                const auto& set = (ear == 0 ? m_custom_left : m_custom_right);
+                length          = set[channel].size();
+                return set[channel].data();
             }
             length = builtin_hrtf_length;
             const bool magls = (m_projection == hrtf_projection::magls);
@@ -199,6 +240,7 @@ namespace ambitap::dsp {
         ///                     the built-in dataset's rate.
         response probe_response(float azimuth, float elevation, size_t fft_size = 512,
                                 float sample_rate = builtin_hrtf_sample_rate) const {
+            require_hrtf_coverage("probe_response");
             float sh[max_channel_count];
             evaluate_sh(m_order, azimuth, elevation, sh);
 
@@ -252,7 +294,38 @@ namespace ambitap::dsp {
         }
 
       private:
+        /// The built-in dataset only covers builtin_hrtf_order; reading past it
+        /// would index off the end of the embedded tables.
+        void require_hrtf_coverage(const char* who) const {
+            if (!has_custom_hrtf() && m_order > builtin_hrtf_order) {
+                throw std::invalid_argument(
+                    std::string("ambitap::dsp::binaural_renderer::") + who + ": order "
+                    + std::to_string(m_order) + " exceeds the built-in HRTF order "
+                    + std::to_string(builtin_hrtf_order)
+                    + "; supply set_custom_hrtf() first");
+            }
+        }
+
+        /// Drive the scene rotator with the inverse of the head orientation.
+        /// The inverse of R = Rz(yaw)*Ry(pitch)*Rx(roll) is its transpose; the
+        /// equivalent Z-Y-X Euler angles are extracted from that so the rotator
+        /// (which composes in the same order) reproduces it exactly.
+        void apply_head_orientation() {
+            const Eigen::Matrix3f R =
+                (Eigen::AngleAxisf(m_head_yaw, Eigen::Vector3f::UnitZ())
+                 * Eigen::AngleAxisf(m_head_pitch, Eigen::Vector3f::UnitY())
+                 * Eigen::AngleAxisf(m_head_roll, Eigen::Vector3f::UnitX()))
+                    .toRotationMatrix();
+            const Eigen::Matrix3f inv = R.transpose();
+
+            const float yaw   = std::atan2(inv(1, 0), inv(0, 0));
+            const float pitch = std::asin(std::clamp(-inv(2, 0), -1.0f, 1.0f));
+            const float roll  = std::atan2(inv(2, 1), inv(2, 2));
+            m_head.set_rotation(yaw, pitch, roll);
+        }
+
         void rebuild_convolvers() {
+            require_hrtf_coverage("prepare");
             m_conv_left.clear();
             m_conv_right.clear();
             if (m_block_size == 0) return;

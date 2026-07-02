@@ -20,6 +20,7 @@ add_executable(ambitap_tests
     test_geometry.cpp
     test_decoding.cpp
     test_binaural.cpp
+    test_hardening.cpp
 )
 target_link_libraries(ambitap_tests PRIVATE AmbiTap::ambitap GTest::gtest_main)
 

@@ -1,5 +1,23 @@
 # AmbiTap — Complete Audit & Review
 
+> **Remediation status (updated 2026-07-02, same branch):** all P0 items from
+> the plan in §6 are now fixed on this branch and covered by regression tests —
+> C1 (degenerate hulls detected; planar layouts get true 2D pairwise VBAP),
+> C2 (EPAD singular-value truncation, N3D basis, gain matched to
+> mode-matching), C4 (directional_loudness beam calibration), C5/C6
+> (constructor validation everywhere + `tests/test_hardening.cpp`), C7
+> (head tracking counter-rotates via the inverse orientation), B1 (ALLRAD
+> 4π scale removed; shared absolute-gain convention), B2/B3 (mode-matching
+> and EPAD built in N3D), B5 (energy-normalized max-rE variant used by the
+> decoders), B8 (SOFA receiver/delay validation, rank-revealing SH solve,
+> leak-safe load). B6: the **generator** bug is fixed
+> (`scripts/generate_hrtf.py`, single phase-continued projection per bin),
+> but the embedded MagLS dataset still needs regenerating against the MIT
+> KEMAR source SOFA, which is not reachable from this environment — run the
+> script per its docstring and re-enable `HrtfData.DISABLED_MaglsDatasetIsCausal`.
+> Suite: 87 tests green, ASan+UBSan clean. C3 (wait-free publishing) and the
+> remaining P1/P2 items are still open.
+
 **Date:** 2026-07-02
 **Scope:** every header under `include/ambitap/`, all tests, scripts, build system, and CI — reviewed line-by-line, with SampleRateTap as the quality/completeness bar.
 **Method:** five parallel subsystem reviews (math core, decoder design + geometry, DSP processors, binaural/FFT stack, tests/infrastructure), followed by an independent verification round: every critical finding below was reproduced with small programs compiled against these exact headers, or with AddressSanitizer. Findings that were not independently re-reproduced are marked *(reported)*; everything else is **(verified)**.

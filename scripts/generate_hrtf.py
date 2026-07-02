@@ -13,8 +13,13 @@ using two different projection schemes:
           LS below the SH aliasing frequency. Above it, the per-direction phase
           is allowed to drift while the magnitude is matched to the target,
           which dramatically improves high-frequency localization. Implemented
-          here as a fixed-iteration alternating projection with phase
-          continuity carried from the previous bin.
+          as a single projection per bin with phase continuity carried from the
+          previous bin, exactly as published. (Running further alternating
+          projections per bin — as an earlier revision of this script did —
+          converges each bin to an arbitrary phase fixed point, severing the
+          bin-to-bin phase continuity; the resulting spectrum is inconsistent
+          with a compact causal FIR and the IFFT time-aliases ~36% of the
+          energy ahead of the acoustic onset. See docs/AUDIT.md finding B6.)
 
 Both datasets are written into the same header so the runtime can switch
 between them via a runtime parameter.
@@ -47,7 +52,13 @@ from scipy.special import lpmv
 
 SPEED_OF_SOUND = 343.0
 HEAD_RADIUS_M  = 0.0875  # MIT KEMAR; close enough for any human-head HRTF
-MAGLS_ITERS    = 50      # alternating projection iterations per bin
+
+# Extra alternating-projection iterations per bin AFTER the phase-continuation
+# projection. Keep this at 0: the published MagLS uses exactly one projection
+# per bin with the phase seeded from the previous bin, which is what keeps the
+# resulting FIRs compact and causal. Iterating further destroys the phase
+# continuity and time-aliases the IRs (audit finding B6).
+MAGLS_ITERS    = 0
 
 
 def sn3d_factor(n, abs_m):

@@ -9,6 +9,7 @@
 #include "../core/coords.h"
 #include "../core/indexing.h"
 #include "../core/spherical_harmonics.h"
+#include "../core/validate.h"
 #include "../geometry/speaker_layout.h"
 #include "../geometry/tdesigns.h"
 #include "max_re.h"
@@ -34,14 +35,19 @@ namespace ambitap {
     /// Reference: Zotter & Frank (2012), "All-Round Ambisonic Panning and Decoding",
     ///            J. Audio Eng. Soc. 60(10), pp. 807-820.
     ///
-    /// @param order       Ambisonics order (>= 0).
-    /// @param speakers    Real speaker directions on the unit sphere.
-    /// @param use_max_re  If true, apply max-rE per-order weighting.
+    /// @param order       Ambisonics order in [0, max_order].
+    /// @param speakers    Real speaker directions on the unit sphere (non-empty).
+    /// @param use_max_re  If true, apply energy-normalized max-rE per-order weighting.
     /// @return Decoder matrix of shape (num_speakers x (order+1)^2). Each row is
     ///         the per-channel weights for one speaker; speaker_signals = D * hoa.
+    ///         Absolute gain matches compute_mode_matching_decoder: decoding a
+    ///         unit-pressure omni field yields unit summed pressure.
+    /// @throws std::invalid_argument on out-of-range order or empty speaker list.
     inline Eigen::MatrixXf compute_allrad_decoder(int                                 order,
                                                   const std::vector<spherical_coord>& speakers,
                                                   bool                                use_max_re = true) {
+        validated_order(order, "compute_allrad_decoder");
+        // speaker_layout validates non-emptiness.
         const auto     C = static_cast<Eigen::Index>(channel_count(order));
         speaker_layout layout(speakers);
 
@@ -51,9 +57,14 @@ namespace ambitap {
         const auto V                  = static_cast<Eigen::Index>(tdesign_count);
 
         // Step 2: Sampling decoder for the T-design.
-        // For a T-design with t >= 2N+1, the pseudoinverse simplifies to
-        //   D_virtual = (4*pi / V) * Y
-        // where Y is the re-encoding matrix.
+        // For a T-design with t >= 2N+1 in the ambisonic convention (Y_00 = 1),
+        // the pseudoinverse simplifies to
+        //   D_virtual = (1 / V) * Y * diag(2n+1)
+        // where Y is the SN3D re-encoding matrix (the per-order factor is applied
+        // below). The 4*pi factor familiar from the physics-orthonormal SH
+        // convention (where the integral of Y^2 over the sphere is 1) does NOT
+        // appear here; including it would make ALLRAD ~22 dB hotter than the
+        // library's other decoders.
         Eigen::MatrixXf Y_virtual(V, C);
         float           sh_buf[max_channel_count];
 
@@ -69,7 +80,7 @@ namespace ambitap {
             }
         }
 
-        const float     weight    = static_cast<float>(4.0 * M_PI) / static_cast<float>(V);
+        const float     weight    = 1.0f / static_cast<float>(V);
         Eigen::MatrixXf D_virtual = weight * Y_virtual; // V x C
 
         // The closed-form sampling decoder requires an orthonormal (N3D) basis;
@@ -83,7 +94,7 @@ namespace ambitap {
         }
 
         if (use_max_re) {
-            auto weights = max_re_weights(order);
+            auto weights = max_re_weights_energy_normalized(order);
             for (Eigen::Index c = 0; c < C; ++c) {
                 int n = order_of(static_cast<size_t>(c));
                 D_virtual.col(c) *= weights[static_cast<size_t>(n)];

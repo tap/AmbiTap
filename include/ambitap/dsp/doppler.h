@@ -8,6 +8,7 @@
 #define AMBITAP_DSP_DOPPLER_H
 
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 #include <cmath>
 #include <cstddef>
@@ -43,8 +44,9 @@ namespace ambitap::dsp {
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
+        /// @throws std::invalid_argument on out-of-range order.
         explicit doppler(int order)
-            : m_channels(channel_count(order)) {}
+            : m_channels(channel_count(validated_order(order, "dsp::doppler"))) {}
 
         size_t channels() const { return m_channels; }
         bool   is_prepared() const { return m_buffer_size != 0; }

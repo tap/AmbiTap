@@ -24,10 +24,21 @@ namespace ambitap {
     /// normals. Incremental algorithm suitable for small point sets (< ~1000 points),
     /// which is typical for speaker layouts and T-designs.
     ///
+    /// Degenerate inputs — fewer than four points, or point sets that are
+    /// (affinely) coincident, collinear, or coplanar, such as a horizontal
+    /// speaker ring — have no 3D hull and return an empty vector. Callers must
+    /// check for this; speaker_layout falls back to 2D pairwise panning.
+    ///
     /// Reference: de Berg et al., "Computational Geometry", Ch. 11.
     inline std::vector<triangle> convex_hull_3d(const std::vector<Eigen::Vector3f>& points) {
         const size_t n = points.size();
         if (n < 4) return {};
+
+        // Degeneracy thresholds for the seed-tetrahedron searches below. Points
+        // are speaker/T-design directions on (or near) the unit sphere, so an
+        // absolute scale is meaningful.
+        constexpr float k_degenerate_sq   = 1e-10f; // squared distances
+        constexpr float k_degenerate_dist = 1e-5f;  // plane distance
 
         // Initial tetrahedron: pick four non-coplanar seed points.
         size_t p0 = 0, p1 = 1, p2 = 0, p3 = 0;
@@ -40,6 +51,7 @@ namespace ambitap {
                 p1       = i;
             }
         }
+        if (max_dist <= k_degenerate_sq) return {}; // all points coincident
 
         Eigen::Vector3f dir01 = (points[p1] - points[p0]).normalized();
         max_dist              = 0.0f;
@@ -52,6 +64,7 @@ namespace ambitap {
                 p2       = i;
             }
         }
+        if (max_dist <= k_degenerate_sq) return {}; // all points collinear
 
         Eigen::Vector3f normal = (points[p1] - points[p0]).cross(points[p2] - points[p0]);
         normal.normalize();
@@ -64,6 +77,7 @@ namespace ambitap {
                 p3       = i;
             }
         }
+        if (max_dist <= k_degenerate_dist) return {}; // all points coplanar
 
         float sign = (points[p3] - points[p0]).dot(normal);
 

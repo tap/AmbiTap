@@ -126,6 +126,42 @@ TEST(DspBinaural, HeadTrackingChangesOutput) {
     EXPECT_GT(diff, 1e-4f);
 }
 
+// Audit finding C7: head tracking must counter-rotate the scene. With the
+// head turned 90° to the LEFT, a front source is physically at the listener's
+// RIGHT — the right-ear energy must dominate. (The old code rotated the scene
+// *by* the head orientation, putting the source at the left ear instead.)
+TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
+    constexpr size_t block = 64;
+    constexpr int    order = 3;
+
+    dsp::binaural_renderer bin(order);
+    bin.prepare(block);
+    bin.set_head_orientation(static_cast<float>(M_PI) * 0.5f, 0.f, 0.f); // look left
+    bin.wait_for_settling();
+
+    // Front source, impulse excitation.
+    planar in(16, block);
+    float  sh[max_channel_count];
+    evaluate_sh(order, 0.f, 0.f, sh);
+    for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = sh[ch];
+
+    float e_left = 0.f, e_right = 0.f;
+    std::vector<float> l(block), r(block);
+    // Run several blocks so the full HRIR (128 taps > one block) is captured.
+    for (int b = 0; b < 4; ++b) {
+        bin.process(in.ptrs.data(), l.data(), r.data(), block);
+        for (size_t i = 0; i < block; ++i) {
+            e_left += l[i] * l[i];
+            e_right += r[i] * r[i];
+        }
+        for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = 0.f; // impulse only once
+    }
+
+    EXPECT_GT(e_right, 2.0f * e_left)
+        << "head turned left => front source at the right ear (E_L=" << e_left
+        << ", E_R=" << e_right << ")";
+}
+
 TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
     dsp::binaural_renderer bin(1);
     const auto r = bin.probe_response(0.5f, 0.1f);

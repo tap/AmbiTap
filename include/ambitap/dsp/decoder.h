@@ -8,6 +8,7 @@
 
 #include "../math/core/coords.h"
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 #include "../math/decoding/allrad.h"
 #include "../math/decoding/epad.h"
 #include "../math/decoding/mode_matching.h"
@@ -64,8 +65,9 @@ namespace ambitap::dsp {
         /// @param order       Ambisonics order in [1, max_order].
         /// @param on_publish  Optional callback run on the worker thread after
         ///                    each successful matrix publish (e.g. UI emission).
+        /// @throws std::invalid_argument on out-of-range order.
         explicit decoder(int order, std::function<void()> on_publish = {})
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::decoder"))
             , m_in_channels(channel_count(order))
             , m_rebuilder([this] { return build(); }, std::move(on_publish)) {}
 

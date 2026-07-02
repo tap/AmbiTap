@@ -7,6 +7,7 @@
 #define AMBITAP_DSP_MIRROR_H
 
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 #include <array>
 #include <cstddef>
@@ -35,8 +36,9 @@ namespace ambitap::dsp {
         std::array<float, max_channel_count> m_sign {};
 
       public:
+        /// @throws std::invalid_argument on out-of-range order.
         explicit mirror(int order)
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::mirror"))
             , m_channels(channel_count(order)) {
             recalculate();
         }

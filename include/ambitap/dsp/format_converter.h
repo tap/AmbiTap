@@ -7,6 +7,7 @@
 #define AMBITAP_DSP_FORMAT_CONVERTER_H
 
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 #include <array>
 #include <cmath>
@@ -71,8 +72,10 @@ namespace ambitap::dsp {
 
       public:
         /// @param order  Ambisonics order in [0, 3]; channel count is (order+1)^2.
+        /// @throws std::invalid_argument on out-of-range order (FuMa is only
+        ///         defined through order 3).
         explicit format_converter(int order)
-            : m_channels(channel_count(order)) {
+            : m_channels(channel_count(validated_order(order, 0, 3, "dsp::format_converter"))) {
             recalculate();
         }
 

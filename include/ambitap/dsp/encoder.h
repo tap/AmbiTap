@@ -8,6 +8,7 @@
 
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
 
 #include <array>
 #include <cstddef>
@@ -31,8 +32,9 @@ namespace ambitap::dsp {
 
       public:
         /// @param order  Ambisonics order in [0, max_order]; channel count is (order+1)^2.
+        /// @throws std::invalid_argument on out-of-range order.
         explicit encoder(int order)
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::encoder"))
             , m_channels(channel_count(order)) {
             recalculate();
         }

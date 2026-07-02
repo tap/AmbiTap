@@ -150,3 +150,33 @@ TEST(HrtfData, DatasetShapeAndContent) {
     EXPECT_GT(energy(builtin_hrtf_magls_left), 1e-6);
     EXPECT_GT(energy(builtin_hrtf_magls_right), 1e-6);
 }
+
+// Audit finding B6: the MagLS dataset shipped by an earlier revision of
+// scripts/generate_hrtf.py was time-aliased — ~36% of its energy landed
+// before the acoustic onset (circular wrap from a spectrum inconsistent with
+// a compact causal FIR), audible as pre-echo. A correctly designed dataset
+// (single phase-continued projection per bin) keeps pre-onset energy small.
+//
+// DISABLED until the dataset is regenerated: the fix is in the generator, but
+// regeneration needs the MIT KEMAR source SOFA, which must be fetched by a
+// human (see the generate_hrtf.py docstring). Re-enable together with the
+// regenerated hrtf_data.h.
+TEST(HrtfData, DISABLED_MaglsDatasetIsCausal) {
+    // The KEMAR ear-canal onset sits near sample 29 at 44.1 kHz; anything in
+    // the first 26 samples is pre-onset. The LS dataset satisfies this with
+    // 0.0% today; allow a small MagLS allowance for phase relaxation.
+    auto pre_onset_fraction = [](const float (*data)[builtin_hrtf_length]) {
+        double pre = 0.0, total = 0.0;
+        for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {
+            for (size_t i = 0; i < builtin_hrtf_length; ++i) {
+                const double v = data[ch][i];
+                total += v * v;
+                if (i < 26) pre += v * v;
+            }
+        }
+        return pre / total;
+    };
+    EXPECT_LT(pre_onset_fraction(builtin_hrtf_left), 0.01);
+    EXPECT_LT(pre_onset_fraction(builtin_hrtf_magls_left), 0.05);
+    EXPECT_LT(pre_onset_fraction(builtin_hrtf_magls_right), 0.05);
+}

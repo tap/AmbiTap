@@ -8,6 +8,7 @@
 
 #include "../math/core/indexing.h"
 #include "../math/core/rotation.h"
+#include "../math/core/validate.h"
 #include "util/async_rebuilder.h"
 
 #include <atomic>
@@ -42,8 +43,9 @@ namespace ambitap::dsp {
 
       public:
         /// @param order  Ambisonics order in [0, max_order]. Order 0 is a passthrough.
+        /// @throws std::invalid_argument on out-of-range order.
         explicit rotator(int order)
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::rotator"))
             , m_channels(channel_count(order))
             , m_rebuilder([this] { return build(); }) {}
 

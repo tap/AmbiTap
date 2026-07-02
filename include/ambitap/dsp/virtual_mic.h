@@ -7,6 +7,7 @@
 #define AMBITAP_DSP_VIRTUAL_MIC_H
 
 #include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/decoding/max_re.h"
 
@@ -34,8 +35,9 @@ namespace ambitap::dsp {
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
+        /// @throws std::invalid_argument on out-of-range order.
         explicit virtual_mic(int order)
-            : m_order(order)
+            : m_order(validated_order(order, "dsp::virtual_mic"))
             , m_channels(channel_count(order)) {
             recalculate();
         }
