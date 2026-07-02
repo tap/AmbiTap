@@ -62,6 +62,27 @@ Example programs live in `examples/` (`encode_rotate_decode`,
 `binaural_render` — writes a WAV of a source orbiting the head) and a
 dependency-free micro-benchmark in `bench/` (`-DAMBITAP_BUILD_BENCH=ON`).
 
+For a visual tour and executable verification of the algorithms, see the
+Jupyter notebooks in `notebooks/` — they drive the actual C++ implementation
+through the C ABI (`tools/capi/`, `-DAMBITAP_BUILD_CAPI=ON`) via ctypes, and
+their `assert` cells re-check the audit's key properties on every run:
+
+- [`notebooks/ambitap_demo.ipynb`](notebooks/ambitap_demo.ipynb) — SH basis
+  maps (cross-checked against SciPy), rotation, 3D + 2D pairwise VBAP, and an
+  audible binaural orbit.
+- [`notebooks/decoder_analysis.ipynb`](notebooks/decoder_analysis.ipynb) —
+  energy / rE-vector / angular-error maps for mode-matching vs ALLRAD vs EPAD
+  across layouts, absolute-gain and rank-truncation gates, and a NumPy
+  pseudoinverse cross-check.
+- [`notebooks/hrtf_analysis.ipynb`](notebooks/hrtf_analysis.ipynb) — LS vs
+  MagLS causality (the audit's B6 picture), ILD/ITD against the Woodworth
+  model, the HRTF resampler's response, and the partitioned convolver vs
+  direct convolution.
+
+Python needs `numpy`, `scipy`, and `matplotlib`
+(`pip install -r notebooks/requirements.txt`); the first cell builds the
+shared library if missing.
+
 ## Consuming
 
 ```cmake

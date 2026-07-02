@@ -62,6 +62,7 @@ jobs:
           -DAMBITAP_WERROR=ON
           -DAMBITAP_BUILD_EXAMPLES=ON
           -DAMBITAP_BUILD_BENCH=ON
+          -DAMBITAP_BUILD_CAPI=ON
 
       - name: Build
         run: cmake --build build --parallel --config Release

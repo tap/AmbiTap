@@ -83,6 +83,15 @@
 > (±9.6 dB / correct ear ordering at ±90°). `HrtfData.MaglsDatasetIsCausal`
 > is enabled and green; no disabled tests remain.
 >
+> **Notebooks parity (follow-up):** the last SampleRateTap parity gap is
+> closed — `tools/capi/` (a minimal C ABI shared library, ctypes-loadable)
+> plus three executed verification notebooks in `notebooks/` whose assert
+> cells re-run the audit's key checks against the real C++ implementation:
+> SH-vs-SciPy, rotation property, VBAP energy normalization, decoder
+> rE/energy/error gates, absolute-gain and EPAD-rank gates, a NumPy
+> pseudoinverse cross-check, HRTF causality/ILD/ITD, resampler response, and
+> convolver-vs-direct equivalence.
+>
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed
 > with a config verified idempotent against the whole tree, and CI now
