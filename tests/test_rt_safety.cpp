@@ -19,6 +19,7 @@
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap/dsp/virtual_mic.h"
+#include "ambitap/dsp/xtc.h"
 #include "ambitap/math/geometry/layouts.h"
 
 #include <gtest/gtest.h>
@@ -269,6 +270,23 @@ TEST(RtSafety, StatefulProcessorsAreAllocationFree) {
     nf.process_frame(io16.in[0], io16.out[0]);
     ev.process(io.in.data(), ev_out, frames);
     grid.process(io.in.data(), frames);
+    EXPECT_EQ(guard.allocations(), 0);
+    EXPECT_EQ(guard.frees(), 0);
+}
+
+TEST(RtSafety, XtcProcessIsAllocationFree) {
+    constexpr size_t block = 64;
+
+    dsp::xtc x;
+    x.prepare(block, 48000.f);
+
+    std::vector<float> in_l(block, 0.25f), in_r(block, -0.25f);
+    std::vector<float> out_l(block), out_r(block);
+
+    rt_guard guard;
+    for (int i = 0; i < 8; ++i) {
+        x.process(in_l.data(), in_r.data(), out_l.data(), out_r.data(), block);
+    }
     EXPECT_EQ(guard.allocations(), 0);
     EXPECT_EQ(guard.frees(), 0);
 }

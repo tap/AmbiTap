@@ -20,6 +20,7 @@
 #include "dsp/spatial_compressor.h"
 #include "dsp/util/async_rebuilder.h"
 #include "dsp/virtual_mic.h"
+#include "dsp/xtc.h"
 #include "math/binaural/convolution.h"
 #include "math/binaural/hrtf_data.h"
 #include "math/binaural/ooura_fft.h"
