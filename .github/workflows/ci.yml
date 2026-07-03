@@ -152,12 +152,39 @@ jobs:
       - name: Build the fuzzer
         run: cmake --build build --target fuzz_sofa_reader --parallel
 
-      - name: Fuzz over the seed corpus (bounded)
+      # Two stages so the gate is genuinely bounded. libFuzzer's per-input
+      # timeout defaults to 1200s, so without -timeout a single slow input
+      # (a large structurally-valid mutation takes minutes under Debug+ASan)
+      # can blow straight past -max_total_time and hit the job kill with no
+      # reproducer. Stage 1 replays every seed unmodified (full-size valid
+      # file included); stage 2 fuzzes with mutations capped at 64 KiB so no
+      # single input can stall the run.
+      - name: Replay the seed corpus
         run: >
           ASAN_OPTIONS=detect_leaks=0
           ./build/tests/fuzz/fuzz_sofa_reader
-          -runs=100000 -max_total_time=180 -rss_limit_mb=4096 -close_fd_mask=3
+          -timeout=60 -rss_limit_mb=4096 -close_fd_mask=3
+          tests/fuzz/corpus/*
+
+      - name: Fuzz (bounded exploration)
+        run: >
+          ASAN_OPTIONS=detect_leaks=0
+          ./build/tests/fuzz/fuzz_sofa_reader
+          -runs=100000 -max_total_time=180 -timeout=30 -max_len=65536
+          -rss_limit_mb=4096 -close_fd_mask=3
           tests/fuzz/corpus
+
+      - name: Upload reproducers on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-reproducers
+          path: |
+            crash-*
+            timeout-*
+            slow-unit-*
+            oom-*
+          if-no-files-found: ignore
 
   embedded:
     # The embedded real-time profile must stay bare-metal-clean: the RT
