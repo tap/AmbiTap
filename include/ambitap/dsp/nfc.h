@@ -68,8 +68,13 @@ namespace ambitap::dsp {
     /// r_src → 0, so both distances are clamped to k_min_distance (0.1 m).
     /// Even so, small source distances at high orders are extreme by nature —
     /// e.g. r_src = 0.1 m, r_ref = 1 m at order 5 is a +100 dB bass boost.
-    /// The audio path is float32 (the embedded contract): the shelf corners
-    /// sit far below fs, so coefficient quantization bounds the realized
+    /// The audio I/O is float32 (the embedded contract), but the section
+    /// state and recurrence arithmetic are double: the shelf corners sit far
+    /// below fs, which puts the biquad poles within ~1e-4 of the unit circle
+    /// — float32 state lets per-sample rounding (and FMA contraction, which
+    /// AppleClang applies by default) accumulate through that near-resonance
+    /// to audible levels (~-65 dB observed). Double state keeps the residue
+    /// near -240 dB; float coefficient quantization still bounds the realized
     /// low-frequency gain to within about 0.03 dB of the closed form at
     /// 48 kHz and ordinary distances.
     ///
@@ -118,9 +123,10 @@ namespace ambitap::dsp {
         std::array<float, k_max_coeffs> m_coefficients {};
         smoothed_table<k_max_coeffs>    m_smooth;
 
-        // Audio-thread filter state: 2 floats per (channel, section),
+        // Audio-thread filter state: 2 doubles per (channel, section),
         // order-major then channel-major — the traversal order of process().
-        std::vector<float> m_state;
+        // Double, not float: see the numerical-care note in the class comment.
+        std::vector<double> m_state;
 
       public:
         /// @param order  Ambisonics order in [0, max_order]; channel count is
@@ -131,7 +137,7 @@ namespace ambitap::dsp {
             , m_channels(channel_count(m_order)) {
             compute_roots();
             m_total_coeffs = k_section_coeffs * nfc_total_sections(m_order);
-            m_state.assign(state_size(), 0.0f);
+            m_state.assign(state_size(), 0.0);
             rebuild_coefficients();
             m_smooth.init(m_coefficients.data(), m_total_coeffs);
         }
@@ -183,7 +189,7 @@ namespace ambitap::dsp {
         void snap_parameters() { m_smooth.snap(); }
 
         /// Clear the filter state; keep coefficients and allocations.
-        void reset() { std::fill(m_state.begin(), m_state.end(), 0.0f); }
+        void reset() { std::fill(m_state.begin(), m_state.end(), 0.0); }
 
         /// Process one frame of channels() samples. Output may alias input.
         /// Audio thread; wait-free.
@@ -259,23 +265,28 @@ namespace ambitap::dsp {
       private:
         /// One transposed-direct-form-II tick. First-order sections are stored
         /// as biquads with b2 = a2 = 0, so one kernel serves both.
-        static float section_tick(float x, const float* c, float* s) noexcept {
-            const float y = c[0] * x + s[0];
-            s[0]          = c[1] * x - c[3] * y + s[1];
-            s[1]          = c[2] * x - c[4] * y;
-            return y;
+        static float section_tick(float x, const float* c, double* s) noexcept {
+            const double xd = static_cast<double>(x);
+            const double y  = static_cast<double>(c[0]) * xd + s[0];
+            s[0]            = static_cast<double>(c[1]) * xd - static_cast<double>(c[3]) * y + s[1];
+            s[1]            = static_cast<double>(c[2]) * xd - static_cast<double>(c[4]) * y;
+            return static_cast<float>(y);
         }
 
         static void section_block(const float* x, float* y, size_t n, const float* c,
-                                  float* s) noexcept {
-            const float b0 = c[0], b1 = c[1], b2 = c[2], a1 = c[3], a2 = c[4];
-            float       s1 = s[0], s2 = s[1];
+                                  double* s) noexcept {
+            const double b0 = static_cast<double>(c[0]);
+            const double b1 = static_cast<double>(c[1]);
+            const double b2 = static_cast<double>(c[2]);
+            const double a1 = static_cast<double>(c[3]);
+            const double a2 = static_cast<double>(c[4]);
+            double       s1 = s[0], s2 = s[1];
             for (size_t i = 0; i < n; ++i) {
-                const float xi = x[i];
-                const float yi = b0 * xi + s1;
-                s1             = b1 * xi - a1 * yi + s2;
-                s2             = b2 * xi - a2 * yi;
-                y[i]           = yi;
+                const double xi = static_cast<double>(x[i]);
+                const double yi = b0 * xi + s1;
+                s1              = b1 * xi - a1 * yi + s2;
+                s2              = b2 * xi - a2 * yi;
+                y[i]            = static_cast<float>(yi);
             }
             s[0] = s1;
             s[1] = s2;
