@@ -33,8 +33,14 @@ namespace {
 
 TEST(DspNfc, IdentityAtEqualDistances) {
     // At r_src == r_ref every section's zero coincides with its pole and the
-    // digital coefficients reduce to an exact passthrough (b0 = 1, b1 = a1,
-    // b2 = a2), so the output must match the input to the last bit.
+    // digital coefficients reduce to a passthrough (b0 = 1, b1 = a1, b2 = a2).
+    // The cancellation is not bit-exact under floating-point contraction
+    // (AppleClang/arm64 fuses b1*x - a1*y into an FMA by default), and the
+    // near-unit-circle poles of these low-corner sections amplify any such
+    // residue — with float32 state that reached ~-65 dB, which is why the
+    // recurrence runs in double (see nfc.h). Assert a tight absolute bound:
+    // double state keeps the residue near -240 dB, so 1e-6 has huge margin
+    // while still failing loudly if the state precision ever regresses.
     dsp::nfc filt(3);
     filt.prepare(48000.f);
     filt.set_source_distance(2.5f);
@@ -53,7 +59,7 @@ TEST(DspNfc, IdentityAtEqualDistances) {
 
     for (size_t ch = 0; ch < filt.channels(); ++ch) {
         for (size_t i = 0; i < frames; ++i) {
-            ASSERT_FLOAT_EQ(io.out_bufs[ch][i], io.in_bufs[ch][i]) << "ch=" << ch << " i=" << i;
+            ASSERT_NEAR(io.out_bufs[ch][i], io.in_bufs[ch][i], 1e-6f) << "ch=" << ch << " i=" << i;
         }
     }
 }
