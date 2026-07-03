@@ -28,6 +28,7 @@ add_executable(ambitap_tests
     test_rt_safety.cpp
     test_embedded_core.cpp
     test_sofa.cpp
+    test_xtc.cpp
 )
 target_link_libraries(ambitap_tests PRIVATE
     AmbiTap::ambitap ambitap_warnings GTest::gtest_main)
