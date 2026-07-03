@@ -15,6 +15,7 @@
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/dsp/format_converter.h"
 #include "ambitap/dsp/mirror.h"
+#include "ambitap/dsp/nfc.h"
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap/dsp/virtual_mic.h"
@@ -246,6 +247,10 @@ TEST(RtSafety, StatefulProcessorsAreAllocationFree) {
     dsp::spatial_compressor comp(1);
     comp.prepare(48000.f);
 
+    dsp::nfc nf(3);
+    nf.prepare(48000.f);
+    nf.set_source_distance(0.5f); // mid-ramp exercises the smoothing path too
+
     analysis::energy_vector ev;
     ev.prepare(48000.f);
 
@@ -253,12 +258,15 @@ TEST(RtSafety, StatefulProcessorsAreAllocationFree) {
     grid.prepare(48000.f);
 
     planar             io(4, frames);
+    planar             io16(16, frames);
     std::vector<float> ev_x(frames), ev_y(frames), ev_z(frames);
     float*             ev_out[3] = {ev_x.data(), ev_y.data(), ev_z.data()};
 
     rt_guard guard;
     dop.process(io.in.data(), io.out.data(), frames);
     comp.process(io.in.data(), io.out.data(), frames);
+    nf.process(io16.in.data(), io16.out.data(), frames);
+    nf.process_frame(io16.in[0], io16.out[0]);
     ev.process(io.in.data(), ev_out, frames);
     grid.process(io.in.data(), frames);
     EXPECT_EQ(guard.allocations(), 0);
