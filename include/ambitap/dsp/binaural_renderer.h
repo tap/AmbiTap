@@ -247,6 +247,9 @@ namespace ambitap::dsp {
         /// normalized so the louder ear peaks at 0 dB, preserving the inter-aural
         /// level difference. Runs synchronously on the calling thread.
         ///
+        /// @param azimuth      Probe azimuth in radians (0 = front, +π/2 = left).
+        /// @param elevation    Probe elevation in radians (0 = horizon, +π/2 = zenith).
+        /// @param fft_size     FFT length for the magnitude spectrum.
         /// @param sample_rate  Rate the HRTF taps are expressed at; defaults to
         ///                     the built-in dataset's rate.
         response probe_response(float azimuth, float elevation, size_t fft_size = 512,

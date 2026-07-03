@@ -146,6 +146,25 @@
 > invariant on the pathological layouts. All notebooks re-executed against
 > the fixed hull; 116 tests green.
 >
+> **SOFA reader fuzzing (follow-up):** a libFuzzer harness over the SOFA
+> load + SH-decompose path (`tests/fuzz/fuzz_sofa_reader.cpp`, Clang +
+> ASan/UBSan, seed corpus in `tests/fuzz/corpus/`, bounded CI smoke job)
+> immediately CAUGHT A REAL BUG: `load_sofa` dereferenced `Data.IR`,
+> `SourcePosition`, and `Data.SamplingRate` through the declared M/N/R
+> dimensions without checking the arrays were present and sized — a
+> hostile or truncated SOFA file that parsed structurally would read
+> through a null or short buffer (UBSan: load of null `float*` at
+> sofa_reader.h:161). Fixed by validating every dereferenced array against
+> its expected element count up front; malformed inputs now throw cleanly.
+> Regression coverage: `tests/test_sofa.cpp` (reject-malformed contract,
+> built on the SOFA CI leg) plus the corpus reproducers.
+>
+> **Documentation site (follow-up):** `docs/CONCEPTS.md` (conventions, the
+> real-time contract, the processor lifecycle) plus a Doxygen config
+> (`docs/Doxyfile`) generating the API reference from the header
+> doc-comments, published to GitHub Pages from main by `.github/workflows/
+> docs.yml` (build-only on PRs).
+>
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed
 > with a config verified idempotent against the whole tree, and CI now

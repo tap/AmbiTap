@@ -1,0 +1,74 @@
+# Doxygen configuration for the AmbiTap API documentation site.
+# Build:  doxygen docs/Doxyfile   (run from the repository root)
+# Output: docs/html/  (deployed to GitHub Pages by CI on main)
+
+PROJECT_NAME           = AmbiTap
+PROJECT_NUMBER         = 0.1.0
+PROJECT_BRIEF          = "Target-independent C++20 higher-order ambisonics (AmbiX)"
+OUTPUT_DIRECTORY       = docs
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+
+# Sources: the public headers plus the hand-written Markdown pages. The
+# generated coefficient tables carry no doc-comments and would only bloat
+# the output, so they are excluded.
+INPUT                  = include/ambitap \
+                         README.md \
+                         docs/CONCEPTS.md \
+                         docs/AUDIT.md \
+                         docs/EMBEDDED.md \
+                         docs/COMPARISON.md
+FILE_PATTERNS          = *.h *.md
+RECURSIVE              = YES
+EXCLUDE                = include/ambitap/math/binaural/hrtf_data.h \
+                         include/ambitap/math/geometry/tdesigns.h
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# Extraction. The headers are thoroughly commented with ///-style docs;
+# surface everything public, keep private/static members out.
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+HIDE_UNDOC_MEMBERS     = NO
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+MARKDOWN_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 3
+AUTOLINK_SUPPORT       = YES
+SORT_MEMBER_DOCS       = NO
+
+# C++20: let Doxygen see the language, and predefine the optional-feature
+# and embedded macros so the gated code (SOFA reader, no-exceptions paths)
+# documents rather than silently dropping out.
+BUILTIN_STL_SUPPORT    = YES
+PREDEFINED             = AMBITAP_HAS_SOFA \
+                         AMBITAP_HAS_EXCEPTIONS=1 \
+                         __cpp_exceptions=1
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+
+# Diagrams via Graphviz: include/collaboration graphs make the header
+# layering legible. Kept modest so the build stays fast.
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+
+# HTML presentation.
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = TOGGLE
+SEARCHENGINE           = YES
+
+# Warnings: surface undocumented public API and broken \ref links, but do
+# not fail the build on them (the tables and third-party headers are out).
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO

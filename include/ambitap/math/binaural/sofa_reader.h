@@ -130,13 +130,37 @@ namespace ambitap {
             }
         }
 
+        // mysofa_load can return a structurally valid handle whose mandatory
+        // arrays are absent or under-sized — a hostile or truncated file
+        // parses, but reading through the declared M/N/R dimensions would run
+        // off a null or short buffer (found by tests/fuzz/fuzz_sofa_reader).
+        // Validate every array this function dereferences, against the exact
+        // element counts the SOFA dimensions imply, before touching it.
+        const size_t M = static_cast<size_t>(hrtf->M);
+        const size_t N = static_cast<size_t>(hrtf->N);
+        if (M == 0 || N == 0) {
+            throw std::runtime_error("ambitap::load_sofa: \"" + path
+                                     + "\" has no measurements or zero-length IRs");
+        }
+        auto require = [&](const MYSOFA_ARRAY& arr, size_t need, const char* what) {
+            if (arr.values == nullptr || arr.elements < need) {
+                throw std::runtime_error("ambitap::load_sofa: \"" + path
+                                         + "\" is missing or has a "
+                                           "truncated "
+                                         + what);
+            }
+        };
+        require(hrtf->DataSamplingRate, 1, "Data.SamplingRate");
+        require(hrtf->SourcePosition, M * 3, "SourcePosition");
+        require(hrtf->DataIR, M * 2 * N, "Data.IR"); // R == 2 checked above
+
         // libmysofa stores source positions in spherical-degrees by default; convert
         // to Cartesian to get a uniform handle, then derive radians.
         mysofa_tocartesian(hrtf.get());
 
         hrtf_data data;
-        data.num_measurements = static_cast<size_t>(hrtf->M);
-        data.hrir_length      = static_cast<size_t>(hrtf->N);
+        data.num_measurements = M;
+        data.hrir_length      = N;
         data.sample_rate      = static_cast<float>(hrtf->DataSamplingRate.values[0]);
 
         data.azimuth.resize(data.num_measurements);

@@ -22,7 +22,7 @@ namespace ambitap::dsp {
     /// the matrix on the control side and pass it to apply(); a change of
     /// matrix identity (the `key` pointer) restarts the fade.
     ///
-    /// Freestanding: no allocation, no exceptions, no locks; <cstddef> only.
+    /// Freestanding: no allocation, no exceptions, no locks; `<cstddef>` only.
     /// State is the fade progress, owned by the (single) audio thread.
     class matrix_applier {
       public:
@@ -44,6 +44,11 @@ namespace ambitap::dsp {
         /// @param mat    Row-major (rows × cols) matrix.
         /// @param prev   Same shape; the matrix faded from. Must stay valid
         ///               alongside mat for the k_fade_samples after adoption.
+        /// @param rows   Output channel count (matrix rows).
+        /// @param cols   Input channel count (matrix columns).
+        /// @param in     Input channel pointers (see frame_layout).
+        /// @param out    Output channel pointers (see frame_layout).
+        /// @param frame_count  Number of frames to process.
         /// @param frame_layout  true: in/out are single-frame channel arrays
         ///               (in[0][c], out[0][r]); false: planar buffers
         ///               (in[c][i], out[r][i]).

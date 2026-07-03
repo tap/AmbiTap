@@ -179,12 +179,19 @@ HRTF tables and a `tools/hrtf_trim` order-trimmed build. Profile
 definition, per-order cycle/memory budgets, and AudioReach integration
 notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
 
-## Audit
+## Documentation
 
-A full correctness and quality audit (with its remediation status) lives in
-[`docs/AUDIT.md`](docs/AUDIT.md). A cross-library comparison (correctness,
-features, performance vs spaudiopy, pyshtools, and the C++ ecosystem) lives
-in [`docs/COMPARISON.md`](docs/COMPARISON.md).
+- [`docs/CONCEPTS.md`](docs/CONCEPTS.md) — conventions, the real-time
+  contract, and the processor lifecycle: read this first.
+- Generated API reference — `doxygen docs/Doxyfile` (published to GitHub
+  Pages from `main`).
+- [`docs/AUDIT.md`](docs/AUDIT.md) — the full correctness/quality audit and
+  its remediation ledger.
+- [`docs/COMPARISON.md`](docs/COMPARISON.md) — cross-library comparison
+  (correctness, features, performance vs spaudiopy, pyshtools, and the C++
+  ecosystem).
+- [`docs/EMBEDDED.md`](docs/EMBEDDED.md) — the embedded real-time profile,
+  budgets, and AudioReach notes.
 
 ## License
 
