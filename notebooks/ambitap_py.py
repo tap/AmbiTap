@@ -71,6 +71,8 @@ def load() -> ctypes.CDLL:
             ctypes.c_int),
         "ambitap_builtin_hrtf_info": ([i32p, i32p, i32p, f32p], ctypes.c_int),
         "ambitap_builtin_hrtf_fir": ([ctypes.c_int, ctypes.c_int, ctypes.c_int, f32p], ctypes.c_int),
+        "ambitap_builtin_hrtf_hrir": (
+            [ctypes.c_int, ctypes.c_int, ctypes.c_float, ctypes.c_float, f32p, f32p], ctypes.c_int),
         "ambitap_resample_fir": (
             [f32p, ctypes.c_int, ctypes.c_float, ctypes.c_float, f32p, ctypes.c_int], ctypes.c_int),
         "ambitap_convolve": (
@@ -195,6 +197,21 @@ def builtin_hrtf(magls: bool = False) -> tuple[np.ndarray, np.ndarray]:
                    "builtin_hrtf_fir")
         ears.append(firs)
     return ears[0], ears[1]
+
+
+def builtin_hrtf_hrir(azimuth: float, elevation: float, *, order: int | None = None,
+                      magls: bool = False) -> tuple[np.ndarray, np.ndarray]:
+    """Time-domain SH-reconstructed KEMAR HRIR at a direction — the weighted
+    sum inside binaural_renderer::probe_response: (left, right), each
+    builtin length taps at the builtin sample rate."""
+    if order is None:
+        order = builtin_hrtf_info()["order"]
+    length = builtin_hrtf_info()["length"]
+    left = np.empty(length, dtype=np.float32)
+    right = np.empty(length, dtype=np.float32)
+    _check(_LIB.ambitap_builtin_hrtf_hrir(order, int(magls), float(azimuth), float(elevation),
+                                          _ptr(left), _ptr(right)), "builtin_hrtf_hrir")
+    return left, right
 
 
 def resample_fir(x: np.ndarray, in_rate: float, out_rate: float) -> np.ndarray:

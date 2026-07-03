@@ -171,6 +171,27 @@ int ambitap_builtin_hrtf_fir(int magls, int ear, int channel, float* out) {
     return 0;
 }
 
+int ambitap_builtin_hrtf_hrir(int order, int magls, float azimuth, float elevation, float* left,
+                              float* right) {
+    if (!left || !right || order < 1 || order > builtin_hrtf_order) return -1;
+    float sh[max_channel_count];
+    evaluate_sh(order, azimuth, elevation, sh);
+
+    float* const ears[2] = {left, right};
+    for (int ear = 0; ear < 2; ++ear) {
+        const float(*table)[builtin_hrtf_length] =
+            magls ? (ear == 0 ? builtin_hrtf_magls_left : builtin_hrtf_magls_right)
+                  : (ear == 0 ? builtin_hrtf_left : builtin_hrtf_right);
+        std::fill(ears[ear], ears[ear] + builtin_hrtf_length, 0.f);
+        for (size_t ch = 0; ch < channel_count(order); ++ch) {
+            for (size_t t = 0; t < builtin_hrtf_length; ++t) {
+                ears[ear][t] += sh[ch] * table[ch][t];
+            }
+        }
+    }
+    return 0;
+}
+
 int ambitap_resample_fir(const float* in, int in_len, float in_rate, float out_rate, float* out,
                          int out_cap) {
     if (!in || !out || in_len <= 0 || in_rate <= 0.f || out_rate <= 0.f) return -1;

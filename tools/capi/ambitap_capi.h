@@ -61,6 +61,13 @@ AMBITAP_API int ambitap_builtin_hrtf_info(int* order, int* channels, int* length
 /// ear 0 = left / 1 = right, channel in [0, channels).
 AMBITAP_API int ambitap_builtin_hrtf_fir(int magls, int ear, int channel, float* out);
 
+/// Time-domain SH-reconstructed HRIR at a probe direction — the weighted sum
+/// dsp::binaural_renderer::probe_response performs before reducing to a
+/// magnitude spectrum. Writes length taps (at the built-in sample rate) per
+/// ear into left/right. magls selects the dataset; order in [1, order].
+AMBITAP_API int ambitap_builtin_hrtf_hrir(int order, int magls, float azimuth, float elevation,
+                                          float* left, float* right);
+
 /// Windowed-sinc FIR resampling into out[out_cap]. Returns the output length,
 /// or -1 when out_cap is too small.
 AMBITAP_API int ambitap_resample_fir(const float* in, int in_len, float in_rate, float out_rate,
