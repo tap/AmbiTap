@@ -21,9 +21,10 @@ namespace ambitap {
     /// below the smallest normal float (including 0 and denormals) are
     /// clamped to it; the callers in the audio paths clamp harder anyway.
     ///
-    /// Why this exists: std::log10/std::pow per sample are software-library
-    /// calls costing hundreds of cycles on embedded FPUs (Cortex-M55,
-    /// Hexagon). This is a handful of MACs and stays on the FPU everywhere.
+    /// Why this exists: `std::log10`/`std::pow` per sample are
+    /// software-library calls costing hundreds of cycles on embedded FPUs
+    /// (Cortex-M55, Hexagon). This is a handful of MACs and stays on the FPU
+    /// everywhere.
     inline float fast_log2(float x) {
         constexpr float k_min_normal = 1.17549435e-38f;
         if (x < k_min_normal) x = k_min_normal;

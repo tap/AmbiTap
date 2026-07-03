@@ -47,6 +47,10 @@ namespace ambitap::dsp {
         /// @param mat    Dense row-major (C × C); only diagonal blocks read.
         /// @param prev   Same shape/layout; the matrix faded from. Must stay
         ///               valid alongside mat during the fade.
+        /// @param order  Ambisonics order; C = (order+1)².
+        /// @param in     Input channel pointers (see frame_layout).
+        /// @param out    Output channel pointers (see frame_layout).
+        /// @param frame_count  Number of frames to process.
         /// @param frame_layout  true: single-frame channel arrays
         ///               (in[0][c], out[0][c]); false: planar buffers
         ///               (in[c][i], out[c][i]).

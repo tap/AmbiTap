@@ -124,6 +124,40 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  fuzz:
+    # The SOFA reader is the library's only untrusted-file surface. Build the
+    # libFuzzer harness (Clang + ASan/UBSan) and run it for a bounded time
+    # over the checked-in seed corpus — a regression gate that replays known
+    # crash reproducers and does light exploratory fuzzing on every push.
+    # For deep campaigns, run tests/fuzz/fuzz_sofa_reader locally for hours.
+    name: fuzz (sofa reader smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Clang + sanitizer/fuzzer runtimes
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y clang-18 libclang-rt-18-dev
+
+      - name: Configure (Clang + SOFA + fuzzers)
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18
+          -DAMBITAP_ENABLE_SOFA=ON -DAMBITAP_BUILD_FUZZERS=ON
+          -DAMBITAP_BUILD_TESTS=OFF -DAMBITAP_INSTALL=OFF
+
+      - name: Build the fuzzer
+        run: cmake --build build --target fuzz_sofa_reader --parallel
+
+      - name: Fuzz over the seed corpus (bounded)
+        run: >
+          ASAN_OPTIONS=detect_leaks=0
+          ./build/tests/fuzz/fuzz_sofa_reader
+          -runs=100000 -max_total_time=180 -rss_limit_mb=4096 -close_fd_mask=3
+          tests/fuzz/corpus
+
   embedded:
     # The embedded real-time profile must stay bare-metal-clean: the RT
     # subset (tools/embedded/rt_core_check.cpp documents it) cross-compiles

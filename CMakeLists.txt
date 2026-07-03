@@ -20,6 +20,7 @@ option(AMBITAP_BUILD_TESTS "Build AmbiTap unit tests" ${_ambitap_dev_default})
 option(AMBITAP_BUILD_EXAMPLES "Build AmbiTap example programs" ${_ambitap_dev_default})
 option(AMBITAP_BUILD_BENCH "Build AmbiTap benchmarks" OFF)
 option(AMBITAP_BUILD_CAPI "Build the C ABI shared library (language bindings, notebooks)" OFF)
+option(AMBITAP_BUILD_FUZZERS "Build libFuzzer harnesses (needs Clang + AMBITAP_ENABLE_SOFA)" OFF)
 
 # ------------------------------------------------------------------------------
 # Warnings (applied to this project's own executables — tests, examples,
@@ -207,4 +208,7 @@ if(AMBITAP_BUILD_BENCH)
 endif()
 if(AMBITAP_BUILD_CAPI)
     add_subdirectory(tools/capi)
+endif()
+if(AMBITAP_BUILD_FUZZERS)
+    add_subdirectory(tests/fuzz)
 endif()
