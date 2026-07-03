@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
@@ -124,7 +125,34 @@ namespace ambitap {
                 return gains;
             }
 
-            // Fallback: nearest speaker by dot product.
+            // No enclosing triangle (numerical edge case): pan in the
+            // least-violating triangle — the one whose smallest barycentric
+            // coordinate is largest — with negatives clamped. Degrades
+            // continuously at coverage boundaries instead of snapping to a
+            // single speaker.
+            if (!m_triangles.empty()) {
+                size_t best     = 0;
+                float  best_min = -std::numeric_limits<float>::infinity();
+                for (size_t ti = 0; ti < m_triangles.size(); ++ti) {
+                    const Eigen::Vector3f g  = m_inv_matrices[ti] * d;
+                    const float           lo = g.minCoeff();
+                    if (lo > best_min) {
+                        best_min = lo;
+                        best     = ti;
+                    }
+                }
+                Eigen::Vector3f g    = (m_inv_matrices[best] * d).cwiseMax(0.0f);
+                const float     norm = g.norm();
+                if (norm > 1e-10f) {
+                    g /= norm;
+                    gains[m_triangles[best].a] = g(0);
+                    gains[m_triangles[best].b] = g(1);
+                    gains[m_triangles[best].c] = g(2);
+                    return gains;
+                }
+            }
+
+            // Last resort (no triangles, no plane): nearest speaker.
             float  max_dot = -2.0f;
             size_t nearest = 0;
             for (size_t i = 0; i < m_cart.size(); ++i) {

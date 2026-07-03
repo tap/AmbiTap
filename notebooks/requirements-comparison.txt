@@ -1,0 +1,4 @@
+# Extra dependencies for notebooks/library_comparison.ipynb
+# (on top of requirements.txt)
+spaudiopy>=0.2.0
+pyshtools>=4.10

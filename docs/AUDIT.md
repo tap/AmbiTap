@@ -129,6 +129,23 @@
 > in-tree tests gate on the defining property Y(R·d) = R·Y(d) directly.
 > 113 tests green.
 >
+> **Cross-library comparison (follow-up):** docs/COMPARISON.md +
+> notebooks/library_comparison.ipynb verify AmbiTap against spaudiopy and
+> pyshtools through exactly-derived convention maps: SH basis (three
+> independent references, <= 1.4e-6), rotation (Ivanic-Ruedenberg vs
+> Wigner-D, 9.6e-7), max-rE weights (identical), VBAP (same gains to
+> 2.9e-7 where triangulation is unambiguous; Pulkki invariants exact for
+> both), mode-matching and EPAD decoders (matrix-identical up to a
+> +1.63 dB convention constant, residual < 5e-7). The comparison also
+> CAUGHT A REAL BUG: the incremental convex hull mis-triangulated exactly
+> coplanar quad faces (cube faces), folding triangles through the interior
+> so ~20% of horizon directions on the cube snapped to a single speaker up
+> to 52 degrees away. Fixed by deciding hull topology on deterministically
+> radius-lifted points plus a least-violating-triangle VBAP fallback;
+> regression tests now enforce hull convexity and the velocity-vector
+> invariant on the pathological layouts. All notebooks re-executed against
+> the fixed hull; 116 tests green.
+>
 > **All remediation items closed:** libmysofa is pinned to the v1.3.4 commit
 > SHA (resolved by the author); the one-time `clang-format` reformat landed
 > with a config verified idempotent against the whole tree, and CI now

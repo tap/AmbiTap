@@ -88,6 +88,12 @@ their `assert` cells re-check the audit's key properties on every run:
   positions and levels, energy-vector DOA tracking of a moving source) and a
   "which order do I need?" study: max-rE beamwidth and decoder |rE| across
   orders 1–5.
+- [`notebooks/library_comparison.ipynb`](notebooks/library_comparison.ipynb)
+  — cross-library verification against spaudiopy and pyshtools: SH basis,
+  rotation, max-rE, VBAP, and decoder matrices agree to float precision
+  through exactly-derived convention maps (needs
+  `pip install -r notebooks/requirements-comparison.txt`). Narrative +
+  feature/performance comparison in [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 Python needs `numpy`, `scipy`, and `matplotlib`
 (`pip install -r notebooks/requirements.txt`); the first cell builds the
@@ -176,7 +182,9 @@ notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
 ## Audit
 
 A full correctness and quality audit (with its remediation status) lives in
-[`docs/AUDIT.md`](docs/AUDIT.md).
+[`docs/AUDIT.md`](docs/AUDIT.md). A cross-library comparison (correctness,
+features, performance vs spaudiopy, pyshtools, and the C++ ecosystem) lives
+in [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ## License
 

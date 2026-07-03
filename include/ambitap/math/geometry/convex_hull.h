@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace ambitap {
@@ -30,8 +31,8 @@ namespace ambitap {
     /// check for this; speaker_layout falls back to 2D pairwise panning.
     ///
     /// Reference: de Berg et al., "Computational Geometry", Ch. 11.
-    inline std::vector<triangle> convex_hull_3d(const std::vector<Eigen::Vector3f>& points) {
-        const size_t n = points.size();
+    inline std::vector<triangle> convex_hull_3d(const std::vector<Eigen::Vector3f>& raw_points) {
+        const size_t n = raw_points.size();
         if (n < 4) return {};
 
         // Degeneracy thresholds for the seed-tetrahedron searches below. Points
@@ -39,6 +40,41 @@ namespace ambitap {
         // absolute scale is meaningful.
         constexpr float k_degenerate_sq   = 1e-10f; // squared distances
         constexpr float k_degenerate_dist = 1e-5f;  // plane distance
+
+        // Symbolic-perturbation guard for exactly coplanar faces (a cube's
+        // square faces are the canonical case): four coplanar corners make the
+        // incremental visibility test ambiguous, and either epsilon choice
+        // mis-stitches SOME insertion order — strict visibility leaves a quad
+        // face half-covered with the stitched triangles folded through the
+        // hull interior. Deciding the TOPOLOGY on deterministically
+        // radius-lifted copies removes every exact tie; the returned indices
+        // are then used with the caller's original (unit) vectors, which VBAP
+        // uses purely directionally. The lift (<= 1e-4 relative) bends
+        // formerly-coplanar quad pairs by an equally negligible angle.
+        std::vector<Eigen::Vector3f> points(n);
+        for (size_t i = 0; i < n; ++i) {
+            const auto  h    = static_cast<uint32_t>(i) * 2654435761u;
+            const float lift = 1e-4f * (static_cast<float>(h % 1024u) + 1.f) / 1024.f;
+            points[i]        = raw_points[i] * (1.f + lift);
+        }
+
+        // Planarity must still be judged on the ORIGINAL points — the lift
+        // would otherwise turn a flat ring into a fake 3D shell.
+        {
+            Eigen::Vector3f mean = Eigen::Vector3f::Zero();
+            for (const auto& p : raw_points) mean += p;
+            mean /= static_cast<float>(n);
+            Eigen::Matrix3f cov = Eigen::Matrix3f::Zero();
+            for (const auto& p : raw_points) {
+                const Eigen::Vector3f q = p - mean;
+                cov += q * q.transpose();
+            }
+            Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> es(cov);
+            if (es.eigenvalues()(0)
+                <= k_degenerate_dist * k_degenerate_dist * static_cast<float>(n)) {
+                return {}; // coincident, collinear, or coplanar input
+            }
+        }
 
         // Initial tetrahedron: pick four non-coplanar seed points.
         size_t p0 = 0, p1 = 1, p2 = 0, p3 = 0;
@@ -93,8 +129,12 @@ namespace ambitap {
             f.v[0] = a;
             f.v[1] = b;
             f.v[2] = c;
-            f.normal = (points[b] - points[a]).cross(points[c] - points[a]).normalized();
-            f.alive = true;
+            const Eigen::Vector3f cr = (points[b] - points[a]).cross(points[c] - points[a]);
+            // Collinear vertices produce a zero-area sliver (possible when a
+            // horizon edge is collinear with the point being added on a
+            // coplanar face); drop it instead of normalizing a zero vector.
+            f.alive  = cr.squaredNorm() > 1e-12f;
+            f.normal = f.alive ? cr.normalized() : Eigen::Vector3f::Zero();
             faces.push_back(f);
         };
 
@@ -133,11 +173,23 @@ namespace ambitap {
 
             const Eigen::Vector3f& pt = points[i];
 
+            // A direction coincident with an existing hull vertex adds nothing
+            // and would only create zero-area faces; skip it.
+            bool duplicate = false;
+            for (size_t j = 0; j < n && !duplicate; ++j) {
+                if (used[j] && (pt - points[j]).squaredNorm() <= k_degenerate_sq) {
+                    duplicate = true;
+                }
+            }
+            if (duplicate) continue;
+
             // Pass 1: mark every live face visible from the new point. Visibility
             // must be decided for all faces before any face is removed — an edge
             // is on the horizon iff its neighbor across the edge is NOT visible,
             // and that test needs the neighbor's visibility regardless of the
-            // order faces are processed in.
+            // order faces are processed in. The radius lift above guarantees no
+            // point is ever exactly coplanar with a face, so this strict test
+            // is unambiguous.
             std::vector<bool> visible(faces.size(), false);
             bool              any_visible = false;
             for (size_t fi = 0; fi < faces.size(); ++fi) {
