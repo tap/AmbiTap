@@ -191,6 +191,9 @@ notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
   correctness cross-checks (spaudiopy, pyshtools), a measured C++
   head-to-head vs libspatialaudio and SAF (`bench/compare/`), and a
   feature/platform matrix across the ecosystem.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the product-surface roadmap: the
+  Max/MSP + Pd wrapper plan and the composable-object line built on the
+  verified core.
 - [`docs/EMBEDDED.md`](docs/EMBEDDED.md) — the embedded real-time profile,
   budgets, and AudioReach notes.
 
