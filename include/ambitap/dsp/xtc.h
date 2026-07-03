@@ -281,8 +281,8 @@ namespace ambitap::dsp {
             m_conv[2].process(in_left, m_mix_right.data());
             m_conv[3].process(in_right, m_scratch.data());
             for (size_t i = 0; i < frame_count; ++i) m_mix_right[i] += m_scratch[i];
-            std::copy(m_mix_left.begin(), m_mix_left.begin() + frame_count, out_left);
-            std::copy(m_mix_right.begin(), m_mix_right.begin() + frame_count, out_right);
+            std::copy_n(m_mix_left.begin(), frame_count, out_left);
+            std::copy_n(m_mix_right.begin(), frame_count, out_right);
         }
 
       private:

@@ -78,7 +78,7 @@ namespace {
                      const std::vector<double>& freqs) {
         plant        P;
         const double half = 0.5 * span_deg * k_dpi / 180.0;
-        for (int s = 0; s < 2; ++s) {
+        for (size_t s = 0; s < 2; ++s) {
             const double az_spk = (s == 0) ? half : -half;
             const double px = distance * std::cos(az_spk), py = distance * std::sin(az_spk);
             const double ry      = py - dy;
@@ -86,8 +86,8 @@ namespace {
             const double az_head = std::atan2(ry, px) - yaw;
             const double gain    = distance / dist;
             const double dt      = (dist - distance) / k_c;
-            for (int e = 0; e < 2; ++e) {
-                const auto ir  = kemar_hrir(az_head, e);
+            for (size_t e = 0; e < 2; ++e) {
+                const auto ir  = kemar_hrir(az_head, static_cast<int>(e));
                 auto&      out = P.c[e][s];
                 out.resize(freqs.size());
                 for (size_t i = 0; i < freqs.size(); ++i) {
@@ -103,8 +103,8 @@ namespace {
     using filter_spectra = std::array<std::array<std::vector<cd>, 2>, 2>;
     filter_spectra filter_response(const dsp::xtc& x, const std::vector<double>& freqs) {
         filter_spectra F;
-        for (int s = 0; s < 2; ++s) {
-            for (int i = 0; i < 2; ++i) {
+        for (size_t s = 0; s < 2; ++s) {
+            for (size_t i = 0; i < 2; ++i) {
                 F[s][i].resize(freqs.size());
                 for (size_t k = 0; k < freqs.size(); ++k) {
                     F[s][i][k] = dft_at(x.fir(s, i), freqs[k]);
@@ -152,7 +152,7 @@ namespace {
         const int    w     = points_per_octave / 6; // ±1/6 octave
         const size_t n     = freqs.size();
         double       worst = 0.0;
-        for (int e = 0; e < 2; ++e) {
+        for (size_t e = 0; e < 2; ++e) {
             std::vector<double> mag2(n);
             for (size_t k = 0; k < n; ++k) {
                 const auto p = perf(C, F, k);
@@ -305,8 +305,8 @@ TEST(DspXtc, X5FilterGainCeiling) {
         EXPECT_LE(x.makeup_gain(), 1.0f) << "span " << span;
 
         double shipped_max = 0.0;
-        for (int s = 0; s < 2; ++s) {
-            for (int i = 0; i < 2; ++i) {
+        for (size_t s = 0; s < 2; ++s) {
+            for (size_t i = 0; i < 2; ++i) {
                 for (int k = 0; k <= 2048; ++k) {
                     const double f = k_fs / 2.0 * static_cast<double>(k) / 2048.0;
                     shipped_max    = std::max(shipped_max, std::abs(dft_at(x.fir(s, i), f)));
@@ -331,8 +331,8 @@ TEST(DspXtc, X5FilterGainCeiling) {
 // resampled host rate.
 TEST(DspXtc, X6Determinism) {
     const auto identical = [](const dsp::xtc& a, const dsp::xtc& b) {
-        for (int s = 0; s < 2; ++s) {
-            for (int i = 0; i < 2; ++i) {
+        for (size_t s = 0; s < 2; ++s) {
+            for (size_t i = 0; i < 2; ++i) {
                 const auto& fa = a.fir(s, i);
                 const auto& fb = b.fir(s, i);
                 if (fa.size() != fb.size()) return false;
@@ -407,8 +407,8 @@ TEST(DspXtc, DesignAtCommonHostRates) {
         x.prepare(128, rate);
         EXPECT_LE(x.design_gain_db(), 12.0f + 1e-4f) << rate;
         double energy = 0.0;
-        for (int s = 0; s < 2; ++s) {
-            for (int i = 0; i < 2; ++i) {
+        for (size_t s = 0; s < 2; ++s) {
+            for (size_t i = 0; i < 2; ++i) {
                 ASSERT_EQ(x.fir(s, i).size(), dsp::xtc::k_fir_length);
                 for (const float v : x.fir(s, i)) {
                     ASSERT_TRUE(std::isfinite(v));
