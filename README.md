@@ -187,9 +187,10 @@ notes live in [`docs/EMBEDDED.md`](docs/EMBEDDED.md).
   Pages from `main`).
 - [`docs/AUDIT.md`](docs/AUDIT.md) — the full correctness/quality audit and
   its remediation ledger.
-- [`docs/COMPARISON.md`](docs/COMPARISON.md) — cross-library comparison
-  (correctness, features, performance vs spaudiopy, pyshtools, and the C++
-  ecosystem).
+- [`docs/COMPARISON.md`](docs/COMPARISON.md) — cross-library comparison:
+  correctness cross-checks (spaudiopy, pyshtools), a measured C++
+  head-to-head vs libspatialaudio and SAF (`bench/compare/`), and a
+  feature/platform matrix across the ecosystem.
 - [`docs/EMBEDDED.md`](docs/EMBEDDED.md) — the embedded real-time profile,
   budgets, and AudioReach notes.
 
