@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -125,15 +126,20 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::FILE* f = std::fopen(out_path.c_str(), "wb");
+    std::ofstream f(out_path, std::ios::binary);
     if (!f) {
         std::fprintf(stderr, "cannot open %s\n", out_path.c_str());
         return 1;
     }
     for (size_t ch = 0; ch < channels; ++ch) {
-        std::fwrite(ir[ch].data() + latency, sizeof(float), n_samples, f);
+        f.write(reinterpret_cast<const char*>(ir[ch].data() + latency),
+                static_cast<std::streamsize>(n_samples * sizeof(float)));
     }
-    std::fclose(f);
+    f.close();
+    if (!f) {
+        std::fprintf(stderr, "short write to %s\n", out_path.c_str());
+        return 1;
+    }
 
     std::printf("wrote %s: order %d (%zu ch) x %zu samples at %.0f Hz, mode %s, "
                 "latency trimmed %zu\n",
