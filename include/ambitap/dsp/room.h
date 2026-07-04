@@ -124,6 +124,18 @@ namespace ambitap::dsp {
         /// Highest supported ambisonics order: the 16 FDN lines feed at most
         /// the 16 SH channels of order 3 (the prototype-verified topology).
         static constexpr int k_max_room_order = 3;
+
+        /// Per-line loop absorption realization:
+        ///   fir — 255-tap linear-phase FIRs fitting all parameterized RT60
+        ///         bands; the verified reference (R4/R5 gates), ~70% of the CPU.
+        ///   iir — one first-order absorptive low-pass per line matching the
+        ///         DC and Nyquist RT60 only; ~130x fewer multiplies in the loop
+        ///         (the object's cost is roughly halved again), at the price of
+        ///         approximate mid-band RT60 and a shorter loop (no 127-sample
+        ///         FIR group delay), so a slightly different late texture. The
+        ///         tail level stays calibrated (the calibration simulates the
+        ///         active filter). Default fir.
+        enum class absorption_kind { fir, iir };
         /// FDN delay-line count (also the Hadamard mixing size).
         static constexpr size_t k_lines = room_data_lines;
         /// Walls in +/-x, +/-y, +/-z order: (x0, x1, y0, y1, z0, z1).
@@ -184,8 +196,11 @@ namespace ambitap::dsp {
         struct model {
             std::vector<er_tap>        taps;
             std::vector<er_tap>        prev_taps;
-            std::vector<float>         absorption;     ///< [line][k_absorption_taps]
+            absorption_kind            kind {absorption_kind::fir};
+            std::vector<float>         absorption;     ///< [line][k_absorption_taps] (kind==fir)
             std::vector<float>         absorption_rev; ///< absorption, per-line reversed (audio path)
+            std::array<float, k_lines> iir_b0 {};      ///< per-line one-pole b0 (kind==iir)
+            std::array<float, k_lines> iir_a1 {};      ///< per-line one-pole pole (kind==iir)
             std::vector<double>        inject_spectra; ///< [line][partition][fft], Ooura packing
             size_t                     partitions {0};
             size_t                     chunk {0};   ///< partition/block size the spectra assume
@@ -210,6 +225,7 @@ namespace ambitap::dsp {
         std::array<float, 3>            m_listener {1.746f, 1.711f, 0.668f};
         std::array<float, k_walls>      m_beta {0.90f, 0.92f, 0.91f, 0.93f, 0.89f, 0.94f};
         std::array<float, k_rt60_bands> m_rt60 {0.90f, 0.84f, 0.76f, 0.66f, 0.54f};
+        absorption_kind                 m_absorption_kind {absorption_kind::fir};
         float                           m_fs {0.0f};
         size_t                          m_block {0};
         /// Burst noise split into octave bands at the prepared sample rate
@@ -233,6 +249,7 @@ namespace ambitap::dsp {
         size_t             m_line_stride {0};
         size_t             m_line_mask {0};
         size_t             m_write {0};
+        std::array<float, k_lines> m_iir_state {}; ///< per-line one-pole memory (kind==iir)
 
         std::vector<real_fft> m_fft;       ///< exactly one; vector for deferred init
         std::vector<double>   m_conv_time; ///< [prev|curr] input, m_fft_size
@@ -314,6 +331,7 @@ namespace ambitap::dsp {
             m_line_stride = next_pow2(k_delays.back() + k_absorption_taps + m_chunk + 1);
             m_line_mask   = m_line_stride - 1;
             m_line_rings.assign(k_lines * m_line_stride, 0.0f);
+            m_iir_state.fill(0.0f);
 
             m_fft.clear();
             m_fft.emplace_back(m_fft_size);
@@ -441,6 +459,22 @@ namespace ambitap::dsp {
         }
         /// The 1 kHz band's RT60 (what set_rt60() pins), seconds.
         float rt60() const { return rt60_band(2); }
+
+        /// Select the per-line absorption realization (see absorption_kind).
+        /// Control thread; triggers an async rebuild (the filters live in the
+        /// model). fir is the verified default; iir is the cheap approximation.
+        void set_absorption_kind(absorption_kind kind) {
+            {
+                std::lock_guard<std::mutex> lock(m_config_mtx);
+                if (m_absorption_kind == kind) return;
+                m_absorption_kind = kind;
+            }
+            m_rebuilder.submit();
+        }
+        absorption_kind absorption() const {
+            std::lock_guard<std::mutex> lock(m_config_mtx);
+            return m_absorption_kind;
+        }
 
         /// Enable/disable the direct-sound tap, the early reflections, and
         /// the late tail independently (each ramps over k_smoothing_samples
@@ -618,22 +652,35 @@ namespace ambitap::dsp {
                 // this loop is ~70% of the object's cost). The rare wrapping
                 // sample falls back to the exact masked form.
                 float filtered[k_lines];
-                for (size_t j = 0; j < k_lines; ++j) {
-                    const float* ring = m_line_rings.data() + j * m_line_stride;
-                    const size_t lag0 = w - k_delays[j];
-                    const size_t p    = lag0 & m_line_mask;    // newest window index
-                    if (p >= k_absorption_taps - 1) {
-                        const float* hr   = m->absorption_rev.data() + j * k_absorption_taps;
-                        const float* base = ring + (p - (k_absorption_taps - 1));
-                        filtered[j]       = dot_fir(hr, base, k_absorption_taps);
-                    }
-                    else {
-                        const float* h   = m->absorption.data() + j * k_absorption_taps;
-                        float        acc = 0.0f;
-                        for (size_t k = 0; k < k_absorption_taps; ++k) {
-                            acc += h[k] * ring[(lag0 - k) & m_line_mask];
+                if (m->kind == absorption_kind::fir) {
+                    for (size_t j = 0; j < k_lines; ++j) {
+                        const float* ring = m_line_rings.data() + j * m_line_stride;
+                        const size_t lag0 = w - k_delays[j];
+                        const size_t p    = lag0 & m_line_mask;    // newest window index
+                        if (p >= k_absorption_taps - 1) {
+                            const float* hr   = m->absorption_rev.data() + j * k_absorption_taps;
+                            const float* base = ring + (p - (k_absorption_taps - 1));
+                            filtered[j]       = dot_fir(hr, base, k_absorption_taps);
                         }
-                        filtered[j] = acc;
+                        else {
+                            const float* h   = m->absorption.data() + j * k_absorption_taps;
+                            float        acc = 0.0f;
+                            for (size_t k = 0; k < k_absorption_taps; ++k) {
+                                acc += h[k] * ring[(lag0 - k) & m_line_mask];
+                            }
+                            filtered[j] = acc;
+                        }
+                    }
+                }
+                else {
+                    // One first-order absorptive low-pass per line on its bare
+                    // delayed loop output x_j(t - d_j) — ~130x fewer multiplies.
+                    for (size_t j = 0; j < k_lines; ++j) {
+                        const float* ring    = m_line_rings.data() + j * m_line_stride;
+                        const float  delayed = ring[(w - k_delays[j]) & m_line_mask];
+                        const float  y = m->iir_b0[j] * delayed + m->iir_a1[j] * m_iir_state[j];
+                        m_iir_state[j] = y;
+                        filtered[j]    = y;
                     }
                 }
 
@@ -921,6 +968,22 @@ namespace ambitap::dsp {
             }
         }
 
+        /// First-order absorptive low-pass H(z) = b0 / (1 - a z^-1) for one FDN
+        /// line, matching the target loop gain 10^(-3 d / (fs T60(f))) exactly
+        /// at DC and Nyquist (T60 falls with frequency, so a >= 0: a low-pass).
+        /// The IIR alternative to design_absorption_fir; the loop carries no
+        /// FIR modeling delay, so the gain is fit to the bare line delay d.
+        static void design_absorption_iir(size_t loop_delay, double fs,
+                                          const std::array<double, k_rt60_bands>& rt60,
+                                          float& b0_out, float& a1_out) {
+            const double d   = static_cast<double>(loop_delay);
+            const double g0  = std::pow(10.0, -3.0 * d / (fs * rt60_of_freq(0.0, rt60)));
+            const double gpi = std::pow(10.0, -3.0 * d / (fs * rt60_of_freq(fs / 2.0, rt60)));
+            const double a   = std::clamp((g0 - gpi) / (g0 + gpi), 0.0, 0.999);
+            b0_out           = static_cast<float>(g0 * (1.0 - a));
+            a1_out           = static_cast<float>(a);
+        }
+
         /// Measure the unscaled tail's omni (W) energy by running the exact
         /// FDN offline: bursts injected at their alignment offsets, the
         /// published absorption FIRs in the loop, energy accumulated over the
@@ -932,12 +995,21 @@ namespace ambitap::dsp {
                                     size_t base, size_t n_tail) const {
             const size_t                     t_int = base + n_tail;
             std::vector<std::vector<double>> x(k_lines, std::vector<double>(t_int, 0.0));
+            std::array<double, k_lines>      iir_s {}; // per-line one-pole state (kind==iir)
             double                           energy = 0.0;
             for (size_t t = 0; t < t_int; ++t) {
                 double filtered[k_lines];
                 for (size_t j = 0; j < k_lines; ++j) {
+                    const auto& xj = x[j];
+                    if (m.kind == absorption_kind::iir) {
+                        const double delayed = (t >= k_delays[j]) ? xj[t - k_delays[j]] : 0.0;
+                        const double y = static_cast<double>(m.iir_b0[j]) * delayed
+                                         + static_cast<double>(m.iir_a1[j]) * iir_s[j];
+                        iir_s[j]    = y;
+                        filtered[j] = y;
+                        continue;
+                    }
                     const float* h   = m.absorption.data() + j * k_absorption_taps;
-                    const auto&  xj  = x[j];
                     double       acc = 0.0;
                     if (t >= k_delays[j]) {
                         const size_t lag0 = t - k_delays[j];
@@ -978,6 +1050,7 @@ namespace ambitap::dsp {
             double                                    fs;
             size_t                                    block;
             std::shared_ptr<const std::vector<float>> bands;
+            absorption_kind                           kind;
             {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
                 dims     = m_dims;
@@ -990,6 +1063,7 @@ namespace ambitap::dsp {
                 fs    = static_cast<double>(m_fs);
                 block = m_block;
                 bands = m_burst_bands;
+                kind  = m_absorption_kind;
             }
             if (block == 0 || !bands) return nullptr;
 
@@ -1023,19 +1097,28 @@ namespace ambitap::dsp {
                            });
 
             // Per-line absorption FIRs fitted to the parameterized decay.
-            fresh->absorption.assign(k_lines * k_absorption_taps, 0.0f);
-            real_fft fft512(512);
-            for (size_t line = 0; line < k_lines; ++line) {
-                design_absorption_fir(k_delays[line], fs, rt60, fft512,
-                                      fresh->absorption.data() + line * k_absorption_taps);
+            fresh->kind = kind;
+            if (kind == absorption_kind::fir) {
+                fresh->absorption.assign(k_lines * k_absorption_taps, 0.0f);
+                real_fft fft512(512);
+                for (size_t line = 0; line < k_lines; ++line) {
+                    design_absorption_fir(k_delays[line], fs, rt60, fft512,
+                                          fresh->absorption.data() + line * k_absorption_taps);
+                }
+                // Per-line reversed copy for the audio path's ascending dot product.
+                fresh->absorption_rev.assign(k_lines * k_absorption_taps, 0.0f);
+                for (size_t line = 0; line < k_lines; ++line) {
+                    const float* src = fresh->absorption.data() + line * k_absorption_taps;
+                    float*       dst = fresh->absorption_rev.data() + line * k_absorption_taps;
+                    for (size_t k = 0; k < k_absorption_taps; ++k) {
+                        dst[k] = src[k_absorption_taps - 1 - k];
+                    }
+                }
             }
-            // Per-line reversed copy for the audio path's ascending dot product.
-            fresh->absorption_rev.assign(k_lines * k_absorption_taps, 0.0f);
-            for (size_t line = 0; line < k_lines; ++line) {
-                const float* src = fresh->absorption.data() + line * k_absorption_taps;
-                float*       dst = fresh->absorption_rev.data() + line * k_absorption_taps;
-                for (size_t k = 0; k < k_absorption_taps; ++k) {
-                    dst[k] = src[k_absorption_taps - 1 - k];
+            else {
+                for (size_t line = 0; line < k_lines; ++line) {
+                    design_absorption_iir(k_delays[line], fs, rt60, fresh->iir_b0[line],
+                                          fresh->iir_a1[line]);
                 }
             }
 
