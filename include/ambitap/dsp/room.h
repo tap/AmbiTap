@@ -194,13 +194,13 @@ namespace ambitap::dsp {
         /// thread. `prev` fields carry the previously published values so the
         /// audio thread can crossfade without holding two products.
         struct model {
-            std::vector<er_tap>        taps;
-            std::vector<er_tap>        prev_taps;
-            absorption_kind            kind {absorption_kind::fir};
-            std::vector<float>         absorption;     ///< [line][k_absorption_taps] (kind==fir)
-            std::vector<float>         absorption_rev; ///< absorption, per-line reversed (audio path)
-            std::array<float, k_lines> iir_b0 {};      ///< per-line one-pole b0 (kind==iir)
-            std::array<float, k_lines> iir_a1 {};      ///< per-line one-pole pole (kind==iir)
+            std::vector<er_tap> taps;
+            std::vector<er_tap> prev_taps;
+            absorption_kind     kind {absorption_kind::fir};
+            std::vector<float>  absorption;       ///< [line][k_absorption_taps] (kind==fir)
+            std::vector<float>  absorption_rev;   ///< absorption, per-line reversed (audio path)
+            std::array<float, k_lines> iir_b0 {}; ///< per-line one-pole b0 (kind==iir)
+            std::array<float, k_lines> iir_a1 {}; ///< per-line one-pole pole (kind==iir)
             std::vector<double>        inject_spectra; ///< [line][partition][fft], Ooura packing
             size_t                     partitions {0};
             size_t                     chunk {0};   ///< partition/block size the spectra assume
@@ -243,12 +243,12 @@ namespace ambitap::dsp {
         size_t m_fft_size {0};    ///< 2 * m_chunk
         size_t m_partitions {0};
 
-        std::vector<float> m_input_ring; ///< mono input history (power-of-two)
-        size_t             m_input_mask {0};
-        std::vector<float> m_line_rings; ///< k_lines * m_line_stride
-        size_t             m_line_stride {0};
-        size_t             m_line_mask {0};
-        size_t             m_write {0};
+        std::vector<float>         m_input_ring; ///< mono input history (power-of-two)
+        size_t                     m_input_mask {0};
+        std::vector<float>         m_line_rings; ///< k_lines * m_line_stride
+        size_t                     m_line_stride {0};
+        size_t                     m_line_mask {0};
+        size_t                     m_write {0};
         std::array<float, k_lines> m_iir_state {}; ///< per-line one-pole memory (kind==iir)
 
         std::vector<real_fft> m_fft;       ///< exactly one; vector for deferred init
@@ -556,7 +556,7 @@ namespace ambitap::dsp {
         /// data-independent reduction tree (so the result is deterministic and
         /// block-size-independent) that the compiler can lift into SIMD lanes.
         static float dot_fir(const float* a, const float* b, size_t n) noexcept {
-            float a0 = 0, a1 = 0, a2 = 0, a3 = 0, a4 = 0, a5 = 0, a6 = 0, a7 = 0;
+            float  a0 = 0, a1 = 0, a2 = 0, a3 = 0, a4 = 0, a5 = 0, a6 = 0, a7 = 0;
             size_t k = 0;
             for (; k + 8 <= n; k += 8) {
                 a0 += a[k] * b[k];
@@ -569,8 +569,7 @@ namespace ambitap::dsp {
                 a7 += a[k + 7] * b[k + 7];
             }
             float acc = ((a0 + a1) + (a2 + a3)) + ((a4 + a5) + (a6 + a7));
-            for (; k < n; ++k)
-                acc += a[k] * b[k];
+            for (; k < n; ++k) acc += a[k] * b[k];
             return acc;
         }
 
@@ -656,7 +655,7 @@ namespace ambitap::dsp {
                     for (size_t j = 0; j < k_lines; ++j) {
                         const float* ring = m_line_rings.data() + j * m_line_stride;
                         const size_t lag0 = w - k_delays[j];
-                        const size_t p    = lag0 & m_line_mask;    // newest window index
+                        const size_t p    = lag0 & m_line_mask; // newest window index
                         if (p >= k_absorption_taps - 1) {
                             const float* hr   = m->absorption_rev.data() + j * k_absorption_taps;
                             const float* base = ring + (p - (k_absorption_taps - 1));
@@ -1003,7 +1002,7 @@ namespace ambitap::dsp {
                     const auto& xj = x[j];
                     if (m.kind == absorption_kind::iir) {
                         const double delayed = (t >= k_delays[j]) ? xj[t - k_delays[j]] : 0.0;
-                        const double y = static_cast<double>(m.iir_b0[j]) * delayed
+                        const double y       = static_cast<double>(m.iir_b0[j]) * delayed
                                          + static_cast<double>(m.iir_a1[j]) * iir_s[j];
                         iir_s[j]    = y;
                         filtered[j] = y;
