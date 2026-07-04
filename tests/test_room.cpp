@@ -312,6 +312,36 @@ TEST(DspRoom, TailRealizesParameterizedRt60) {
     }
 }
 
+TEST(DspRoom, IirAbsorptionApproximatesRt60AndStaysCalibrated) {
+    // set_absorption_kind(iir) swaps the 255-tap linear-phase absorption FIRs
+    // for one first-order low-pass per line, matching the target RT60 exactly
+    // only at DC and Nyquist (the cheap real-time alternative). It is an
+    // approximation, so this asserts loose contracts rather than the FIR gate's
+    // +/-10%: the tail must stay finite, decay on the right order across bands,
+    // and — because the calibration simulates the active filter — keep the tail
+    // level within a few dB of the FIR reference.
+    dsp::room  rf(3);
+    const auto ir_fir = render_ir(rf, 2.0);
+
+    dsp::room ri(3);
+    ri.set_absorption_kind(dsp::room::absorption_kind::iir);
+    const auto ir_iir = render_ir(ri, 2.0);
+
+    for (float v : ir_iir[0]) ASSERT_TRUE(std::isfinite(v));
+
+    for (size_t b = 0; b < k_centers.size(); ++b) {
+        const double t20 = fit_decay_time(band_filtfilt(ir_iir[0], k_centers[b]), -5.0, -25.0);
+        EXPECT_GT(t20, 0.4 * k_rt60[b]) << k_centers[b] << " Hz: IIR T20 " << t20;
+        EXPECT_LT(t20, 2.0 * k_rt60[b]) << k_centers[b] << " Hz: IIR T20 " << t20;
+    }
+
+    double ef = 0.0, ei = 0.0;
+    for (float v : ir_fir[0]) ef += static_cast<double>(v) * v;
+    for (float v : ir_iir[0]) ei += static_cast<double>(v) * v;
+    const double ratio_db = 10.0 * std::log10(ei / std::max(ef, 1e-30));
+    EXPECT_LT(std::abs(ratio_db), 3.0) << "IIR tail energy " << ratio_db << " dB vs FIR";
+}
+
 TEST(DspRoom, TailEnergyMatchesCalibrationTarget) {
     // The tail's omni energy must land on the closed-form continuation of
     // the image-source model (prototype tail_energy_target): the enumerated
