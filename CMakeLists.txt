@@ -199,6 +199,8 @@ endif()
 if(AMBITAP_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    # Offline dsp::room IR renderer for the room_verification.ipynb gates.
+    add_subdirectory(tools/room_render)
 endif()
 if(AMBITAP_BUILD_EXAMPLES)
     add_subdirectory(examples)

@@ -16,6 +16,7 @@
 #include "ambitap/dsp/format_converter.h"
 #include "ambitap/dsp/mirror.h"
 #include "ambitap/dsp/nfc.h"
+#include "ambitap/dsp/room.h"
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/dsp/spatial_compressor.h"
 #include "ambitap/dsp/virtual_mic.h"
@@ -309,4 +310,38 @@ TEST(RtSafety, BinauralRendererProcessIsAllocationFree) {
     }
     EXPECT_EQ(guard.allocations(), 0);
     EXPECT_EQ(guard.frees(), 0);
+}
+
+TEST(RtSafety, RoomProcessIsAllocationFree) {
+    constexpr size_t block = 64;
+
+    dsp::room room(3);
+    room.prepare(block, 48000.f);
+    room.wait_for_settling();
+    room.set_tail_enabled(false); // mid-ramp exercises the smoothing path too
+
+    std::vector<float> in(block, 0.25f);
+    planar             out(16, block);
+
+    {
+        rt_guard guard;
+        // Includes the model-adoption crossfade path (first call after
+        // publish) and the settled path.
+        for (int i = 0; i < 8; ++i) {
+            room.process(in.data(), out.out.data(), block);
+        }
+        EXPECT_EQ(guard.allocations(), 0);
+        EXPECT_EQ(guard.frees(), 0);
+    }
+
+    // A rebuild published while the audio thread holds no guard must not
+    // push frees onto a subsequently-armed audio section (the worker frees).
+    room.set_rt60(0.5f);
+    room.wait_for_settling();
+    {
+        rt_guard guard;
+        room.process(in.data(), out.out.data(), block);
+        EXPECT_EQ(guard.allocations(), 0);
+        EXPECT_EQ(guard.frees(), 0);
+    }
 }

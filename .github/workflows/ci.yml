@@ -23,6 +23,7 @@ jobs:
             $(git ls-files '*.h' '*.cpp' \
               ':!:third_party/**' \
               ':!:bench/compare/**' \
+              ':!:include/ambitap/dsp/room_data.h' \
               ':!:include/ambitap/math/binaural/hrtf_data.h' \
               ':!:include/ambitap/math/geometry/tdesigns.h')
 
