@@ -1084,8 +1084,11 @@ namespace ambitap::dsp {
                                tap.delay      = latency + static_cast<size_t>(std::llround(t * fs));
                                tap.direct     = (refl == 0);
                                const float az = static_cast<float>(std::atan2(u[1], u[0]));
-                               const float el =
-                                   static_cast<float>(std::atan2(u[2], std::hypot(u[0], u[1])));
+                               // sqrt(x^2 + y^2) rather than std::hypot (equivalent
+                               // for a unit direction; dodges the Windows <math.h>
+                               // `hypot` macro seen when the Max SDK is in the TU).
+                               const float el = static_cast<float>(
+                                   std::atan2(u[2], std::sqrt(u[0] * u[0] + u[1] * u[1])));
                                float sh[k_lines];
                                evaluate_sh(m_order, az, el, sh);
                                for (size_t ch = 0; ch < m_channels; ++ch) {

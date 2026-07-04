@@ -526,7 +526,12 @@ namespace ambitap::dsp {
                     fft.forward_inplace(time.data());
                     gmax = std::max({gmax, std::abs(time[0]), std::abs(time[1])});
                     for (size_t k = 1; k < G / 2; ++k) {
-                        gmax = std::max(gmax, std::hypot(time[2 * k], time[2 * k + 1]));
+                        // sqrt(re^2 + im^2) rather than std::hypot: equivalent for
+                        // these bounded magnitudes and avoids the <math.h> `hypot`
+                        // macro that Windows headers (e.g. via the Max SDK) define.
+                        const double re = time[2 * k];
+                        const double im = time[2 * k + 1];
+                        gmax            = std::max(gmax, std::sqrt(re * re + im * im));
                     }
                 }
             }
