@@ -185,6 +185,7 @@ namespace ambitap::dsp {
             std::vector<er_tap>        taps;
             std::vector<er_tap>        prev_taps;
             std::vector<float>         absorption;     ///< [line][k_absorption_taps]
+            std::vector<float>         absorption_rev; ///< absorption, per-line reversed (audio path)
             std::vector<double>        inject_spectra; ///< [line][partition][fft], Ooura packing
             size_t                     partitions {0};
             size_t                     chunk {0};   ///< partition/block size the spectra assume
@@ -517,6 +518,28 @@ namespace ambitap::dsp {
         /// plus the burst (all lines' FIRs are zero-padded to it).
         size_t inject_taps() const { return m_base - k_delays.front() + k_burst_length; }
 
+        /// sum_{k} a[k] b[k] with eight independent accumulators: a fixed,
+        /// data-independent reduction tree (so the result is deterministic and
+        /// block-size-independent) that the compiler can lift into SIMD lanes.
+        static float dot_fir(const float* a, const float* b, size_t n) noexcept {
+            float a0 = 0, a1 = 0, a2 = 0, a3 = 0, a4 = 0, a5 = 0, a6 = 0, a7 = 0;
+            size_t k = 0;
+            for (; k + 8 <= n; k += 8) {
+                a0 += a[k] * b[k];
+                a1 += a[k + 1] * b[k + 1];
+                a2 += a[k + 2] * b[k + 2];
+                a3 += a[k + 3] * b[k + 3];
+                a4 += a[k + 4] * b[k + 4];
+                a5 += a[k + 5] * b[k + 5];
+                a6 += a[k + 6] * b[k + 6];
+                a7 += a[k + 7] * b[k + 7];
+            }
+            float acc = ((a0 + a1) + (a2 + a3)) + ((a4 + a5) + (a6 + a7));
+            for (; k < n; ++k)
+                acc += a[k] * b[k];
+            return acc;
+        }
+
         // ---- Audio path ----------------------------------------------------
 
         void process_chunk(const model* m, const float* in, float* const* out,
@@ -586,17 +609,32 @@ namespace ambitap::dsp {
                 }
 
                 // Absorption FIRs over each line's loop output o_j(t) =
-                // x_j(t - d_j): read the line ring at lag d_j + k.
+                // x_j(t - d_j): read the line ring at lag d_j + k. The window
+                // ring[lag0 .. lag0-254] is contiguous unless it straddles the
+                // ring wrap; in the common contiguous case run it as an
+                // ascending dot with the reversed coefficients (identical terms
+                // to the masked descending form, but the fixed forward stride
+                // and independent accumulators let the compiler vectorize —
+                // this loop is ~70% of the object's cost). The rare wrapping
+                // sample falls back to the exact masked form.
                 float filtered[k_lines];
                 for (size_t j = 0; j < k_lines; ++j) {
                     const float* ring = m_line_rings.data() + j * m_line_stride;
-                    const float* h    = m->absorption.data() + j * k_absorption_taps;
                     const size_t lag0 = w - k_delays[j];
-                    float        acc  = 0.0f;
-                    for (size_t k = 0; k < k_absorption_taps; ++k) {
-                        acc += h[k] * ring[(lag0 - k) & m_line_mask];
+                    const size_t p    = lag0 & m_line_mask;    // newest window index
+                    if (p >= k_absorption_taps - 1) {
+                        const float* hr   = m->absorption_rev.data() + j * k_absorption_taps;
+                        const float* base = ring + (p - (k_absorption_taps - 1));
+                        filtered[j]       = dot_fir(hr, base, k_absorption_taps);
                     }
-                    filtered[j] = acc;
+                    else {
+                        const float* h   = m->absorption.data() + j * k_absorption_taps;
+                        float        acc = 0.0f;
+                        for (size_t k = 0; k < k_absorption_taps; ++k) {
+                            acc += h[k] * ring[(lag0 - k) & m_line_mask];
+                        }
+                        filtered[j] = acc;
+                    }
                 }
 
                 // x_i(t) = inject_i(t) + sum_j feedback[i][j] filtered_j(t).
@@ -990,6 +1028,15 @@ namespace ambitap::dsp {
             for (size_t line = 0; line < k_lines; ++line) {
                 design_absorption_fir(k_delays[line], fs, rt60, fft512,
                                       fresh->absorption.data() + line * k_absorption_taps);
+            }
+            // Per-line reversed copy for the audio path's ascending dot product.
+            fresh->absorption_rev.assign(k_lines * k_absorption_taps, 0.0f);
+            for (size_t line = 0; line < k_lines; ++line) {
+                const float* src = fresh->absorption.data() + line * k_absorption_taps;
+                float*       dst = fresh->absorption_rev.data() + line * k_absorption_taps;
+                for (size_t k = 0; k < k_absorption_taps; ++k) {
+                    dst[k] = src[k_absorption_taps - 1 - k];
+                }
             }
 
             // Per-line input bursts: octave bands re-shaped by the
