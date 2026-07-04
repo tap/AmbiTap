@@ -1,4 +1,5 @@
 # Generated data tables — regenerate via scripts/, never hand-format.
+include/ambitap/dsp/room_data.h
 include/ambitap/math/binaural/hrtf_data.h
 include/ambitap/math/geometry/tdesigns.h
 third_party/*

@@ -16,6 +16,7 @@ add_executable(ambitap_tests
     test_dsp_transforms.cpp
     test_dsp_stateful.cpp
     test_nfc.cpp
+    test_room.cpp
     test_dsp_matrix.cpp
     test_dsp_binaural.cpp
     test_analysis_soundfield.cpp
