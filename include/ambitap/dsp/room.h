@@ -429,7 +429,9 @@ namespace ambitap::dsp {
         /// clamped to [k_min_rt60, k_max_rt60]. Out-of-range band indices are
         /// ignored. Control thread; triggers an async rebuild.
         void set_rt60_band(size_t band, float seconds) {
-            if (band >= k_rt60_bands) return;
+            if (band >= k_rt60_bands) {
+                return;
+            }
             {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
                 m_rt60[band] = std::clamp(seconds, k_min_rt60, k_max_rt60);
@@ -450,8 +452,9 @@ namespace ambitap::dsp {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
                 const float                 target = std::clamp(seconds, k_min_rt60, k_max_rt60);
                 const float                 ratio  = target / m_rt60[2]; // 1 kHz band
-                for (auto& v : m_rt60)
+                for (auto& v : m_rt60) {
                     v = std::clamp(v * ratio, k_min_rt60, k_max_rt60);
+                }
             }
             m_rebuilder.submit();
         }
@@ -464,7 +467,9 @@ namespace ambitap::dsp {
         void set_absorption_kind(absorption_kind kind) {
             {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
-                if (m_absorption_kind == kind) return;
+                if (m_absorption_kind == kind) {
+                    return;
+                }
                 m_absorption_kind = kind;
             }
             m_rebuilder.submit();
@@ -518,11 +523,15 @@ namespace ambitap::dsp {
             for (size_t ch = 0; ch < m_channels; ++ch) {
                 std::memset(out[ch], 0, frame_count * sizeof(float));
             }
-            if (m_chunk == 0 || frame_count != m_audio_block) return;
+            if (m_chunk == 0 || frame_count != m_audio_block) {
+                return;
+            }
 
             auto         guard = m_rebuilder.read_lock();
             const model* m     = guard.get();
-            if (!m || m->chunk != m_chunk || m->partitions != m_partitions) return;
+            if (!m || m->chunk != m_chunk || m->partitions != m_partitions) {
+                return;
+            }
 
             if (m != m_last_model) {
                 m_last_model = m;
@@ -542,8 +551,9 @@ namespace ambitap::dsp {
 
         static size_t next_pow2(size_t n) {
             size_t p = 1;
-            while (p < n)
+            while (p < n) {
                 p <<= 1;
+            }
             return p;
         }
 
@@ -568,8 +578,9 @@ namespace ambitap::dsp {
                 a7 += a[k + 7] * b[k + 7];
             }
             float acc = ((a0 + a1) + (a2 + a3)) + ((a4 + a5) + (a6 + a7));
-            for (; k < n; ++k)
+            for (; k < n; ++k) {
                 acc += a[k] * b[k];
+            }
             return acc;
         }
 
@@ -589,10 +600,12 @@ namespace ambitap::dsp {
             // per line (shared-spectrum partitioned overlap-save; the FIR
             // spectra live in the published model, the input history here —
             // so a model swap keeps the history and stays click-free).
-            for (size_t i = 0; i < B; ++i)
+            for (size_t i = 0; i < B; ++i) {
                 m_conv_time[i] = m_conv_time[B + i];
-            for (size_t i = 0; i < B; ++i)
+            }
+            for (size_t i = 0; i < B; ++i) {
                 m_conv_time[B + i] = static_cast<double>(in[i]);
+            }
             double* slot = m_spec_ring.data() + m_spec_pos * F;
             std::copy(m_conv_time.begin(), m_conv_time.end(), slot);
             m_fft[0].forward_inplace(slot);
@@ -730,8 +743,9 @@ namespace ambitap::dsp {
         static double rt60_of_freq(double f, const std::array<double, k_rt60_bands>& rt60) {
             const double                     lf = std::log(std::max(f, 1.0));
             std::array<double, k_rt60_bands> lc{};
-            for (size_t b = 0; b < k_rt60_bands; ++b)
+            for (size_t b = 0; b < k_rt60_bands; ++b) {
                 lc[b] = std::log(k_rt60_centers_hz[b]);
+            }
             double v;
             if (lf <= lc.front()) {
                 const double slope = (rt60[1] - rt60[0]) / (lc[1] - lc[0]);
@@ -744,8 +758,9 @@ namespace ambitap::dsp {
             }
             else {
                 size_t b = 0;
-                while (lf > lc[b + 1])
+                while (lf > lc[b + 1]) {
                     ++b;
+                }
                 const double t = (lf - lc[b]) / (lc[b + 1] - lc[b]);
                 v              = rt60[b] + t * (rt60[b + 1] - rt60[b]);
             }
@@ -782,7 +797,9 @@ namespace ambitap::dsp {
                                     }
                                     const double dist = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
                                     const double t    = dist / static_cast<double>(k_speed_of_sound);
-                                    if (t > t_max || dist < 1e-6) continue;
+                                    if (t > t_max || dist < 1e-6) {
+                                        continue;
+                                    }
                                     int    refl = 0;
                                     double amp  = 1.0;
                                     for (size_t a = 0; a < 3; ++a) {
@@ -819,8 +836,12 @@ namespace ambitap::dsp {
             double       e_fit  = 0.0;
             for_each_image(dims, source, listener, beta, t_enum, [&](double t, double amp, const double*, int) {
                 const double e = amp * amp;
-                if (t >= t_cut && t < t_enum) e_mid += e;
-                if (t >= t_fit && t < t_enum) e_fit += e;
+                if (t >= t_cut && t < t_enum) {
+                    e_mid += e;
+                }
+                if (t >= t_fit && t < t_enum) {
+                    e_fit += e;
+                }
             });
             const double rate = 13.8 / rt60_of_freq(1000.0, rt60);
             return e_mid + e_fit / (std::exp(rate * (t_enum - t_fit)) - 1.0);
@@ -873,7 +894,9 @@ namespace ambitap::dsp {
                         sr += v * cs[idx];
                         si -= v * sn[idx];
                         idx += k;
-                        if (idx >= N) idx -= N;
+                        if (idx >= N) {
+                            idx -= N;
+                        }
                     }
                     re[k] = sr;
                     im[k] = si;
@@ -881,7 +904,9 @@ namespace ambitap::dsp {
                 for (size_t b = 0; b < k_noise_bands; ++b) {
                     std::fill(acc.begin(), acc.end(), 0.0);
                     for (size_t k = 0; k <= half; ++k) {
-                        if (band_of[k] != b) continue;
+                        if (band_of[k] != b) {
+                            continue;
+                        }
                         const double weight = (k == 0 || k == half) ? 1.0 : 2.0;
                         const double wr     = weight * re[k];
                         const double wi     = weight * im[k];
@@ -889,7 +914,9 @@ namespace ambitap::dsp {
                         for (size_t n = 0; n < N; ++n) {
                             acc[n] += wr * cs[idx] - wi * sn[idx];
                             idx += k;
-                            if (idx >= N) idx -= N;
+                            if (idx >= N) {
+                                idx -= N;
+                            }
                         }
                     }
                     float* dst = out->data() + (line * k_noise_bands + b) * N;
@@ -936,8 +963,9 @@ namespace ambitap::dsp {
             for (size_t k = 0; k < nfreqs; ++k) {
                 const double x  = static_cast<double>(k) / static_cast<double>(nfreqs - 1);
                 const double fx = x * nyq;
-                while (seg + 2 < grid && f[seg + 1] < fx)
+                while (seg + 2 < grid && f[seg + 1] < fx) {
                     ++seg;
+                }
                 const double t   = (fx - f[seg]) / (f[seg + 1] - f[seg]);
                 const double amp = g[seg] + std::clamp(t, 0.0, 1.0) * (g[seg + 1] - g[seg]);
                 const double ph  = k_pi * group_delay * x;
@@ -1026,7 +1054,9 @@ namespace ambitap::dsp {
                         w += static_cast<double>(m_outmix[0][li]) * x[li][t - k_delays[li]];
                     }
                 }
-                if (t >= base) energy += w * w;
+                if (t >= base) {
+                    energy += w * w;
+                }
             }
             return energy;
         }
@@ -1056,7 +1086,9 @@ namespace ambitap::dsp {
                 bands = m_burst_bands;
                 kind  = m_absorption_kind;
             }
-            if (block == 0 || !bands) return nullptr;
+            if (block == 0 || !bands) {
+                return nullptr;
+            }
 
             const size_t n0      = static_cast<size_t>(std::llround(static_cast<double>(k_er_cutoff_seconds) * fs));
             const size_t base    = std::max(k_delays.back(), n0);
@@ -1130,8 +1162,9 @@ namespace ambitap::dsp {
                     }
                 }
                 double e = 0.0;
-                for (double v : shaped)
+                for (double v : shaped) {
                     e += v * v;
+                }
                 const double norm = 1.0 / std::sqrt(e);
                 bursts[line].resize(k_burst_length);
                 for (size_t n = 0; n < k_burst_length; ++n) {

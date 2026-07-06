@@ -36,14 +36,14 @@ namespace ambitap::dsp {
     /// k_smoothing_samples; call snap_parameters() for offline/exact use. The
     /// audio path is wait-free.
     class directional_loudness {
-        int                                  m_order;
-        size_t                               m_channels;
-        float                                m_azimuth{0.0f};
-        float                                m_elevation{0.0f};
+        int                                    m_order;
+        size_t                                 m_channels;
+        float                                  m_azimuth{0.0f};
+        float                                  m_elevation{0.0f};
         std::array<float, k_max_channel_count> m_sh_at_direction{};
 
         smoothed_table<k_max_channel_count> m_smooth;
-        smoothed_scalar                   m_gain{1.0f};
+        smoothed_scalar                     m_gain{1.0f};
         // 1 / ||SH(d)||^2, recomputed with the direction.
         smoothed_scalar m_inv_norm{1.0f};
 

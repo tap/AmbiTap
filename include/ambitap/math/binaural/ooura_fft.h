@@ -58,22 +58,34 @@ namespace ambitap {
         /// Forward real FFT: time-domain float[size] -> packed frequency-domain float[size].
         /// Output may alias input.
         void forward(const float* input, float* output) {
-            for (int i = 0; i < m_size; ++i)
-                m_buf[static_cast<size_t>(i)] = input[i];
+            for (int i = 0; i < m_size; ++i) {
+                {
+                    m_buf[static_cast<size_t>(i)] = input[i];
+                }
+            }
             rdft(m_size, 1, m_buf.data(), m_ip.data(), m_w.data());
-            for (int i = 0; i < m_size; ++i)
-                output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)]);
+            for (int i = 0; i < m_size; ++i) {
+                {
+                    output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)]);
+                }
+            }
         }
 
         /// Inverse real FFT: packed frequency-domain float[size] -> time-domain float[size].
         /// Output is scaled by 2/size to produce a normalized inverse. May alias input.
         void inverse(const float* input, float* output) {
-            for (int i = 0; i < m_size; ++i)
-                m_buf[static_cast<size_t>(i)] = input[i];
+            for (int i = 0; i < m_size; ++i) {
+                {
+                    m_buf[static_cast<size_t>(i)] = input[i];
+                }
+            }
             rdft(m_size, -1, m_buf.data(), m_ip.data(), m_w.data());
             const double scale = 2.0 / static_cast<double>(m_size);
-            for (int i = 0; i < m_size; ++i)
-                output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)] * scale);
+            for (int i = 0; i < m_size; ++i) {
+                {
+                    output[i] = static_cast<float>(m_buf[static_cast<size_t>(i)] * scale);
+                }
+            }
         }
 
         /// In-place forward FFT on a double buffer (no float conversion).

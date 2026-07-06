@@ -81,13 +81,21 @@ namespace {
 #endif
 
 void* operator new(std::size_t size) {
-    if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
-    if (void* p = std::malloc(size ? size : 1)) return p;
+    if (g_armed) {
+        g_allocs.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (void* p = std::malloc(size ? size : 1)) {
+        return p;
+    }
     throw std::bad_alloc();
 }
 void* operator new(std::size_t size, std::align_val_t al) {
-    if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
-    if (void* p = aligned_alloc_portable(static_cast<std::size_t>(al), size)) return p;
+    if (g_armed) {
+        g_allocs.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (void* p = aligned_alloc_portable(static_cast<std::size_t>(al), size)) {
+        return p;
+    }
     throw std::bad_alloc();
 }
 void* operator new[](std::size_t size) {
@@ -97,28 +105,36 @@ void* operator new[](std::size_t size, std::align_val_t al) {
     return ::operator new(size, al);
 }
 void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
-    if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
+    if (g_armed) {
+        g_allocs.fetch_add(1, std::memory_order_relaxed);
+    }
     return std::malloc(size ? size : 1);
 }
 void* operator new[](std::size_t size, const std::nothrow_t& t) noexcept {
     return ::operator new(size, t);
 }
 void* operator new(std::size_t size, std::align_val_t al, const std::nothrow_t&) noexcept {
-    if (g_armed) g_allocs.fetch_add(1, std::memory_order_relaxed);
+    if (g_armed) {
+        g_allocs.fetch_add(1, std::memory_order_relaxed);
+    }
     return aligned_alloc_portable(static_cast<std::size_t>(al), size);
 }
 void* operator new[](std::size_t size, std::align_val_t al, const std::nothrow_t& t) noexcept {
     return ::operator new(size, al, t);
 }
 void operator delete(void* p) noexcept {
-    if (g_armed) g_frees.fetch_add(1, std::memory_order_relaxed);
+    if (g_armed) {
+        g_frees.fetch_add(1, std::memory_order_relaxed);
+    }
     std::free(p);
 }
 void operator delete(void* p, std::size_t) noexcept {
     ::operator delete(p);
 }
 void operator delete(void* p, std::align_val_t) noexcept {
-    if (g_armed) g_frees.fetch_add(1, std::memory_order_relaxed);
+    if (g_armed) {
+        g_frees.fetch_add(1, std::memory_order_relaxed);
+    }
     aligned_free_portable(p);
 }
 void operator delete(void* p, std::size_t, std::align_val_t al) noexcept {

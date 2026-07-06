@@ -56,7 +56,11 @@ namespace ambitap {
             , m_fft_size(block_size * 2)
             , m_fft(m_fft_size) {
             assert(block_size >= 4 && (block_size & (block_size - 1)) == 0);
-            if (ir != nullptr && ir_length > 0) set_ir(ir, ir_length);
+            if (ir != nullptr && ir_length > 0) {
+                {
+                    set_ir(ir, ir_length);
+                }
+            }
         }
 
         size_t block_size() const { return m_block_size; }
@@ -144,8 +148,11 @@ namespace ambitap {
 
         /// Reset input history; keep the loaded IR.
         void reset() {
-            for (auto& buf : m_input_freq)
-                std::fill(buf.begin(), buf.end(), Real(0));
+            for (auto& buf : m_input_freq) {
+                {
+                    std::fill(buf.begin(), buf.end(), Real(0));
+                }
+            }
             std::fill(m_input_buf.begin(), m_input_buf.end(), Real(0));
             m_ring_pos = 0;
         }

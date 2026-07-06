@@ -72,8 +72,8 @@ TEST(DspNfc, DcGainMatchesClosedForm) {
         int   order;
     };
     const scenario cases[] = {
-        {2.0f, 1.0f, 5},        // cut: source beyond the reference
-        {0.5f, 1.0f, 5},        // boost: source inside the reference
+        {2.0f, 1.0f, 5},          // cut: source beyond the reference
+        {0.5f, 1.0f, 5},          // boost: source inside the reference
         {1.5f, 1.0f, k_max_order} // exercises the Bessel roots at every order
     };
 
@@ -86,8 +86,9 @@ TEST(DspNfc, DcGainMatchesClosedForm) {
 
         const size_t       C = filt.channels();
         std::vector<float> in(C, 1.f), out(C, 0.f);
-        for (int i = 0; i < 48000; ++i)
+        for (int i = 0; i < 48000; ++i) {
             filt.process_frame(in.data(), out.data());
+        }
 
         // Tolerance: the audio path is float32 (embedded contract), and at
         // these corner frequencies the biquad denominator sum 1 + a1 + a2
@@ -128,14 +129,17 @@ TEST(DspNfc, ImpulseResponseDecaysAtAggressiveDistances) {
         constexpr int      total = 48000, tail_start = 44000;
         for (int i = 0; i < total; ++i) {
             const float v = (i == 0) ? 1.f : 0.f;
-            for (auto& x : in)
+            for (auto& x : in) {
                 x = v;
+            }
             filt.process_frame(in.data(), out.data());
             for (size_t ch = 0; ch < C; ++ch) {
                 ASSERT_TRUE(std::isfinite(out[ch])) << "order=" << order << " i=" << i;
                 const float a = std::abs(out[ch]);
                 peak          = std::max(peak, a);
-                if (i >= tail_start) tail = std::max(tail, a);
+                if (i >= tail_start) {
+                    tail = std::max(tail, a);
+                }
             }
         }
         EXPECT_GT(peak, 0.f) << "order=" << order;
@@ -153,8 +157,9 @@ TEST(DspNfc, ParameterChangesRampWithoutSnap) {
 
     const size_t       C = filt.channels();
     std::vector<float> in(C, 1.f), out(C, 0.f);
-    for (int i = 0; i < 4800; ++i)
+    for (int i = 0; i < 4800; ++i) {
         filt.process_frame(in.data(), out.data());
+    }
     const float before = out[C - 1];
 
     filt.set_source_distance(0.25f); // boost — ramped, not snapped
@@ -163,8 +168,9 @@ TEST(DspNfc, ParameterChangesRampWithoutSnap) {
 
     for (int i = 0; i < 48000; ++i) {
         filt.process_frame(in.data(), out.data());
-        for (size_t ch = 0; ch < C; ++ch)
+        for (size_t ch = 0; ch < C; ++ch) {
             ASSERT_TRUE(std::isfinite(out[ch]));
+        }
     }
     EXPECT_NEAR(out[C - 1], filt.dc_gain(2), 1e-2f * filt.dc_gain(2));
 }

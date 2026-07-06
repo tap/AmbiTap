@@ -85,7 +85,9 @@ namespace ambitap {
                 return false;
             }
             for (size_t i = 0; i < num_inputs * num_outputs; ++i) {
-                if (!irs[i]) return false;
+                if (!irs[i]) {
+                    return false;
+                }
             }
 
             m_block_size = block_size;

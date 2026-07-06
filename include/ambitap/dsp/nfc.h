@@ -29,8 +29,9 @@ namespace ambitap::dsp {
     /// Total cascade sections across the order-1..N filters of an order-N bus.
     constexpr size_t nfc_total_sections(int order) {
         size_t s = 0;
-        for (int m = 1; m <= order; ++m)
+        for (int m = 1; m <= order; ++m) {
             s += nfc_sections_for_order(m);
+        }
         return s;
     }
 
@@ -221,8 +222,9 @@ namespace ambitap::dsp {
                 // Fast path: constant coefficients, channel-major blocks.
                 const float* co = m_smooth.tick(m_total_coeffs);
                 if (out[0] != in[0]) {
-                    for (size_t i = 0; i < frame_count; ++i)
+                    for (size_t i = 0; i < frame_count; ++i) {
                         out[0][i] = in[0][i];
+                    }
                 }
                 size_t coeff_base = 0, state_off = 0;
                 for (int m = 1; m <= m_order; ++m) {
@@ -330,8 +332,9 @@ namespace ambitap::dsp {
             }
             const auto eval = [&](cplx z) {
                 cplx p{1.0, 0.0};
-                for (int n = 1; n <= m; ++n)
+                for (int n = 1; n <= m; ++n) {
                     p = cadd(cmul(p, z), cplx{coeff[n], 0.0});
+                }
                 return p;
             };
 
@@ -346,13 +349,17 @@ namespace ambitap::dsp {
                 for (int i = 0; i < m; ++i) {
                     cplx den{1.0, 0.0};
                     for (int j = 0; j < m; ++j) {
-                        if (j != i) den = cmul(den, csub(roots[i], roots[j]));
+                        if (j != i) {
+                            den = cmul(den, csub(roots[i], roots[j]));
+                        }
                     }
                     const cplx delta = cdiv(eval(roots[i]), den);
                     roots[i]         = csub(roots[i], delta);
                     worst            = std::max(worst, cabs(delta) / (1.0 + cabs(roots[i])));
                 }
-                if (worst < 1e-14) break;
+                if (worst < 1e-14) {
+                    break;
+                }
             }
         }
 
@@ -369,25 +376,34 @@ namespace ambitap::dsp {
                 int  pair_count = 0;
                 int  real_idx   = 0;
                 for (int i = 1; i < m; ++i) {
-                    if (std::abs(roots[i].im) < std::abs(roots[real_idx].im)) real_idx = i;
+                    if (std::abs(roots[i].im) < std::abs(roots[real_idx].im)) {
+                        real_idx = i;
+                    }
                 }
                 for (int i = 0; i < m; ++i) {
-                    if (m % 2 == 1 && i == real_idx) continue;
-                    if (roots[i].im > 0.0) pairs[pair_count++] = roots[i];
+                    if (m % 2 == 1 && i == real_idx) {
+                        continue;
+                    }
+                    if (roots[i].im > 0.0) {
+                        pairs[pair_count++] = roots[i];
+                    }
                 }
                 // Insertion sort: tiny fixed-size array (std::sort trips GCC's
                 // -Warray-bounds here — its insertion threshold exceeds 5).
                 for (int i = 1; i < pair_count; ++i) {
                     const cplx key = pairs[i];
                     int        j   = i - 1;
-                    for (; j >= 0 && pairs[j].re > key.re; --j)
+                    for (; j >= 0 && pairs[j].re > key.re; --j) {
                         pairs[j + 1] = pairs[j];
+                    }
                     pairs[j + 1] = key;
                 }
                 for (int i = 0; i < pair_count; ++i) {
                     m_roots.push_back({pairs[i].re, pairs[i].im});
                 }
-                if (m % 2 == 1) m_roots.push_back({roots[real_idx].re, 0.0});
+                if (m % 2 == 1) {
+                    m_roots.push_back({roots[real_idx].re, 0.0});
+                }
             }
         }
 

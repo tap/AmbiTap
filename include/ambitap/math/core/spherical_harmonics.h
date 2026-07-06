@@ -57,7 +57,8 @@ namespace ambitap {
 
         // First off-diagonal: P_{m+1}^m
         for (int m = 0; m < N; ++m) {
-            plm[(m + 1) * (k_max_order + 1) + m] = static_cast<float>(2 * m + 1) * sin_el * plm[m * (k_max_order + 1) + m];
+            plm[(m + 1) * (k_max_order + 1) + m] =
+                static_cast<float>(2 * m + 1) * sin_el * plm[m * (k_max_order + 1) + m];
         }
 
         // General recurrence: P_n^m for n > m+1

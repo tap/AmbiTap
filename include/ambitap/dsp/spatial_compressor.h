@@ -105,7 +105,9 @@ namespace ambitap::dsp {
             const float coef  = (abs_w > m_envelope) ? m_attack_coef.load(std::memory_order_relaxed)
                                                      : m_release_coef.load(std::memory_order_relaxed);
             m_envelope += (abs_w - m_envelope) * coef;
-            if (m_envelope < 1e-30f) m_envelope = 0.f; // denormal guard
+            if (m_envelope < 1e-30f) {
+                m_envelope = 0.f; // denormal guard
+            }
 
             const float makeup_db = m_makeup_db.load(std::memory_order_relaxed);
             if (m_envelope <= m_threshold_lin.load(std::memory_order_relaxed)) {

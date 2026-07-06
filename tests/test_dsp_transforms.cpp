@@ -23,8 +23,9 @@ namespace {
         dsp::encoder enc(order);
         enc.set_direction(az, el);
         std::vector<float> v(enc.channels());
-        for (size_t ch = 0; ch < v.size(); ++ch)
+        for (size_t ch = 0; ch < v.size(); ++ch) {
             v[ch] = enc.coefficients()[ch];
+        }
         return v;
     }
 

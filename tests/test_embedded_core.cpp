@@ -73,7 +73,9 @@ TEST(FastMath, CompressorGainMatchesLibmFormula) {
 
         const float abs_w = std::abs(w);
         env += (abs_w - env) * (abs_w > env ? attack : release);
-        if (env < 1e-30f) env = 0.f;
+        if (env < 1e-30f) {
+            env = 0.f;
+        }
         const float env_db    = 20.f * std::log10(std::max(env, 1e-12f));
         const float over      = env_db + 20.f;
         const float reduce_db = (over > 0.f) ? -over * (1.f - 1.f / 4.f) : 0.f;
@@ -91,8 +93,9 @@ TEST(Convolver32, MatchesDoubleConvolver) {
     std::uniform_real_distribution<float> dist(-1.f, 1.f);
 
     std::vector<float> ir(139); // odd length: exercises the partial partition
-    for (auto& v : ir)
+    for (auto& v : ir) {
         v = dist(rng);
+    }
 
     constexpr size_t        block = 64;
     partitioned_convolver   ref(block, ir.data(), ir.size());
@@ -101,8 +104,9 @@ TEST(Convolver32, MatchesDoubleConvolver) {
 
     std::vector<float> in(block), out_ref(block), out_f32(block);
     for (int b = 0; b < 32; ++b) {
-        for (auto& v : in)
+        for (auto& v : in) {
             v = dist(rng);
+        }
         ref.process(in.data(), out_ref.data());
         f32.process(in.data(), out_f32.data());
         for (size_t i = 0; i < block; ++i) {
@@ -144,8 +148,9 @@ TEST(ConvolverBank, MatchesIndependentConvolvers) {
     std::vector<std::vector<float>> irs(inputs * outputs, std::vector<float>(taps));
     std::vector<const float*>       ir_ptrs;
     for (auto& ir : irs) {
-        for (auto& v : ir)
+        for (auto& v : ir) {
             v = dist(rng);
+        }
         ir_ptrs.push_back(ir.data());
     }
 
@@ -161,15 +166,18 @@ TEST(ConvolverBank, MatchesIndependentConvolvers) {
 
     std::vector<std::vector<float>> in(inputs, std::vector<float>(block));
     std::vector<const float*>       in_ptrs;
-    for (auto& b : in)
+    for (auto& b : in) {
         in_ptrs.push_back(b.data());
+    }
     std::vector<float> out0(block), out1(block), tmp(block);
     float*             out_ptrs[2] = {out0.data(), out1.data()};
 
     for (int b = 0; b < 24; ++b) {
-        for (auto& buf : in)
-            for (auto& v : buf)
+        for (auto& buf : in) {
+            for (auto& v : buf) {
                 v = dist(rng);
+            }
+        }
 
         bank.process(in_ptrs.data(), out_ptrs);
 
@@ -177,8 +185,9 @@ TEST(ConvolverBank, MatchesIndependentConvolvers) {
             std::vector<float> expected(block, 0.f);
             for (size_t c = 0; c < inputs; ++c) {
                 ref[o * inputs + c].process(in_ptrs[c], tmp.data());
-                for (size_t i = 0; i < block; ++i)
+                for (size_t i = 0; i < block; ++i) {
                     expected[i] += tmp[i];
+                }
             }
             const float* got = (o == 0) ? out0.data() : out1.data();
             for (size_t i = 0; i < block; ++i) {
@@ -215,8 +224,9 @@ TEST(MatrixApplier, LinearCrossfadeAndSettle) {
 
     // Settled: pure new matrix.
     applier.apply(mat, mat, prev, 2, 2, in, out, n, false);
-    for (size_t i = 0; i < n; ++i)
+    for (size_t i = 0; i < n; ++i) {
         ASSERT_FLOAT_EQ(out0[i], 2.f);
+    }
 
     // New key restarts the fade (same values, different identity).
     const float mat2[] = {2.f, 0.f, 0.f, 2.f};
@@ -242,25 +252,30 @@ TEST(ShBlockApplier, MatchesDenseApplierOnRotationMatrices) {
     std::uniform_real_distribution<float> dist(-1.f, 1.f);
     std::vector<std::vector<float>>       in(C, std::vector<float>(block));
     std::vector<const float*>             in_ptrs;
-    for (auto& b : in)
+    for (auto& b : in) {
         in_ptrs.push_back(b.data());
+    }
 
     std::vector<std::vector<float>> out_dense(C, std::vector<float>(block));
     std::vector<std::vector<float>> out_block(C, std::vector<float>(block));
     std::vector<float*>             dense_ptrs, block_ptrs;
-    for (auto& b : out_dense)
+    for (auto& b : out_dense) {
         dense_ptrs.push_back(b.data());
-    for (auto& b : out_block)
+    }
+    for (auto& b : out_block) {
         block_ptrs.push_back(b.data());
+    }
 
     dsp::matrix_applier   dense;
     dsp::sh_block_applier blocked;
 
     // Enough blocks to cover the whole crossfade and settled operation.
     for (int b = 0; b < 8; ++b) {
-        for (auto& buf : in)
-            for (auto& v : buf)
+        for (auto& buf : in) {
+            for (auto& v : buf) {
                 v = dist(rng);
+            }
+        }
 
         dense.apply(mat.data(), mat.data(), prev.data(), C, C, in_ptrs.data(), dense_ptrs.data(), block, false);
         blocked.apply(mat.data(), mat.data(), prev.data(), order, in_ptrs.data(), block_ptrs.data(), block, false);
@@ -321,8 +336,9 @@ TEST(RotationRecurrence, SatisfiesRotationProperty) {
 
                 for (size_t i = 0; i < C; ++i) {
                     float acc = 0.f;
-                    for (size_t j = 0; j < C; ++j)
+                    for (size_t j = 0; j < C; ++j) {
                         acc += M[i * C + j] * sh_d[j];
+                    }
                     ASSERT_NEAR(acc, sh_rd[i], 1e-5f) << "order " << order << " channel " << i << " trial " << trial;
                 }
             }
@@ -341,8 +357,9 @@ TEST(RotationRecurrence, MatricesAreOrthogonal) {
         for (size_t i = 0; i < C; ++i) {
             for (size_t j = 0; j < C; ++j) {
                 float acc = 0.f;
-                for (size_t k = 0; k < C; ++k)
+                for (size_t k = 0; k < C; ++k) {
                     acc += M[i * C + k] * M[j * C + k];
+                }
                 ASSERT_NEAR(acc, i == j ? 1.f : 0.f, 1e-5f) << "order " << order;
             }
         }
@@ -401,25 +418,30 @@ TEST(BinauralCore, MatchesDoubleConvolverReference) {
     std::uniform_real_distribution<float> dist(-1.f, 1.f);
     std::vector<std::vector<float>>       hoa(C, std::vector<float>(block));
     std::vector<const float*>             in;
-    for (auto& b : hoa)
+    for (auto& b : hoa) {
         in.push_back(b.data());
+    }
 
     std::vector<float> out_l(block), out_r(block), tmp(block);
     std::vector<float> exp_l(block), exp_r(block);
     for (int b = 0; b < 16; ++b) {
-        for (auto& buf : hoa)
-            for (auto& v : buf)
+        for (auto& buf : hoa) {
+            for (auto& v : buf) {
                 v = dist(rng);
+            }
+        }
 
         std::fill(exp_l.begin(), exp_l.end(), 0.f);
         std::fill(exp_r.begin(), exp_r.end(), 0.f);
         for (size_t ch = 0; ch < C; ++ch) {
             ref_l[ch].process(in[ch], tmp.data());
-            for (size_t i = 0; i < block; ++i)
+            for (size_t i = 0; i < block; ++i) {
                 exp_l[i] += tmp[i];
+            }
             ref_r[ch].process(in[ch], tmp.data());
-            for (size_t i = 0; i < block; ++i)
+            for (size_t i = 0; i < block; ++i) {
                 exp_r[i] += tmp[i];
+            }
         }
 
         core.process(in.data(), out_l.data(), out_r.data(), block);

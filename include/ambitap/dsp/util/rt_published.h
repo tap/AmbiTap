@@ -99,7 +99,11 @@ namespace ambitap::dsp {
         /// can no longer be using it. Null products are ignored. May block for
         /// roughly one reader region (one audio callback).
         void publish(std::shared_ptr<Product> fresh) {
-            if (!fresh) return;
+            if (!fresh) {
+                {
+                    return;
+                }
+            }
             std::shared_ptr<Product> old;
             {
                 std::lock_guard<std::mutex> lock(m_mtx);
@@ -115,9 +119,12 @@ namespace ambitap::dsp {
       private:
         void wait_for_grace() const {
             const auto e = m_epoch.load(std::memory_order_seq_cst);
-            if ((e & 1u) == 0)
-                return; // reader outside: regions entered from
-                        // now on will see the new pointer
+            if ((e & 1u) == 0) {
+                {
+                    return; // reader outside: regions entered from
+                }
+            }
+            // now on will see the new pointer
             while (m_epoch.load(std::memory_order_acquire) == e) {
                 std::this_thread::sleep_for(std::chrono::microseconds(50));
             }

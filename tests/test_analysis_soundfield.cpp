@@ -59,13 +59,16 @@ TEST(AnalysisSoundfieldGrid, LocalizesEncodedSource) {
         ptrs.push_back(bufs[c].data());
     }
 
-    for (int b = 0; b < 200; ++b)
+    for (int b = 0; b < 200; ++b) {
         sg.process(ptrs.data(), frames);
+    }
 
     const auto img    = sg.snapshot(40.f);
     size_t     argmax = 0;
     for (size_t d = 1; d < img.data.size(); ++d) {
-        if (img.data[d] > img.data[argmax]) argmax = d;
+        if (img.data[d] > img.data[argmax]) {
+            argmax = d;
+        }
     }
     EXPECT_EQ(argmax, 8u * az_steps + 16u);
     EXPECT_FLOAT_EQ(img.data[argmax], 1.f); // the peak normalizes to exactly 1

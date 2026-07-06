@@ -42,7 +42,8 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         const std::string arg  = argv[i];
         auto              next = [&](double& v) {
-            if (i + 1 >= argc) return false;
+            if (i + 1 >= argc) { return false;
+}
             v = std::atof(argv[++i]);
             return true;
         };
@@ -59,19 +60,23 @@ int main(int argc, char** argv) {
             have_source = true;
         }
         else if (arg == "--seconds") {
-            if (!next(seconds)) break;
+            if (!next(seconds)) { break;
+}
         }
         else if (arg == "--sr") {
-            if (!next(sr)) break;
+            if (!next(sr)) { break;
+}
         }
         else if (arg == "--block") {
             double v = 0;
-            if (!next(v)) break;
+            if (!next(v)) { break;
+}
             block = static_cast<size_t>(v);
         }
         else if (arg == "--order") {
             double v = 0;
-            if (!next(v)) break;
+            if (!next(v)) { break;
+}
             order = static_cast<int>(v);
         }
         else {
@@ -85,7 +90,8 @@ int main(int argc, char** argv) {
     }
 
     ambitap::dsp::room room(order);
-    if (have_source) room.set_source_position(src[0], src[1], src[2]);
+    if (have_source) { room.set_source_position(src[0], src[1], src[2]);
+}
     if (mode == "er") {
         room.set_tail_enabled(false);
     }
@@ -114,12 +120,14 @@ int main(int argc, char** argv) {
     std::vector<float>              input(block, 0.0f);
     std::vector<std::vector<float>> out_bufs(channels, std::vector<float>(block, 0.0f));
     std::vector<float*>             out_ptrs;
-    for (auto& b : out_bufs) out_ptrs.push_back(b.data());
+    for (auto& b : out_bufs) { out_ptrs.push_back(b.data());
+}
     std::vector<std::vector<float>> ir(channels, std::vector<float>(blocks * block, 0.0f));
 
     for (size_t bi = 0; bi < blocks; ++bi) {
         std::fill(input.begin(), input.end(), 0.0f);
-        if (bi == 0) input[0] = 1.0f; // unit impulse at t = 0
+        if (bi == 0) { input[0] = 1.0f; // unit impulse at t = 0
+}
         room.process(input.data(), out_ptrs.data(), block);
         for (size_t ch = 0; ch < channels; ++ch) {
             std::memcpy(ir[ch].data() + bi * block, out_bufs[ch].data(), block * sizeof(float));

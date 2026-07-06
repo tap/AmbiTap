@@ -95,8 +95,12 @@ namespace ambitap::dsp {
                 m_distance.load(std::memory_order_relaxed) / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
             // Cap at buffer_size - 2 so the interpolation can read i and i+1.
             const float max_s = static_cast<float>(m_buffer_size) - 2.f;
-            if (s < 0.f) s = 0.f;
-            if (s > max_s) s = max_s;
+            if (s < 0.f) {
+                s = 0.f;
+            }
+            if (s > max_s) {
+                s = max_s;
+            }
             return s;
         }
 
@@ -104,8 +108,9 @@ namespace ambitap::dsp {
         /// Outputs silence until prepare() has been called.
         void process_frame(const float* in, float* out) noexcept {
             if (m_buffer_size == 0) {
-                for (size_t ch = 0; ch < m_channels; ++ch)
+                for (size_t ch = 0; ch < m_channels; ++ch) {
                     out[ch] = 0.f;
+                }
                 return;
             }
             const float target = current_delay_samples();
@@ -121,8 +126,9 @@ namespace ambitap::dsp {
         void process(const float* const* in, float* const* out, size_t frame_count) noexcept {
             if (m_buffer_size == 0) {
                 for (size_t ch = 0; ch < m_channels; ++ch) {
-                    for (size_t i = 0; i < frame_count; ++i)
+                    for (size_t i = 0; i < frame_count; ++i) {
                         out[ch][i] = 0.f;
+                    }
                 }
                 return;
             }
@@ -140,8 +146,9 @@ namespace ambitap::dsp {
         /// Clear the delay lines; keep the allocation. Also snaps the delay
         /// slew to the current target.
         void reset() {
-            for (auto& buf : m_buffers)
+            for (auto& buf : m_buffers) {
                 std::fill(buf.begin(), buf.end(), 0.f);
+            }
             m_write_idx     = 0;
             m_delay_current = current_delay_samples();
         }
@@ -160,7 +167,9 @@ namespace ambitap::dsp {
         void allocate() {
             // +2 samples of headroom for the interpolator.
             const size_t needed = static_cast<size_t>(std::ceil(m_max_distance / m_speed_of_sound * m_fs)) + 2;
-            if (needed == m_buffer_size) return;
+            if (needed == m_buffer_size) {
+                return;
+            }
 
             m_buffer_size = needed;
             m_buffers.assign(m_channels, std::vector<float>(m_buffer_size, 0.f));

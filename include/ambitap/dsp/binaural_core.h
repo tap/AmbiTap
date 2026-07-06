@@ -66,7 +66,9 @@ namespace ambitap::dsp {
         /// @return false (leaving the core unprepared) on bad arguments.
         bool prepare(size_t block_size, const float* const* left_firs, const float* const* right_firs, size_t taps) {
             m_block_size = 0;
-            if (!left_firs || !right_firs) return false;
+            if (!left_firs || !right_firs) {
+                return false;
+            }
 
             // Bank IR layout: row-major [ear][channel].
             std::vector<const float*> irs(2 * m_channels);
@@ -74,7 +76,9 @@ namespace ambitap::dsp {
                 irs[ch]              = left_firs[ch];
                 irs[m_channels + ch] = right_firs[ch];
             }
-            if (!m_bank.prepare(block_size, m_channels, 2, irs.data(), taps)) return false;
+            if (!m_bank.prepare(block_size, m_channels, 2, irs.data(), taps)) {
+                return false;
+            }
             m_block_size = block_size;
             return true;
         }

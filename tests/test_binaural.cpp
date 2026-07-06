@@ -22,8 +22,9 @@ namespace {
         std::mt19937                          rng(seed);
         std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
         std::vector<float>                    v(length);
-        for (auto& x : v)
+        for (auto& x : v) {
             x = dist(rng);
+        }
         return v;
     }
 
@@ -169,7 +170,9 @@ TEST(HrtfData, MaglsDatasetIsCausal) {
             for (size_t i = 0; i < builtin_hrtf_length; ++i) {
                 const double v = data[ch][i];
                 total += v * v;
-                if (i < 26) pre += v * v;
+                if (i < 26) {
+                    pre += v * v;
+                }
             }
         }
         return pre / total;

@@ -30,7 +30,9 @@ namespace {
 
     bool all_finite(const std::vector<float>& v) {
         for (float x : v) {
-            if (!std::isfinite(x)) return false;
+            if (!std::isfinite(x)) {
+                return false;
+            }
         }
         return true;
     }
@@ -53,7 +55,9 @@ TEST(RtPublished, ReaderNeverSeesTornOrFreedProduct) {
             if (p) {
                 const float first = (*p)[0];
                 for (float v : *p) {
-                    if (v != first) inconsistencies.fetch_add(1, std::memory_order_relaxed);
+                    if (v != first) {
+                        inconsistencies.fetch_add(1, std::memory_order_relaxed);
+                    }
                 }
             }
         }
@@ -83,7 +87,9 @@ TEST(DspThreads, RotatorSetterHammerVsProcess) {
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {
             rot.process_frame(in.data(), out.data());
-            if (!all_finite(out)) bad.store(true, std::memory_order_relaxed);
+            if (!all_finite(out)) {
+                bad.store(true, std::memory_order_relaxed);
+            }
         }
     });
 
@@ -114,7 +120,9 @@ TEST(DspThreads, DecoderSpeakerHammerVsProcess) {
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {
             dec.process_frame(in.data(), out.data(), 8);
-            if (!all_finite(out)) bad.store(true, std::memory_order_relaxed);
+            if (!all_finite(out)) {
+                bad.store(true, std::memory_order_relaxed);
+            }
         }
     });
 
@@ -144,8 +152,9 @@ TEST(DspThreads, EncoderDirectionHammerVsProcess) {
 
     std::vector<std::vector<float>> bufs(enc.channels(), std::vector<float>(16));
     std::vector<float*>             out;
-    for (auto& b : bufs)
+    for (auto& b : bufs) {
         out.push_back(b.data());
+    }
     std::vector<float> mono(16, 1.f);
 
     std::atomic<bool> stop{false};
@@ -155,7 +164,9 @@ TEST(DspThreads, EncoderDirectionHammerVsProcess) {
         while (!stop.load(std::memory_order_relaxed)) {
             enc.process(mono.data(), out.data(), 16);
             for (auto& b : bufs) {
-                if (!all_finite(b)) bad.store(true, std::memory_order_relaxed);
+                if (!all_finite(b)) {
+                    bad.store(true, std::memory_order_relaxed);
+                }
             }
         }
     });
@@ -177,8 +188,9 @@ TEST(DspThreads, SoundfieldGridResizeVsProcess) {
 
     std::vector<std::vector<float>> bufs(grid.channels(), std::vector<float>(32, 0.1f));
     std::vector<const float*>       in;
-    for (auto& b : bufs)
+    for (auto& b : bufs) {
         in.push_back(b.data());
+    }
 
     std::atomic<bool> stop{false};
 

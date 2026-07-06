@@ -123,12 +123,18 @@ namespace ambitap::dsp {
                 const int abs_m = std::abs(m);
                 bool      flip  = false;
 
-                if (m_flip_lr && m < 0) flip = !flip;
+                if (m_flip_lr && m < 0) {
+                    flip = !flip;
+                }
                 if (m_flip_fb) {
                     const bool fb_flip = (m > 0 && (m & 1)) || (m < 0 && ((abs_m & 1) == 0));
-                    if (fb_flip) flip = !flip;
+                    if (fb_flip) {
+                        flip = !flip;
+                    }
                 }
-                if (m_flip_ud && (((n + abs_m) & 1) != 0)) flip = !flip;
+                if (m_flip_ud && (((n + abs_m) & 1) != 0)) {
+                    flip = !flip;
+                }
 
                 m_sign[ch] = flip ? -1.f : 1.f;
             }

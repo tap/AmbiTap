@@ -155,13 +155,15 @@ namespace ambitap::dsp {
                           size_t frame_count, bool frame_layout) const noexcept {
             if (!m || m->speakers != out_channels) {
                 if (frame_layout) {
-                    for (size_t ch = 0; ch < out_channels; ++ch)
+                    for (size_t ch = 0; ch < out_channels; ++ch) {
                         out[0][ch] = 0.f;
+                    }
                 }
                 else {
                     for (size_t ch = 0; ch < out_channels; ++ch) {
-                        for (size_t i = 0; i < frame_count; ++i)
+                        for (size_t i = 0; i < frame_count; ++i) {
                             out[ch][i] = 0.f;
+                        }
                     }
                 }
                 return;
@@ -181,7 +183,9 @@ namespace ambitap::dsp {
                 algorithm = m_algorithm;
                 mre       = m_max_re;
             }
-            if (speakers.empty()) return nullptr; // keep previous matrix
+            if (speakers.empty()) {
+                return nullptr; // keep previous matrix
+            }
 
             Eigen::MatrixXf D;
             switch (algorithm) {

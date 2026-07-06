@@ -35,7 +35,7 @@ namespace ambitap::dsp {
 
         // Audio-side smoothed values.
         smoothed_table<k_max_channel_count> m_smooth;
-        smoothed_scalar                   m_gain{1.0f};
+        smoothed_scalar                     m_gain{1.0f};
 
       public:
         /// @param order  Ambisonics order in [0, k_max_order]; channel count is (order+1)^2.

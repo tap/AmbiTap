@@ -22,8 +22,9 @@ namespace {
         const float el = std::atan2(d.z(), std::sqrt(d.x() * d.x() + d.y() * d.y()));
         evaluate_sh(order, az, el, sh);
         Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
-        for (Eigen::Index i = 0; i < v.size(); ++i)
+        for (Eigen::Index i = 0; i < v.size(); ++i) {
             v(i) = sh[i];
+        }
         return v;
     }
 

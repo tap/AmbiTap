@@ -69,8 +69,11 @@ namespace ambitap {
             den += g * weights[static_cast<size_t>(n)] * weights[static_cast<size_t>(n)];
         }
         const float alpha = std::sqrt(num / den);
-        for (auto& w : weights)
-            w *= alpha;
+        for (auto& w : weights) {
+            {
+                w *= alpha;
+            }
+        }
         return weights;
     }
 
