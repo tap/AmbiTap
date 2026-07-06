@@ -6,18 +6,18 @@
 #ifndef AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 #define AMBITAP_ANALYSIS_SOUNDFIELD_GRID_H
 
-#include "../dsp/util/rt_published.h"
-#include "../math/core/coords.h"
-#include "../math/core/indexing.h"
-#include "../math/core/spherical_harmonics.h"
-#include "../math/core/validate.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <memory>
 #include <vector>
+
+#include "../dsp/util/rt_published.h"
+#include "../math/core/coords.h"
+#include "../math/core/indexing.h"
+#include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
 
 namespace ambitap::analysis {
 
@@ -50,10 +50,10 @@ namespace ambitap::analysis {
         /// Display-ready snapshot: row-major rows x cols values in [0, 1],
         /// normalized over a dynamic range below the current peak.
         struct image {
-            int                rows {0};
-            int                cols {0};
+            int                rows{0};
+            int                cols{0};
             std::vector<float> data;
-            float              peak_db {0.f}; ///< absolute peak, for annotation
+            float              peak_db{0.f}; ///< absolute peak, for annotation
         };
 
       private:
@@ -72,14 +72,15 @@ namespace ambitap::analysis {
                 , directions(az * (az / 2))
                 , Y(static_cast<size_t>(directions) * channels, 0.f)
                 , energy(static_cast<size_t>(directions)) {
-                for (auto& e : energy) e.store(0.f, std::memory_order_relaxed);
+                for (auto& e : energy)
+                    e.store(0.f, std::memory_order_relaxed);
             }
         };
 
         int                m_order;
         size_t             m_channels;
-        std::atomic<float> m_fs {48000.f};
-        std::atomic<float> m_smoothing_ms {200.f};
+        std::atomic<float> m_fs{48000.f};
+        std::atomic<float> m_smoothing_ms{200.f};
 
         dsp::rt_published<const grid> m_grid; // wait-free for the audio thread
 
@@ -105,9 +106,7 @@ namespace ambitap::analysis {
         void prepare(float sample_rate) { m_fs.store(sample_rate, std::memory_order_relaxed); }
 
         /// One-pole smoothing time constant for per-direction energy, in ms.
-        void set_smoothing_time_ms(float ms) {
-            m_smoothing_ms.store(ms, std::memory_order_relaxed);
-        }
+        void  set_smoothing_time_ms(float ms) { m_smoothing_ms.store(ms, std::memory_order_relaxed); }
         float smoothing_time_ms() const { return m_smoothing_ms.load(std::memory_order_relaxed); }
 
         /// Rebuild the SH table at a new resolution (elevation resolution is
@@ -120,8 +119,7 @@ namespace ambitap::analysis {
                 for (int col = 0; col < fresh->az_steps; ++col) {
                     const float az = azimuth_of_column(col, fresh->az_steps);
                     const int   d  = row * fresh->az_steps + col;
-                    evaluate_sh(m_order, az, el,
-                                fresh->Y.data() + static_cast<size_t>(d) * m_channels);
+                    evaluate_sh(m_order, az, el, fresh->Y.data() + static_cast<size_t>(d) * m_channels);
                 }
             }
             m_grid.publish(std::move(fresh));
@@ -155,7 +153,8 @@ namespace ambitap::analysis {
             for (size_t c = 0; c < m_channels; ++c) {
                 for (size_t c2 = c; c2 < m_channels; ++c2) {
                     float acc = 0.f;
-                    for (size_t i = 0; i < frame_count; ++i) acc += in[c][i] * in[c2][i];
+                    for (size_t i = 0; i < frame_count; ++i)
+                        acc += in[c][i] * in[c2][i];
                     acc *= inv_n;
                     R[c * m_channels + c2] = acc;
                     R[c2 * m_channels + c] = acc;

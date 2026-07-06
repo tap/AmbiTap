@@ -3,12 +3,12 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/encoder.h"
-#include "ambitap/math/core/spherical_harmonics.h"
+#include <vector>
 
 #include <gtest/gtest.h>
 
-#include <vector>
+#include "ambitap/dsp/encoder.h"
+#include "ambitap/math/core/spherical_harmonics.h"
 
 using namespace ambitap;
 
@@ -48,14 +48,14 @@ TEST(DspEncoder, ProcessAppliesCoefficientsAndGain) {
     std::vector<float>              in     = {1.0f, -0.5f, 0.25f, 0.0f, 0.75f, -1.0f, 0.1f, 0.9f};
     std::vector<std::vector<float>> out(enc.channels(), std::vector<float>(frames));
     std::vector<float*>             ptrs;
-    for (auto& v : out) ptrs.push_back(v.data());
+    for (auto& v : out)
+        ptrs.push_back(v.data());
 
     enc.process(in.data(), ptrs.data(), frames);
 
     for (size_t ch = 0; ch < enc.channels(); ++ch) {
         for (size_t i = 0; i < frames; ++i) {
-            EXPECT_FLOAT_EQ(out[ch][i], in[i] * enc.coefficients()[ch] * 2.0f)
-                << "ch=" << ch << " i=" << i;
+            EXPECT_FLOAT_EQ(out[ch][i], in[i] * enc.coefficients()[ch] * 2.0f) << "ch=" << ch << " i=" << i;
         }
     }
 

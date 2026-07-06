@@ -6,16 +6,17 @@
 #ifndef AMBITAP_MATH_EPAD_H
 #define AMBITAP_MATH_EPAD_H
 
+#include <cmath>
+#include <stdexcept>
+#include <vector>
+
+#include <Eigen/Dense>
+
 #include "../core/coords.h"
 #include "../core/indexing.h"
 #include "../core/spherical_harmonics.h"
 #include "../core/validate.h"
 #include "max_re.h"
-
-#include <Eigen/Dense>
-#include <cmath>
-#include <stdexcept>
-#include <vector>
 
 namespace ambitap {
 
@@ -51,8 +52,7 @@ namespace ambitap {
     /// @param use_max_re  If true, apply energy-normalized max-rE column weighting.
     /// @return Decoder matrix (num_speakers x (order+1)^2); speaker_signals = D * hoa.
     /// @throws std::invalid_argument on out-of-range order or empty speaker list.
-    inline Eigen::MatrixXf compute_epad_decoder(int                                 order,
-                                                const std::vector<spherical_coord>& speakers,
+    inline Eigen::MatrixXf compute_epad_decoder(int order, const std::vector<spherical_coord>& speakers,
                                                 bool use_max_re = false) {
         validated_order(order, "compute_epad_decoder");
         if (speakers.empty()) {
@@ -83,11 +83,12 @@ namespace ambitap {
 
         // Truncate: keep only singular pairs the layout can actually reproduce.
         Eigen::Index r = 0;
-        while (r < S.size() && S(r) > 1e-3f * S(0)) ++r;
+        while (r < S.size() && S(r) > 1e-3f * S(0))
+            ++r;
 
         const float     scale = 1.0f / std::sqrt(static_cast<float>(L));
-        Eigen::MatrixXf D     = scale * (U.leftCols(r) * V.leftCols(r).transpose())
-                            * n3d.asDiagonal(); // (L, C), SN3D input
+        Eigen::MatrixXf D =
+            scale * (U.leftCols(r) * V.leftCols(r).transpose()) * n3d.asDiagonal(); // (L, C), SN3D input
 
         if (use_max_re) {
             auto weights = max_re_weights_energy_normalized(order);

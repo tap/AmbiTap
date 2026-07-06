@@ -6,6 +6,11 @@
 #ifndef AMBITAP_MATH_ALLRAD_H
 #define AMBITAP_MATH_ALLRAD_H
 
+#include <cmath>
+#include <vector>
+
+#include <Eigen/Dense>
+
 #include "../core/coords.h"
 #include "../core/indexing.h"
 #include "../core/spherical_harmonics.h"
@@ -13,10 +18,6 @@
 #include "../geometry/speaker_layout.h"
 #include "../geometry/tdesigns.h"
 #include "max_re.h"
-
-#include <Eigen/Dense>
-#include <cmath>
-#include <vector>
 
 namespace ambitap {
 
@@ -43,8 +44,7 @@ namespace ambitap {
     ///         Absolute gain matches compute_mode_matching_decoder: decoding a
     ///         unit-pressure omni field yields unit summed pressure.
     /// @throws std::invalid_argument on out-of-range order or empty speaker list.
-    inline Eigen::MatrixXf compute_allrad_decoder(int                                 order,
-                                                  const std::vector<spherical_coord>& speakers,
+    inline Eigen::MatrixXf compute_allrad_decoder(int order, const std::vector<spherical_coord>& speakers,
                                                   bool use_max_re = true) {
         validated_order(order, "compute_allrad_decoder");
         // speaker_layout validates non-emptiness.

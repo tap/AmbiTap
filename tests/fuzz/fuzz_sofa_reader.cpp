@@ -18,13 +18,13 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/math/binaural/sofa_reader.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <string>
+
+#include "ambitap/math/binaural/sofa_reader.h"
 
 namespace {
 

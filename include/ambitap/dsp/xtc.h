@@ -8,17 +8,17 @@
 #ifndef AMBITAP_DSP_XTC_H
 #define AMBITAP_DSP_XTC_H
 
-#include "../math/binaural/convolution.h"
-#include "../math/binaural/hrtf_data.h"
-#include "../math/binaural/ooura_fft.h"
-#include "../math/binaural/resample.h"
-#include "../math/core/spherical_harmonics.h"
-
 #include <algorithm>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <vector>
+
+#include "../math/binaural/convolution.h"
+#include "../math/binaural/hrtf_data.h"
+#include "../math/binaural/ooura_fft.h"
+#include "../math/binaural/resample.h"
+#include "../math/core/spherical_harmonics.h"
 
 namespace ambitap::dsp {
 
@@ -170,17 +170,17 @@ namespace ambitap::dsp {
         /// Raised-cosine taper length at each FIR end.
         static constexpr size_t k_window_taper = 128;
 
-        float  m_span_deg {20.0f};
-        float  m_distance {1.0f};
-        float  m_regularization {0.5f};
-        float  m_sample_rate {builtin_hrtf_sample_rate};
-        size_t m_block_size {0};
+        float  m_span_deg{20.0f};
+        float  m_distance{1.0f};
+        float  m_regularization{0.5f};
+        float  m_sample_rate{builtin_hrtf_sample_rate};
+        size_t m_block_size{0};
 
         // Shipped FIRs (makeup attenuation baked in), indexed [speaker][input]
         // with 0 = left. Speaker-left feed = fir(0,0)*in_L + fir(0,1)*in_R.
         std::vector<float> m_fir[2][2];
-        float              m_makeup {1.0f};         // linear, <= 1
-        float              m_design_gain_db {0.0f}; // realized max |H_ij| pre-makeup
+        float              m_makeup{1.0f};         // linear, <= 1
+        float              m_design_gain_db{0.0f}; // realized max |H_ij| pre-makeup
 
         // Audio-path engine: convolvers in [LL, LR, RL, RR] order + mix
         // scratch (so outputs may alias inputs).
@@ -247,9 +247,7 @@ namespace ambitap::dsp {
 
         /// Shipped FIR (makeup attenuation baked in) feeding `speaker` (0 =
         /// left, 1 = right) from program `input` (0 = left, 1 = right).
-        const std::vector<float>& fir(size_t speaker, size_t input) const {
-            return m_fir[speaker][input];
-        }
+        const std::vector<float>& fir(size_t speaker, size_t input) const { return m_fir[speaker][input]; }
 
         /// Static makeup attenuation baked into the shipped FIRs (linear,
         /// <= 1): the reciprocal of the realized worst-case filter gain.
@@ -261,7 +259,8 @@ namespace ambitap::dsp {
 
         /// Clear convolver history; keep filters and allocations.
         void reset() {
-            for (auto& c : m_conv) c.reset();
+            for (auto& c : m_conv)
+                c.reset();
         }
 
         /// Process one block: two program inputs -> two speaker feeds, each
@@ -277,10 +276,12 @@ namespace ambitap::dsp {
             }
             m_conv[0].process(in_left, m_mix_left.data());
             m_conv[1].process(in_right, m_scratch.data());
-            for (size_t i = 0; i < frame_count; ++i) m_mix_left[i] += m_scratch[i];
+            for (size_t i = 0; i < frame_count; ++i)
+                m_mix_left[i] += m_scratch[i];
             m_conv[2].process(in_left, m_mix_right.data());
             m_conv[3].process(in_right, m_scratch.data());
-            for (size_t i = 0; i < frame_count; ++i) m_mix_right[i] += m_scratch[i];
+            for (size_t i = 0; i < frame_count; ++i)
+                m_mix_right[i] += m_scratch[i];
             std::copy_n(m_mix_left.begin(), frame_count, out_left);
             std::copy_n(m_mix_right.begin(), frame_count, out_right);
         }
@@ -296,7 +297,8 @@ namespace ambitap::dsp {
             std::vector<float> ir(builtin_hrtf_length, 0.0f);
             for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {
                 const float* fir = (ear == 0) ? builtin_hrtf_left[ch] : builtin_hrtf_right[ch];
-                for (size_t t = 0; t < builtin_hrtf_length; ++t) ir[t] += sh[ch] * fir[t];
+                for (size_t t = 0; t < builtin_hrtf_length; ++t)
+                    ir[t] += sh[ch] * fir[t];
             }
             return ir;
         }
@@ -309,14 +311,12 @@ namespace ambitap::dsp {
                 w = 1.0;
             }
             else if (f < k_reg_lo_pass_hz) {
-                const double t =
-                    std::log(f / k_reg_lo_stop_hz) / std::log(k_reg_lo_pass_hz / k_reg_lo_stop_hz);
-                w = 0.5 * (1.0 + std::cos(3.14159265358979323846 * t));
+                const double t = std::log(f / k_reg_lo_stop_hz) / std::log(k_reg_lo_pass_hz / k_reg_lo_stop_hz);
+                w              = 0.5 * (1.0 + std::cos(3.14159265358979323846 * t));
             }
             else if (f > k_reg_hi_pass_hz) {
-                const double t =
-                    std::log(f / k_reg_hi_pass_hz) / std::log(k_reg_hi_stop_hz / k_reg_hi_pass_hz);
-                w = 0.5 * (1.0 - std::cos(3.14159265358979323846 * t));
+                const double t = std::log(f / k_reg_hi_pass_hz) / std::log(k_reg_hi_stop_hz / k_reg_hi_pass_hz);
+                w              = 0.5 * (1.0 - std::cos(3.14159265358979323846 * t));
             }
             return std::exp((1.0 - w) * std::log(beta_in) + w * std::log(k_beta_out));
         }
@@ -341,13 +341,13 @@ namespace ambitap::dsp {
                     const float        az   = (s == 0) ? half_span_rad : -half_span_rad;
                     std::vector<float> hrir = kemar_hrir(az, e);
                     if (m_sample_rate != builtin_hrtf_sample_rate) {
-                        hrir = resample_fir(hrir.data(), hrir.size(), builtin_hrtf_sample_rate,
-                                            m_sample_rate);
+                        hrir = resample_fir(hrir.data(), hrir.size(), builtin_hrtf_sample_rate, m_sample_rate);
                     }
                     auto&        buf = spec[e][s];
                     const size_t n   = std::min(hrir.size(), G);
                     buf.assign(G, 0.0);
-                    for (size_t t = 0; t < n; ++t) buf[t] = static_cast<double>(hrir[t]);
+                    for (size_t t = 0; t < n; ++t)
+                        buf[t] = static_cast<double>(hrir[t]);
                     fft.forward_inplace(buf.data());
                 }
             }
@@ -364,12 +364,13 @@ namespace ambitap::dsp {
                 const size_t        n = x.size();
                 std::vector<double> out(n, 0.0);
                 for (size_t k = 1; k < n; ++k) {
-                    const auto lo = std::max<size_t>(
-                        1, static_cast<size_t>(std::ceil(static_cast<double>(k) * 0.8908987)));
-                    const auto hi = std::min<size_t>(
-                        n - 1, static_cast<size_t>(std::floor(static_cast<double>(k) * 1.1224620)));
+                    const auto lo =
+                        std::max<size_t>(1, static_cast<size_t>(std::ceil(static_cast<double>(k) * 0.8908987)));
+                    const auto hi =
+                        std::min<size_t>(n - 1, static_cast<size_t>(std::floor(static_cast<double>(k) * 1.1224620)));
                     double acc = 0.0;
-                    for (size_t j = lo; j <= hi; ++j) acc += x[j];
+                    for (size_t j = lo; j <= hi; ++j)
+                        acc += x[j];
                     out[k] = acc / static_cast<double>(hi - lo + 1);
                 }
                 out[0] = out[1];
@@ -386,19 +387,20 @@ namespace ambitap::dsp {
             for (size_t k = 0; k < bins; ++k) {
                 double p = 0.0;
                 for (int e = 0; e < 2; ++e)
-                    for (int s = 0; s < 2; ++s) p += std::norm(plant_bin(e, s, k));
+                    for (int s = 0; s < 2; ++s)
+                        p += std::norm(plant_bin(e, s, k));
                 plant_power[k] = 0.5 * p;
             }
             smooth_third_octave(plant_power);
 
             // ---- Per-bin regularized inverse + raw diagonal level -----------
             const double beta_in =
-                k_beta_in_default
-                * std::pow(10.0, 2.0 * (static_cast<double>(m_regularization) - 0.5));
+                k_beta_in_default * std::pow(10.0, 2.0 * (static_cast<double>(m_regularization) - 0.5));
             std::vector<cd>     h[2][2];
             std::vector<double> diag(bins, 0.0); // sqrt(|P00|*|P11|), pre-norm
             for (auto& row : h)
-                for (auto& v : row) v.assign(bins, cd {0.0, 0.0});
+                for (auto& v : row)
+                    v.assign(bins, cd{0.0, 0.0});
 
             for (size_t k = 0; k < bins; ++k) {
                 const double f    = static_cast<double>(k) * fs / static_cast<double>(G);
@@ -435,9 +437,11 @@ namespace ambitap::dsp {
             //      (never chase a narrow plant notch), frozen outside the
             //      normalization range ---------------------------------------
             std::vector<double> smooth(bins, 0.0);
-            for (size_t k = 0; k < bins; ++k) smooth[k] = diag[k] * diag[k];
+            for (size_t k = 0; k < bins; ++k)
+                smooth[k] = diag[k] * diag[k];
             smooth_third_octave(smooth);
-            for (size_t k = 0; k < bins; ++k) smooth[k] = std::sqrt(smooth[k]);
+            for (size_t k = 0; k < bins; ++k)
+                smooth[k] = std::sqrt(smooth[k]);
 
             size_t k_lo = bins - 1, k_hi = 0;
             for (size_t k = 0; k < bins; ++k) {
@@ -446,8 +450,7 @@ namespace ambitap::dsp {
                 if (f <= k_norm_hi_hz && k > k_hi) k_hi = k;
             }
             if (k_hi < k_lo) k_lo = k_hi; // degenerate rates: freeze everywhere
-            const double cap =
-                std::pow(10.0, (static_cast<double>(k_gain_ceiling_db) - k_cap_margin_db) / 20.0);
+            const double cap = std::pow(10.0, (static_cast<double>(k_gain_ceiling_db) - k_cap_margin_db) / 20.0);
 
             // Per-bin normalization factor and its gain demand; global fit of
             // the worst in-fit-band demand onto the ceiling.
@@ -457,7 +460,8 @@ namespace ambitap::dsp {
                 const double d = smooth[std::clamp(k, k_lo, k_hi)];
                 norm[k]        = (d > 1e-12) ? 1.0 / d : 0.0;
                 for (auto& row : h)
-                    for (auto& v : row) demand[k] = std::max(demand[k], std::abs(v[k]) * norm[k]);
+                    for (auto& v : row)
+                        demand[k] = std::max(demand[k], std::abs(v[k]) * norm[k]);
                 const double f = static_cast<double>(k) * fs / static_cast<double>(G);
                 if (f >= k_fit_lo_hz && f <= k_fit_hi_hz) fit_max = std::max(fit_max, demand[k]);
             }
@@ -474,7 +478,8 @@ namespace ambitap::dsp {
                     n *= 0.5 * (1.0 + std::cos(3.14159265358979323846 * t));
                 }
                 for (auto& row : h)
-                    for (auto& v : row) v[k] *= n;
+                    for (auto& v : row)
+                        v[k] *= n;
             }
 
             // ---- Realize the FIRs: IFFT, modeling-delay rotation, taper -----
@@ -500,16 +505,14 @@ namespace ambitap::dsp {
                         if (t < k_window_taper) {
                             w = 0.5
                                 * (1.0
-                                   - std::cos(3.14159265358979323846
-                                              * (static_cast<double>(t) + 0.5)
+                                   - std::cos(3.14159265358979323846 * (static_cast<double>(t) + 0.5)
                                               / static_cast<double>(k_window_taper)));
                         }
                         else if (t >= k_fir_length - k_window_taper) {
                             const size_t r = k_fir_length - 1 - t;
                             w              = 0.5
                                 * (1.0
-                                   - std::cos(3.14159265358979323846
-                                              * (static_cast<double>(r) + 0.5)
+                                   - std::cos(3.14159265358979323846 * (static_cast<double>(r) + 0.5)
                                               / static_cast<double>(k_window_taper)));
                         }
                         fir[t] = static_cast<float>(time[src] * scale * w);
@@ -522,7 +525,8 @@ namespace ambitap::dsp {
             for (auto& row : m_fir) {
                 for (auto& fir : row) {
                     std::fill(time.begin(), time.end(), 0.0);
-                    for (size_t t = 0; t < k_fir_length; ++t) time[t] = static_cast<double>(fir[t]);
+                    for (size_t t = 0; t < k_fir_length; ++t)
+                        time[t] = static_cast<double>(fir[t]);
                     fft.forward_inplace(time.data());
                     gmax = std::max({gmax, std::abs(time[0]), std::abs(time[1])});
                     for (size_t k = 1; k < G / 2; ++k) {
@@ -539,7 +543,8 @@ namespace ambitap::dsp {
             m_makeup         = static_cast<float>(std::min(1.0, 1.0 / std::max(gmax, 1e-12)));
             for (auto& row : m_fir)
                 for (auto& fir : row)
-                    for (auto& v : fir) v *= m_makeup;
+                    for (auto& v : fir)
+                        v *= m_makeup;
 
             rebuild_convolvers();
         }

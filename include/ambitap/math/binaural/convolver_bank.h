@@ -7,12 +7,12 @@
 #ifndef AMBITAP_MATH_CONVOLVER_BANK_H
 #define AMBITAP_MATH_CONVOLVER_BANK_H
 
-#include "ooura_fft.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <vector>
+
+#include "ooura_fft.h"
 
 namespace ambitap {
 
@@ -36,13 +36,14 @@ namespace ambitap {
     /// Freestanding: builds with -fno-exceptions/-fno-rtti; no locks, no
     /// threads. prepare() allocates (init/control time); process() is
     /// wait-free and allocation-free.
-    template <typename Real, typename Fft> class basic_convolver_bank {
-        size_t m_block_size {0};
-        size_t m_fft_size {0}; // 2 * m_block_size
-        size_t m_inputs {0};
-        size_t m_outputs {0};
-        size_t m_partitions {0};
-        size_t m_ring_pos {0};
+    template <typename Real, typename Fft>
+    class basic_convolver_bank {
+        size_t m_block_size{0};
+        size_t m_fft_size{0}; // 2 * m_block_size
+        size_t m_inputs{0};
+        size_t m_outputs{0};
+        size_t m_partitions{0};
+        size_t m_ring_pos{0};
 
         std::vector<Fft>  m_fft;        // exactly one; vector for deferred init
         std::vector<Real> m_ir_freq;    // [output][input][partition][fft_size]
@@ -77,8 +78,7 @@ namespace ambitap {
         ///                    [output][input], each `taps` samples long.
         /// @param taps        Common FIR length, >= 1.
         /// @return false (leaving the bank unprepared) on bad arguments.
-        bool prepare(size_t block_size, size_t num_inputs, size_t num_outputs,
-                     const float* const* irs, size_t taps) {
+        bool prepare(size_t block_size, size_t num_inputs, size_t num_outputs, const float* const* irs, size_t taps) {
             m_partitions = 0;
             if (!irs || taps == 0 || num_inputs == 0 || num_outputs == 0 || block_size < 4
                 || (block_size & (block_size - 1)) != 0) {
@@ -112,8 +112,7 @@ namespace ambitap {
                         m_fft[0].forward_inplace(temp.data());
                         std::copy(temp.begin(), temp.end(),
                                   m_ir_freq.begin()
-                                      + static_cast<long>(((out * num_inputs + in) * partitions + p)
-                                                          * m_fft_size));
+                                      + static_cast<long>(((out * num_inputs + in) * partitions + p) * m_fft_size));
                     }
                 }
             }

@@ -4,6 +4,11 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <stdexcept>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/analysis/soundfield_grid.h"
 #include "ambitap/dsp/binaural_renderer.h"
 #include "ambitap/dsp/decoder.h"
@@ -20,11 +25,6 @@
 #include "ambitap/math/decoding/mode_matching.h"
 #include "ambitap/math/geometry/layouts.h"
 #include "ambitap/math/geometry/speaker_layout.h"
-
-#include <gtest/gtest.h>
-
-#include <stdexcept>
-#include <vector>
 
 using namespace ambitap;
 
@@ -81,11 +81,9 @@ TEST(Hardening, BinauralRendererValidatesCustomHrtfShape) {
     using firs = std::vector<std::vector<float>>;
     const firs good(4, std::vector<float>(32, 0.f));
 
-    EXPECT_THROW(bin.set_custom_hrtf(firs(3, std::vector<float>(32, 0.f)), good),
-                 std::invalid_argument)
+    EXPECT_THROW(bin.set_custom_hrtf(firs(3, std::vector<float>(32, 0.f)), good), std::invalid_argument)
         << "too few left FIRs";
-    EXPECT_THROW(bin.set_custom_hrtf(good, firs(5, std::vector<float>(32, 0.f))),
-                 std::invalid_argument)
+    EXPECT_THROW(bin.set_custom_hrtf(good, firs(5, std::vector<float>(32, 0.f))), std::invalid_argument)
         << "too many right FIRs";
 
     firs ragged = good;

@@ -5,15 +5,15 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/xtc.h"
-
-#include <gtest/gtest.h>
-
 #include <array>
 #include <cmath>
 #include <complex>
 #include <cstring>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "ambitap/dsp/xtc.h"
 
 using namespace ambitap;
 
@@ -33,7 +33,8 @@ namespace {
         std::vector<float> ir(builtin_hrtf_length, 0.0f);
         for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {
             const float* fir = (ear == 0) ? builtin_hrtf_left[ch] : builtin_hrtf_right[ch];
-            for (size_t t = 0; t < builtin_hrtf_length; ++t) ir[t] += sh[ch] * fir[t];
+            for (size_t t = 0; t < builtin_hrtf_length; ++t)
+                ir[t] += sh[ch] * fir[t];
         }
         return ir;
     }
@@ -41,11 +42,11 @@ namespace {
     /// Textbook DFT at an arbitrary frequency (e^{-jwt} convention) —
     /// deliberately independent of the Ooura FFT the design itself uses.
     cd dft_at(const std::vector<float>& x, double f) {
-        cd           acc {0.0, 0.0};
+        cd           acc{0.0, 0.0};
         const double w = -2.0 * k_dpi * f / k_fs;
         for (size_t n = 0; n < x.size(); ++n) {
             const double p = w * static_cast<double>(n);
-            acc += static_cast<double>(x[n]) * cd {std::cos(p), std::sin(p)};
+            acc += static_cast<double>(x[n]) * cd{std::cos(p), std::sin(p)};
         }
         return acc;
     }
@@ -59,8 +60,7 @@ namespace {
         std::vector<double> f;
         const int           n = static_cast<int>(std::ceil(std::log2(hi / lo) * points_per_octave));
         for (int i = 0; i <= n; ++i) {
-            f.push_back(
-                std::min(hi, lo * std::pow(2.0, static_cast<double>(i) / points_per_octave)));
+            f.push_back(std::min(hi, lo * std::pow(2.0, static_cast<double>(i) / points_per_octave)));
         }
         return f;
     }
@@ -74,8 +74,7 @@ namespace {
     struct plant {
         std::array<std::array<std::vector<cd>, 2>, 2> c; // [ear][speaker]
     };
-    plant make_plant(double span_deg, double distance, double dy, double yaw,
-                     const std::vector<double>& freqs) {
+    plant make_plant(double span_deg, double distance, double dy, double yaw, const std::vector<double>& freqs) {
         plant        P;
         const double half = 0.5 * span_deg * k_dpi / 180.0;
         for (size_t s = 0; s < 2; ++s) {
@@ -92,7 +91,7 @@ namespace {
                 out.resize(freqs.size());
                 for (size_t i = 0; i < freqs.size(); ++i) {
                     const double ph = -2.0 * k_dpi * freqs[i] * dt;
-                    out[i]          = dft_at(ir, freqs[i]) * gain * cd {std::cos(ph), std::sin(ph)};
+                    out[i]          = dft_at(ir, freqs[i]) * gain * cd{std::cos(ph), std::sin(ph)};
                 }
             }
         }
@@ -147,8 +146,8 @@ namespace {
     /// own 300 Hz – 6 kHz mean; returns the worse-ear max |deviation| in dB
     /// over 200 Hz – 8 kHz. The grid extends ±1/6 octave past the audit band
     /// so the smoother at the edges sees real data, not a clamped window.
-    double measure_coloration(const plant& C, const filter_spectra& F,
-                              const std::vector<double>& freqs, int points_per_octave) {
+    double measure_coloration(const plant& C, const filter_spectra& F, const std::vector<double>& freqs,
+                              int points_per_octave) {
         const int    w     = points_per_octave / 6; // ±1/6 octave
         const size_t n     = freqs.size();
         double       worst = 0.0;
@@ -163,7 +162,8 @@ namespace {
                 const size_t a   = (k < static_cast<size_t>(w)) ? 0 : k - static_cast<size_t>(w);
                 const size_t b   = std::min(n - 1, k + static_cast<size_t>(w));
                 double       acc = 0.0;
-                for (size_t j = a; j <= b; ++j) acc += mag2[j];
+                for (size_t j = a; j <= b; ++j)
+                    acc += mag2[j];
                 smoothed[k] = 10.0 * std::log10(acc / static_cast<double>(b - a + 1) + 1e-30);
             }
             double ref = 0.0;
@@ -191,8 +191,7 @@ namespace {
         return g;
     }
     const std::vector<double>& audit_grid() {
-        static const auto g =
-            log_freqs(200.0 * std::pow(2.0, -1.0 / 6.0), 8000.0 * std::pow(2.0, 1.0 / 6.0), 96);
+        static const auto g = log_freqs(200.0 * std::pow(2.0, -1.0 / 6.0), 8000.0 * std::pow(2.0, 1.0 / 6.0), 96);
         return g;
     }
 
@@ -380,7 +379,8 @@ TEST(DspXtc, ProcessRealizesShippedFirs) {
 
     // Mismatched block: silence (and no state corruption).
     x.process(in.data(), in.data(), out_l.data(), out_r.data(), 32);
-    for (size_t i = 0; i < 32; ++i) ASSERT_EQ(out_l[i], 0.0f);
+    for (size_t i = 0; i < 32; ++i)
+        ASSERT_EQ(out_l[i], 0.0f);
 
     // Impulse on the left input -> fir(0,0) on the left speaker, fir(1,0) on
     // the right speaker.
@@ -420,6 +420,7 @@ TEST(DspXtc, DesignAtCommonHostRates) {
 
         std::vector<float> in(128, 0.5f), l(128), r(128);
         x.process(in.data(), in.data(), l.data(), r.data(), 128);
-        for (const float v : l) ASSERT_TRUE(std::isfinite(v));
+        for (const float v : l)
+            ASSERT_TRUE(std::isfinite(v));
     }
 }

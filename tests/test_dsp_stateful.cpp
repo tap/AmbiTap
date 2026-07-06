@@ -3,15 +3,15 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/analysis/energy_vector.h"
 #include "ambitap/dsp/doppler.h"
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/dsp/spatial_compressor.h"
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <vector>
 
 using namespace ambitap;
 
@@ -22,7 +22,8 @@ TEST(DspDoppler, SilentUntilPrepared) {
     float in[4]  = {1.f, 1.f, 1.f, 1.f};
     float out[4] = {9.f, 9.f, 9.f, 9.f};
     dop.process_frame(in, out);
-    for (float v : out) EXPECT_EQ(v, 0.f);
+    for (float v : out)
+        EXPECT_EQ(v, 0.f);
 }
 
 TEST(DspDoppler, IntegerDelayPassesImpulse) {
@@ -39,7 +40,8 @@ TEST(DspDoppler, IntegerDelayPassesImpulse) {
     float        in[4], out[4];
     for (size_t i = 0; i < delay + 8; ++i) {
         const float v = (i == 0) ? 1.f : 0.f;
-        for (auto& x : in) x = v;
+        for (auto& x : in)
+            x = v;
         dop.process_frame(in, out);
         const float expected = (i == delay) ? 1.f : 0.f;
         for (size_t ch = 0; ch < 4; ++ch) {
@@ -75,7 +77,8 @@ TEST(DspSpatialCompressor, SteadyStateGainReduction) {
 
     // Drive with a constant W of 1.0 (0 dB) until the envelope converges.
     float gain = 1.f;
-    for (int i = 0; i < 48000; ++i) gain = comp.process_envelope(1.f);
+    for (int i = 0; i < 48000; ++i)
+        gain = comp.process_envelope(1.f);
 
     // 12 dB over threshold at 4:1 -> reduce by 12 * (1 - 1/4) = 9 dB.
     EXPECT_NEAR(gain, std::pow(10.f, -9.f / 20.f), 1e-3f);
@@ -87,10 +90,9 @@ TEST(DspSpatialCompressor, GainAppliesUniformlyAcrossChannels) {
 
     constexpr size_t                frames = 64;
     const size_t                    C      = comp.channels();
-    std::vector<std::vector<float>> in(C, std::vector<float>(frames, 0.5f)),
-        out(C, std::vector<float>(frames));
-    std::vector<const float*> ip;
-    std::vector<float*>       op;
+    std::vector<std::vector<float>> in(C, std::vector<float>(frames, 0.5f)), out(C, std::vector<float>(frames));
+    std::vector<const float*>       ip;
+    std::vector<float*>             op;
     for (size_t ch = 0; ch < C; ++ch) {
         ip.push_back(in[ch].data());
         op.push_back(out[ch].data());
@@ -117,7 +119,8 @@ TEST(AnalysisEnergyVector, ConvergesToSourceDirection) {
     float frame[4], out[3] = {};
     enc.process_sample(1.f, frame);
 
-    for (int i = 0; i < 48000; ++i) ev.process_frame(frame, out);
+    for (int i = 0; i < 48000; ++i)
+        ev.process_frame(frame, out);
 
     EXPECT_NEAR(out[0], 1.f, 1e-3f); // x (front)
     EXPECT_NEAR(out[1], 0.f, 1e-3f); // y
@@ -128,7 +131,8 @@ TEST(AnalysisEnergyVector, ConvergesToSourceDirection) {
     enc.snap_parameters();
     enc.process_sample(1.f, frame);
     ev.reset();
-    for (int i = 0; i < 48000; ++i) ev.process_frame(frame, out);
+    for (int i = 0; i < 48000; ++i)
+        ev.process_frame(frame, out);
     EXPECT_NEAR(out[0], 0.f, 1e-3f);
     EXPECT_NEAR(out[1], 1.f, 1e-3f);
     EXPECT_NEAR(out[2], 0.f, 1e-3f);

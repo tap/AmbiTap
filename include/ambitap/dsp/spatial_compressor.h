@@ -6,14 +6,14 @@
 #ifndef AMBITAP_DSP_SPATIAL_COMPRESSOR_H
 #define AMBITAP_DSP_SPATIAL_COMPRESSOR_H
 
-#include "../math/core/fast_math.h"
-#include "../math/core/indexing.h"
-#include "../math/core/validate.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstddef>
+
+#include "../math/core/fast_math.h"
+#include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 namespace ambitap::dsp {
 
@@ -33,18 +33,18 @@ namespace ambitap::dsp {
     /// values), the process methods on one audio thread.
     class spatial_compressor {
         size_t m_channels;
-        float  m_fs {48000.f}; // control thread only (prepare)
-        float  m_attack_s {0.005f};
-        float  m_release_s {0.1f};
+        float  m_fs{48000.f}; // control thread only (prepare)
+        float  m_attack_s{0.005f};
+        float  m_release_s{0.1f};
 
-        std::atomic<float> m_threshold_db {-12.f};
-        std::atomic<float> m_threshold_lin {0.251188643f}; // 10^(-12/20)
-        std::atomic<float> m_ratio {4.f};
-        std::atomic<float> m_makeup_db {0.f};
-        std::atomic<float> m_attack_coef {0.f};
-        std::atomic<float> m_release_coef {0.f};
+        std::atomic<float> m_threshold_db{-12.f};
+        std::atomic<float> m_threshold_lin{0.251188643f}; // 10^(-12/20)
+        std::atomic<float> m_ratio{4.f};
+        std::atomic<float> m_makeup_db{0.f};
+        std::atomic<float> m_attack_coef{0.f};
+        std::atomic<float> m_release_coef{0.f};
 
-        float m_envelope {0.f}; // audio-thread state
+        float m_envelope{0.f}; // audio-thread state
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
@@ -102,9 +102,8 @@ namespace ambitap::dsp {
         /// transcendentals at all: a single linear-domain compare.
         float process_envelope(float w_sample) noexcept {
             const float abs_w = std::abs(w_sample);
-            const float coef  = (abs_w > m_envelope)
-                                    ? m_attack_coef.load(std::memory_order_relaxed)
-                                    : m_release_coef.load(std::memory_order_relaxed);
+            const float coef  = (abs_w > m_envelope) ? m_attack_coef.load(std::memory_order_relaxed)
+                                                     : m_release_coef.load(std::memory_order_relaxed);
             m_envelope += (abs_w - m_envelope) * coef;
             if (m_envelope < 1e-30f) m_envelope = 0.f; // denormal guard
 

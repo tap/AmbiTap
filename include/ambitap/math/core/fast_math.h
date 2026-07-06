@@ -64,8 +64,7 @@ namespace ambitap {
         p       = p * f + 6.9314684e-01f;
         p       = p * f + 1.0000000e+00f;
 
-        const auto scale =
-            std::bit_cast<float>(static_cast<std::uint32_t>(static_cast<int>(xi) + 127) << 23);
+        const auto scale = std::bit_cast<float>(static_cast<std::uint32_t>(static_cast<int>(xi) + 127) << 23);
         return p * scale;
     }
 

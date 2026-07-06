@@ -34,10 +34,9 @@ namespace ambitap {
     inline int validated_order(int order, int lowest, int highest, const char* context) {
         if (order < lowest || order > highest) {
 #if AMBITAP_HAS_EXCEPTIONS
-            throw std::invalid_argument(std::string("ambitap::") + context + ": order "
-                                        + std::to_string(order) + " outside supported range ["
-                                        + std::to_string(lowest) + ", " + std::to_string(highest)
-                                        + "]");
+            throw std::invalid_argument(std::string("ambitap::") + context + ": order " + std::to_string(order)
+                                        + " outside supported range [" + std::to_string(lowest) + ", "
+                                        + std::to_string(highest) + "]");
 #else
             assert(false && "ambitap: order outside supported range");
             (void)context;

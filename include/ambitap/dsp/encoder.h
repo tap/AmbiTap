@@ -6,13 +6,13 @@
 #ifndef AMBITAP_DSP_ENCODER_H
 #define AMBITAP_DSP_ENCODER_H
 
+#include <array>
+#include <cstddef>
+
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
-
-#include <array>
-#include <cstddef>
 
 namespace ambitap::dsp {
 
@@ -27,15 +27,15 @@ namespace ambitap::dsp {
     class encoder {
         int    m_order;
         size_t m_channels;
-        float  m_azimuth {0.0f};
-        float  m_elevation {0.0f};
+        float  m_azimuth{0.0f};
+        float  m_elevation{0.0f};
 
         // Control-side snapshot for the coefficient accessors.
-        std::array<float, max_channel_count> m_coefficients {};
+        std::array<float, max_channel_count> m_coefficients{};
 
         // Audio-side smoothed values.
         smoothed_table<max_channel_count> m_smooth;
-        smoothed_scalar                   m_gain {1.0f};
+        smoothed_scalar                   m_gain{1.0f};
 
       public:
         /// @param order  Ambisonics order in [0, max_order]; channel count is (order+1)^2.
@@ -83,9 +83,7 @@ namespace ambitap::dsp {
         const float* coefficients() const { return m_coefficients.data(); }
 
         /// Per-channel target multiplier including gain. Control thread.
-        float channel_gain(size_t channel) const {
-            return m_coefficients[channel] * m_gain.target();
-        }
+        float channel_gain(size_t channel) const { return m_coefficients[channel] * m_gain.target(); }
 
         /// Skip the parameter ramps: the audio thread jumps straight to the
         /// latest targets on its next call. Offline rendering / tests.

@@ -5,8 +5,6 @@
 /// Run:    ./build/examples/binaural_render [out.wav]
 /// Copyright 2026 Timothy Place. MIT License.
 
-#include <ambitap/ambitap.h>
-
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -14,11 +12,13 @@
 #include <fstream>
 #include <vector>
 
+#include <ambitap/ambitap.h>
+
 namespace {
 
     // Minimal 16-bit stereo WAV writer.
-    void write_wav(const char* path, const std::vector<float>& left,
-                   const std::vector<float>& right, std::uint32_t sample_rate) {
+    void write_wav(const char* path, const std::vector<float>& left, const std::vector<float>& right,
+                   std::uint32_t sample_rate) {
         const std::uint32_t frames      = static_cast<std::uint32_t>(left.size());
         const std::uint32_t data_bytes  = frames * 2u * 2u;
         const std::uint32_t riff_bytes  = 36u + data_bytes;
@@ -87,8 +87,7 @@ int main(int argc, char** argv) {
     // A 330 Hz tone orbiting the head once per two seconds.
     size_t n = 0;
     for (size_t start = 0; start + block <= frames; start += block) {
-        const float az =
-            2.0f * pi * static_cast<float>(start) / (2.0f * sample_rate); // one revolution / 2 s
+        const float az = 2.0f * pi * static_cast<float>(start) / (2.0f * sample_rate); // one revolution / 2 s
         enc.set_direction(az, 0.0f); // ramped by the encoder: click-free motion
         for (size_t i = 0; i < block; ++i, ++n) {
             mono[i] = 0.5f * std::sin(2.0f * pi * 330.0f * static_cast<float>(n) / sample_rate);

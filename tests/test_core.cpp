@@ -3,15 +3,15 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/math/core/indexing.h"
 #include "ambitap/math/core/normalization.h"
 #include "ambitap/math/core/spherical_harmonics.h"
 #include "ambitap/math/geometry/tdesigns.h"
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <vector>
 
 using namespace ambitap;
 
@@ -47,8 +47,7 @@ TEST(Normalization, Sn3dBasics) {
 TEST(Normalization, N3dRelations) {
     for (int n = 0; n <= max_order; ++n) {
         for (int m = 0; m <= n; ++m) {
-            EXPECT_NEAR(n3d_factor(n, m),
-                        sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
+            EXPECT_NEAR(n3d_factor(n, m), sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
         }
         EXPECT_NEAR(sn3d_to_n3d(n) * n3d_to_sn3d(n), 1.0f, 1e-6f);
     }
@@ -92,8 +91,7 @@ TEST(SphericalHarmonics, OrthonormalUnderTdesignQuadrature) {
     float                           sh[max_channel_count];
     for (size_t v = 0; v < count; ++v) {
         const float az = std::atan2(pts[v][1], pts[v][0]);
-        const float el =
-            std::atan2(pts[v][2], std::sqrt(pts[v][0] * pts[v][0] + pts[v][1] * pts[v][1]));
+        const float el = std::atan2(pts[v][2], std::sqrt(pts[v][0] * pts[v][0] + pts[v][1] * pts[v][1]));
         evaluate_sh(order, az, el, sh);
         for (size_t c = 0; c < C; ++c) {
             Y[v][c] = sh[c] * sn3d_to_n3d(acn_order(c));

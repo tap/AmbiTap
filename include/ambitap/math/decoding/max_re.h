@@ -6,11 +6,11 @@
 #ifndef AMBITAP_MATH_MAX_RE_H
 #define AMBITAP_MATH_MAX_RE_H
 
-#include "../core/coords.h"
-
 #include <cmath>
 #include <cstddef>
 #include <vector>
+
+#include "../core/coords.h"
 
 namespace ambitap {
 
@@ -39,9 +39,8 @@ namespace ambitap {
         }
 
         for (int n = 1; n < order; ++n) {
-            float p_next =
-                (static_cast<float>(2 * n + 1) * x * p_curr - static_cast<float>(n) * p_prev)
-                / static_cast<float>(n + 1);
+            float p_next = (static_cast<float>(2 * n + 1) * x * p_curr - static_cast<float>(n) * p_prev)
+                           / static_cast<float>(n + 1);
             p_prev                              = p_curr;
             p_curr                              = p_next;
             weights[static_cast<size_t>(n) + 1] = p_next;
@@ -70,7 +69,8 @@ namespace ambitap {
             den += g * weights[static_cast<size_t>(n)] * weights[static_cast<size_t>(n)];
         }
         const float alpha = std::sqrt(num / den);
-        for (auto& w : weights) w *= alpha;
+        for (auto& w : weights)
+            w *= alpha;
         return weights;
     }
 

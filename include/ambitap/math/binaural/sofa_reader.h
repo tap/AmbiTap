@@ -10,13 +10,6 @@
 
 #ifdef AMBITAP_HAS_SOFA
 
-#include "../core/indexing.h"
-#include "../core/normalization.h"
-#include "../core/spherical_harmonics.h"
-
-#include <mysofa.h>
-
-#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -25,6 +18,13 @@
 #include <string>
 #include <vector>
 
+#include <Eigen/Dense>
+#include <mysofa.h>
+
+#include "../core/indexing.h"
+#include "../core/normalization.h"
+#include "../core/spherical_harmonics.h"
+
 namespace ambitap {
 
     /// HRTF data loaded from a SOFA file.
@@ -32,12 +32,12 @@ namespace ambitap {
     /// Holds raw HRIR measurements (per-measurement, per-ear, per-sample) and can
     /// project them onto the SH basis at any order via decompose_sh().
     struct hrtf_data {
-        size_t                                       num_measurements {0};
-        size_t                                       hrir_length {0};
-        float                                        sample_rate {0.f};
+        size_t                                       num_measurements{0};
+        size_t                                       hrir_length{0};
+        float                                        sample_rate{0.f};
         std::vector<float>                           azimuth;   // radians
         std::vector<float>                           elevation; // radians
-        std::vector<std::vector<std::vector<float>>> hrir; // [measurement][ear 0=L/1=R][sample]
+        std::vector<std::vector<std::vector<float>>> hrir;      // [measurement][ear 0=L/1=R][sample]
 
         /// Project the measured HRIRs onto the SH basis at the given order.
         ///
@@ -54,8 +54,7 @@ namespace ambitap {
             Eigen::MatrixXf Y(M, C);
             float           sh_buf[max_channel_count];
             for (Eigen::Index i = 0; i < M; ++i) {
-                evaluate_sh(order, azimuth[static_cast<size_t>(i)],
-                            elevation[static_cast<size_t>(i)], sh_buf);
+                evaluate_sh(order, azimuth[static_cast<size_t>(i)], elevation[static_cast<size_t>(i)], sh_buf);
                 for (Eigen::Index j = 0; j < C; ++j) {
                     Y(i, j) = sh_buf[j];
                 }
@@ -68,10 +67,9 @@ namespace ambitap {
             Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXf> cod(Y);
             cod.setThreshold(1e-4f);
             if (cod.rank() < C) {
-                throw std::runtime_error(
-                    "ambitap::hrtf_data::decompose_sh: measurement grid cannot support order "
-                    + std::to_string(order) + " (re-encoding matrix rank "
-                    + std::to_string(cod.rank()) + " < " + std::to_string(C) + " channels)");
+                throw std::runtime_error("ambitap::hrtf_data::decompose_sh: measurement grid cannot support order "
+                                         + std::to_string(order) + " (re-encoding matrix rank "
+                                         + std::to_string(cod.rank()) + " < " + std::to_string(C) + " channels)");
             }
             Eigen::MatrixXf Y_pinv = cod.pseudoInverse();
 
@@ -108,24 +106,21 @@ namespace ambitap {
     inline hrtf_data load_sofa(const std::string& path) {
         int err = MYSOFA_OK;
 
-        const std::unique_ptr<MYSOFA_HRTF, decltype(&mysofa_free)> hrtf(
-            mysofa_load(path.c_str(), &err), &mysofa_free);
+        const std::unique_ptr<MYSOFA_HRTF, decltype(&mysofa_free)> hrtf(mysofa_load(path.c_str(), &err), &mysofa_free);
         if (hrtf == nullptr || err != MYSOFA_OK) {
             throw std::runtime_error("ambitap::load_sofa: failed to load \"" + path + "\"");
         }
 
         if (hrtf->R != 2) {
-            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has "
-                                     + std::to_string(hrtf->R)
+            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has " + std::to_string(hrtf->R)
                                      + " receivers; only 2 (left/right) is supported");
         }
         if (hrtf->DataDelay.values != nullptr) {
             for (unsigned i = 0; i < hrtf->DataDelay.elements; ++i) {
                 if (hrtf->DataDelay.values[i] != 0.0f) {
-                    throw std::runtime_error(
-                        "ambitap::load_sofa: \"" + path
-                        + "\" carries non-zero Data.Delay, which is not supported; "
-                          "bake the delays into the IRs before loading");
+                    throw std::runtime_error("ambitap::load_sofa: \"" + path
+                                             + "\" carries non-zero Data.Delay, which is not supported; "
+                                               "bake the delays into the IRs before loading");
                 }
             }
         }
@@ -139,8 +134,7 @@ namespace ambitap {
         const size_t M = static_cast<size_t>(hrtf->M);
         const size_t N = static_cast<size_t>(hrtf->N);
         if (M == 0 || N == 0) {
-            throw std::runtime_error("ambitap::load_sofa: \"" + path
-                                     + "\" has no measurements or zero-length IRs");
+            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has no measurements or zero-length IRs");
         }
         auto require = [&](const MYSOFA_ARRAY& arr, size_t need, const char* what) {
             if (arr.values == nullptr || arr.elements < need) {

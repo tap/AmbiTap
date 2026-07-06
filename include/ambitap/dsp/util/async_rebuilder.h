@@ -6,8 +6,6 @@
 #ifndef AMBITAP_DSP_UTIL_ASYNC_REBUILDER_H
 #define AMBITAP_DSP_UTIL_ASYNC_REBUILDER_H
 
-#include "rt_published.h"
-
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -15,6 +13,8 @@
 #include <mutex>
 #include <thread>
 #include <utility>
+
+#include "rt_published.h"
 
 namespace ambitap::dsp {
 
@@ -39,7 +39,8 @@ namespace ambitap::dsp {
     /// The owner must declare its async_rebuilder member *after* every member
     /// the build callback reads, so the worker is joined (in ~async_rebuilder)
     /// before those members are destroyed.
-    template <typename Product> class async_rebuilder {
+    template <typename Product>
+    class async_rebuilder {
       public:
         using build_fn   = std::function<std::shared_ptr<Product>()>;
         using publish_fn = std::function<void()>;
@@ -111,9 +112,7 @@ namespace ambitap::dsp {
                 std::uint64_t seq_to_run;
                 {
                     std::unique_lock<std::mutex> lock(m_mtx);
-                    m_worker_cv.wait(lock, [this, &last_seen] {
-                        return m_exiting || m_pending_seq > last_seen;
-                    });
+                    m_worker_cv.wait(lock, [this, &last_seen] { return m_exiting || m_pending_seq > last_seen; });
                     if (m_exiting) return;
                     seq_to_run = m_pending_seq;
                 }
@@ -142,9 +141,9 @@ namespace ambitap::dsp {
         std::mutex              m_mtx;
         std::condition_variable m_worker_cv;
         std::condition_variable m_done_cv;
-        std::uint64_t           m_pending_seq {0}; // guarded by m_mtx
-        std::uint64_t           m_done_seq {0};    // guarded by m_mtx
-        bool                    m_exiting {false}; // guarded by m_mtx
+        std::uint64_t           m_pending_seq{0}; // guarded by m_mtx
+        std::uint64_t           m_done_seq{0};    // guarded by m_mtx
+        bool                    m_exiting{false}; // guarded by m_mtx
 
         std::thread m_worker; // last member: joins before anything else dies
     };

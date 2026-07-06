@@ -6,16 +6,16 @@
 #ifndef AMBITAP_DSP_ROTATOR_H
 #define AMBITAP_DSP_ROTATOR_H
 
+#include <atomic>
+#include <cstddef>
+#include <memory>
+#include <vector>
+
 #include "../math/core/indexing.h"
 #include "../math/core/rotation.h"
 #include "../math/core/validate.h"
 #include "util/async_rebuilder.h"
 #include "util/sh_block_applier.h"
-
-#include <atomic>
-#include <cstddef>
-#include <memory>
-#include <vector>
 
 namespace ambitap::dsp {
 
@@ -51,9 +51,9 @@ namespace ambitap::dsp {
         int    m_order;
         size_t m_channels;
 
-        std::atomic<float> m_yaw {0.0f};
-        std::atomic<float> m_pitch {0.0f};
-        std::atomic<float> m_roll {0.0f};
+        std::atomic<float> m_yaw{0.0f};
+        std::atomic<float> m_pitch{0.0f};
+        std::atomic<float> m_roll{0.0f};
 
         // Crossfading block-diagonal application (SH rotation never mixes
         // orders); owned by the (single) audio thread.
@@ -135,22 +135,23 @@ namespace ambitap::dsp {
       private:
         // frame_layout == true: in/out are single-frame channel arrays
         // (in[0][ch]); false: planar buffers (in[ch][i]).
-        void apply_frames(const product* p, const float* const* in, float* const* out,
-                          size_t frame_count, bool frame_layout) const noexcept {
+        void apply_frames(const product* p, const float* const* in, float* const* out, size_t frame_count,
+                          bool frame_layout) const noexcept {
             if (!p) {
                 if (frame_layout) {
-                    for (size_t ch = 0; ch < m_channels; ++ch) out[0][ch] = in[0][ch];
+                    for (size_t ch = 0; ch < m_channels; ++ch)
+                        out[0][ch] = in[0][ch];
                 }
                 else {
                     for (size_t ch = 0; ch < m_channels; ++ch) {
-                        for (size_t i = 0; i < frame_count; ++i) out[ch][i] = in[ch][i];
+                        for (size_t i = 0; i < frame_count; ++i)
+                            out[ch][i] = in[ch][i];
                     }
                 }
                 return;
             }
 
-            m_applier.apply(p, p->m.data(), p->prev.data(), m_order, in, out, frame_count,
-                            frame_layout);
+            m_applier.apply(p, p->m.data(), p->prev.data(), m_order, in, out, frame_count, frame_layout);
         }
 
         std::shared_ptr<const product> build() const {

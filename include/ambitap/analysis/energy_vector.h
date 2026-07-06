@@ -34,13 +34,13 @@ namespace ambitap::analysis {
     /// process methods on one audio thread, value() from any thread (it reads
     /// an atomic snapshot the audio thread publishes per call).
     class energy_vector {
-        float                m_fs {48000.f};          // control thread only
-        float                m_smoothing_s {0.01f};   // control thread only
-        std::atomic<float>   m_alpha {0.002f};        // one-pole coef, ~10 ms at 48 kHz
-        std::array<float, 3> m_state {0.f, 0.f, 0.f}; // audio-thread state
+        float                m_fs{48000.f};          // control thread only
+        float                m_smoothing_s{0.01f};   // control thread only
+        std::atomic<float>   m_alpha{0.002f};        // one-pole coef, ~10 ms at 48 kHz
+        std::array<float, 3> m_state{0.f, 0.f, 0.f}; // audio-thread state
 
         // Snapshot for UI reads; published by the audio thread.
-        std::array<std::atomic<float>, 3> m_published {};
+        std::array<std::atomic<float>, 3> m_published{};
 
       public:
         energy_vector() { recalculate(); }
@@ -99,8 +99,7 @@ namespace ambitap::analysis {
         /// Current smoothed vector: an atomic snapshot published by the audio
         /// thread once per process call. Any thread.
         std::array<float, 3> value() const {
-            return {m_published[0].load(std::memory_order_relaxed),
-                    m_published[1].load(std::memory_order_relaxed),
+            return {m_published[0].load(std::memory_order_relaxed), m_published[1].load(std::memory_order_relaxed),
                     m_published[2].load(std::memory_order_relaxed)};
         }
 

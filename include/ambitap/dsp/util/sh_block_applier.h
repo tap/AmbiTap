@@ -7,9 +7,9 @@
 #ifndef AMBITAP_DSP_SH_BLOCK_APPLIER_H
 #define AMBITAP_DSP_SH_BLOCK_APPLIER_H
 
-#include "matrix_applier.h"
-
 #include <cstddef>
+
+#include "matrix_applier.h"
 
 namespace ambitap::dsp {
 
@@ -54,9 +54,8 @@ namespace ambitap::dsp {
         /// @param frame_layout  true: single-frame channel arrays
         ///               (in[0][c], out[0][c]); false: planar buffers
         ///               (in[c][i], out[c][i]).
-        void apply(const void* key, const float* mat, const float* prev, int order,
-                   const float* const* in, float* const* out, size_t frame_count,
-                   bool frame_layout) noexcept {
+        void apply(const void* key, const float* mat, const float* prev, int order, const float* const* in,
+                   float* const* out, size_t frame_count, bool frame_layout) noexcept {
             if (key != m_fade_ref) { // new matrix adopted: restart the crossfade
                 m_fade_ref = key;
                 m_fade_pos = 0;
@@ -66,9 +65,8 @@ namespace ambitap::dsp {
 
             for (size_t i = 0; i < frame_count; ++i) {
                 const bool  fading = m_fade_pos < k_fade_samples;
-                const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                 / static_cast<float>(k_fade_samples)
-                                            : 1.f;
+                const float alpha =
+                    fading ? (static_cast<float>(m_fade_pos) + 1.f) / static_cast<float>(k_fade_samples) : 1.f;
                 for (int l = 0; l <= order; ++l) {
                     const size_t base  = static_cast<size_t>(l) * static_cast<size_t>(l);
                     const size_t width = 2 * static_cast<size_t>(l) + 1;
@@ -96,8 +94,8 @@ namespace ambitap::dsp {
         }
 
       private:
-        const void* m_fade_ref {nullptr};
-        size_t      m_fade_pos {k_fade_samples};
+        const void* m_fade_ref{nullptr};
+        size_t      m_fade_pos{k_fade_samples};
     };
 
 } // namespace ambitap::dsp

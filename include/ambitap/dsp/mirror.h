@@ -6,13 +6,13 @@
 #ifndef AMBITAP_DSP_MIRROR_H
 #define AMBITAP_DSP_MIRROR_H
 
-#include "../math/core/indexing.h"
-#include "../math/core/validate.h"
-#include "util/smoothing.h"
-
 #include <array>
 #include <cstddef>
 #include <cstdlib>
+
+#include "../math/core/indexing.h"
+#include "../math/core/validate.h"
+#include "util/smoothing.h"
 
 namespace ambitap::dsp {
 
@@ -35,11 +35,11 @@ namespace ambitap::dsp {
     class mirror {
         int    m_order;
         size_t m_channels;
-        bool   m_flip_lr {false};
-        bool   m_flip_fb {false};
-        bool   m_flip_ud {false};
+        bool   m_flip_lr{false};
+        bool   m_flip_fb{false};
+        bool   m_flip_ud{false};
 
-        std::array<float, max_channel_count> m_sign {};
+        std::array<float, max_channel_count> m_sign{};
 
         smoothed_table<max_channel_count> m_smooth;
 
