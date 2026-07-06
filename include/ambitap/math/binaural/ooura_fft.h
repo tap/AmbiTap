@@ -36,11 +36,6 @@ namespace ambitap {
     ///   - bin[k].real    = out[2k], bin[k].imag = out[2k+1]  for 1 <= k < N/2
     /// The number of complex bins is N/2 + 1.
     class real_fft {
-        int                 m_size;
-        std::vector<double> m_buf;
-        std::vector<int>    m_ip;
-        std::vector<double> m_w;
-
       public:
         explicit real_fft(size_t size)
             : m_size(static_cast<int>(size))
@@ -93,6 +88,12 @@ namespace ambitap {
         /// In-place inverse FFT on a double buffer (no float conversion, no scaling).
         /// Caller must scale by 2/size for a normalized inverse.
         void inverse_inplace(double* data) { rdft(m_size, -1, data, m_ip.data(), m_w.data()); }
+
+      private:
+        int                 m_size;
+        std::vector<double> m_buf;
+        std::vector<int>    m_ip;
+        std::vector<double> m_w;
     };
 
     /// Single-precision real FFT — the same Ooura algorithm instantiated for
@@ -101,10 +102,6 @@ namespace ambitap {
     /// above falls back to software floating point. Packing convention and
     /// scaling match real_fft exactly.
     class real_fft32 {
-        int                m_size;
-        std::vector<int>   m_ip;
-        std::vector<float> m_w;
-
       public:
         explicit real_fft32(size_t size)
             : m_size(static_cast<int>(size))
@@ -123,6 +120,11 @@ namespace ambitap {
         /// In-place inverse FFT on a float buffer (no scaling; caller scales
         /// by 2/size for a normalized inverse).
         void inverse_inplace(float* data) { rdft_f(m_size, -1, data, m_ip.data(), m_w.data()); }
+
+      private:
+        int                m_size;
+        std::vector<int>   m_ip;
+        std::vector<float> m_w;
     };
 
 } // namespace ambitap

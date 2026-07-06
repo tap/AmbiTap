@@ -31,20 +31,6 @@ namespace ambitap::dsp {
     /// Threading: setters run on one control thread (atomic stores — no torn
     /// values), the process methods on one audio thread.
     class spatial_compressor {
-        size_t m_channels;
-        float  m_fs{48000.f}; // control thread only (prepare)
-        float  m_attack_s{0.005f};
-        float  m_release_s{0.1f};
-
-        std::atomic<float> m_threshold_db{-12.f};
-        std::atomic<float> m_threshold_lin{0.251188643f}; // 10^(-12/20)
-        std::atomic<float> m_ratio{4.f};
-        std::atomic<float> m_makeup_db{0.f};
-        std::atomic<float> m_attack_coef{0.f};
-        std::atomic<float> m_release_coef{0.f};
-
-        float m_envelope{0.f}; // audio-thread state
-
       public:
         /// @param order  Ambisonics order in [1, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
@@ -141,6 +127,20 @@ namespace ambitap::dsp {
             m_attack_coef.store(1.f - std::exp(-1.f / (a * m_fs)), std::memory_order_relaxed);
             m_release_coef.store(1.f - std::exp(-1.f / (r * m_fs)), std::memory_order_relaxed);
         }
+
+        size_t m_channels;
+        float  m_fs{48000.f}; // control thread only (prepare)
+        float  m_attack_s{0.005f};
+        float  m_release_s{0.1f};
+
+        std::atomic<float> m_threshold_db{-12.f};
+        std::atomic<float> m_threshold_lin{0.251188643f}; // 10^(-12/20)
+        std::atomic<float> m_ratio{4.f};
+        std::atomic<float> m_makeup_db{0.f};
+        std::atomic<float> m_attack_coef{0.f};
+        std::atomic<float> m_release_coef{0.f};
+
+        float m_envelope{0.f}; // audio-thread state
     };
 
 } // namespace ambitap::dsp

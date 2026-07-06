@@ -30,16 +30,6 @@ namespace ambitap::dsp {
     /// call snap_parameters() for offline/exact use. The audio path is
     /// wait-free.
     class virtual_mic {
-        int    m_order;
-        size_t m_channels;
-        float  m_azimuth{0.0f};
-        float  m_elevation{0.0f};
-        bool   m_max_re{false};
-
-        std::array<float, k_max_channel_count> m_coefficients{};
-
-        smoothed_table<k_max_channel_count> m_smooth;
-
       public:
         /// @param order  Ambisonics order in [1, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
@@ -131,6 +121,16 @@ namespace ambitap::dsp {
         }
 
         void publish() { m_smooth.set(m_coefficients.data(), m_channels); }
+
+        int    m_order;
+        size_t m_channels;
+        float  m_azimuth{0.0f};
+        float  m_elevation{0.0f};
+        bool   m_max_re{false};
+
+        std::array<float, k_max_channel_count> m_coefficients{};
+
+        smoothed_table<k_max_channel_count> m_smooth;
     };
 
 } // namespace ambitap::dsp

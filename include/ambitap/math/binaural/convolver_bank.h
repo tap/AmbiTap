@@ -37,28 +37,6 @@ namespace ambitap {
     /// wait-free and allocation-free.
     template <typename Real, typename Fft>
     class basic_convolver_bank {
-        size_t m_block_size{0};
-        size_t m_fft_size{0}; // 2 * m_block_size
-        size_t m_inputs{0};
-        size_t m_outputs{0};
-        size_t m_partitions{0};
-        size_t m_ring_pos{0};
-
-        std::vector<Fft>  m_fft;        // exactly one; vector for deferred init
-        std::vector<Real> m_ir_freq;    // [output][input][partition][fft_size]
-        std::vector<Real> m_input_freq; // [input][partition][fft_size] rings
-        std::vector<Real> m_input_buf;  // [input][fft_size] time [prev|curr]
-        std::vector<Real> m_accum;      // [fft_size]
-        std::vector<Real> m_output_buf; // [fft_size]
-
-        Real* input_buf(size_t in) { return m_input_buf.data() + in * m_fft_size; }
-        Real* input_freq(size_t in, size_t slot) {
-            return m_input_freq.data() + (in * m_partitions + slot) * m_fft_size;
-        }
-        const Real* ir_freq(size_t out, size_t in, size_t p) const {
-            return m_ir_freq.data() + (((out * m_inputs) + in) * m_partitions + p) * m_fft_size;
-        }
-
       public:
         basic_convolver_bank() = default;
 
@@ -192,6 +170,29 @@ namespace ambitap {
             std::fill(m_input_freq.begin(), m_input_freq.end(), Real(0));
             std::fill(m_input_buf.begin(), m_input_buf.end(), Real(0));
             m_ring_pos = 0;
+        }
+
+      private:
+        size_t m_block_size{0};
+        size_t m_fft_size{0}; // 2 * m_block_size
+        size_t m_inputs{0};
+        size_t m_outputs{0};
+        size_t m_partitions{0};
+        size_t m_ring_pos{0};
+
+        std::vector<Fft>  m_fft;        // exactly one; vector for deferred init
+        std::vector<Real> m_ir_freq;    // [output][input][partition][fft_size]
+        std::vector<Real> m_input_freq; // [input][partition][fft_size] rings
+        std::vector<Real> m_input_buf;  // [input][fft_size] time [prev|curr]
+        std::vector<Real> m_accum;      // [fft_size]
+        std::vector<Real> m_output_buf; // [fft_size]
+
+        Real* input_buf(size_t in) { return m_input_buf.data() + in * m_fft_size; }
+        Real* input_freq(size_t in, size_t slot) {
+            return m_input_freq.data() + (in * m_partitions + slot) * m_fft_size;
+        }
+        const Real* ir_freq(size_t out, size_t in, size_t p) const {
+            return m_ir_freq.data() + (((out * m_inputs) + in) * m_partitions + p) * m_fft_size;
         }
     };
 

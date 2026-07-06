@@ -29,10 +29,6 @@ namespace ambitap {
     /// +Z first, pitch about +Y second, roll about +X last, right-hand rule
     /// (positive pitch tilts the front axis DOWN).
     class sh_rotation {
-        int             m_order;
-        size_t          m_num_channels;
-        Eigen::MatrixXf m_matrix;
-
       public:
         sh_rotation(int order, const Eigen::Matrix3f& R)
             : m_order(order)
@@ -74,6 +70,10 @@ namespace ambitap {
                 }
             }
         }
+
+        int             m_order;
+        size_t          m_num_channels;
+        Eigen::MatrixXf m_matrix;
     };
 
 } // namespace ambitap

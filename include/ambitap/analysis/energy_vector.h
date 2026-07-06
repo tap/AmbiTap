@@ -33,14 +33,6 @@ namespace ambitap::analysis {
     /// process methods on one audio thread, value() from any thread (it reads
     /// an atomic snapshot the audio thread publishes per call).
     class energy_vector {
-        float                m_fs{48000.f};          // control thread only
-        float                m_smoothing_s{0.01f};   // control thread only
-        std::atomic<float>   m_alpha{0.002f};        // one-pole coef, ~10 ms at 48 kHz
-        std::array<float, 3> m_state{0.f, 0.f, 0.f}; // audio-thread state
-
-        // Snapshot for UI reads; published by the audio thread.
-        std::array<std::atomic<float>, 3> m_published{};
-
       public:
         energy_vector() { recalculate(); }
 
@@ -120,6 +112,14 @@ namespace ambitap::analysis {
             const float tau = std::max(1e-6f, m_smoothing_s);
             m_alpha.store(1.f - std::exp(-1.f / (tau * m_fs)), std::memory_order_relaxed);
         }
+
+        float                m_fs{48000.f};          // control thread only
+        float                m_smoothing_s{0.01f};   // control thread only
+        std::atomic<float>   m_alpha{0.002f};        // one-pole coef, ~10 ms at 48 kHz
+        std::array<float, 3> m_state{0.f, 0.f, 0.f}; // audio-thread state
+
+        // Snapshot for UI reads; published by the audio thread.
+        std::array<std::atomic<float>, 3> m_published{};
     };
 
 } // namespace ambitap::analysis

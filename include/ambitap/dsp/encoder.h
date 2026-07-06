@@ -24,18 +24,6 @@ namespace ambitap::dsp {
     /// tables, no clicks. Call snap_parameters() for offline/exact use. The
     /// audio path is wait-free (no allocation, locks, or syscalls).
     class encoder {
-        int    m_order;
-        size_t m_channels;
-        float  m_azimuth{0.0f};
-        float  m_elevation{0.0f};
-
-        // Control-side snapshot for the coefficient accessors.
-        std::array<float, k_max_channel_count> m_coefficients{};
-
-        // Audio-side smoothed values.
-        smoothed_table<k_max_channel_count> m_smooth;
-        smoothed_scalar                     m_gain{1.0f};
-
       public:
         /// @param order  Ambisonics order in [0, k_max_order]; channel count is (order+1)^2.
         /// @throws std::invalid_argument on out-of-range order.
@@ -127,6 +115,18 @@ namespace ambitap::dsp {
       private:
         void recalculate() { evaluate_sh(m_order, m_azimuth, m_elevation, m_coefficients.data()); }
         void publish() { m_smooth.set(m_coefficients.data(), m_channels); }
+
+        int    m_order;
+        size_t m_channels;
+        float  m_azimuth{0.0f};
+        float  m_elevation{0.0f};
+
+        // Control-side snapshot for the coefficient accessors.
+        std::array<float, k_max_channel_count> m_coefficients{};
+
+        // Audio-side smoothed values.
+        smoothed_table<k_max_channel_count> m_smooth;
+        smoothed_scalar                     m_gain{1.0f};
     };
 
 } // namespace ambitap::dsp
