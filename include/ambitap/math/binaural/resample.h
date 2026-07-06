@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Offline FIR resampling (windowed sinc) for HRTF sample-rate adaptation.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file resample.h
+/// @brief Offline FIR resampling (windowed sinc) for HRTF sample-rate adaptation.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_RESAMPLE_H
-#define AMBITAP_MATH_RESAMPLE_H
+#pragma once
 
 #include <cmath>
 #include <cstddef>
@@ -62,5 +61,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_RESAMPLE_H

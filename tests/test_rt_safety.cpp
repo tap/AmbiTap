@@ -1,10 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Real-time-safety tests: the audio-path process methods must neither
-/// allocate nor free heap memory. Enforced with a replaced global
-/// operator new/delete that counts activity while a thread-local guard is
-/// armed (the SampleRateTap approach to making the RT claim testable).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_rt_safety.cpp
+/// @brief Real-time-safety tests: the audio-path process methods must neither
+///        allocate nor free heap memory. Enforced with a replaced global
+///        operator new/delete that counts activity while a thread-local guard is
+///        armed (the SampleRateTap approach to making the RT claim testable).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <atomic>
 #include <cstdlib>

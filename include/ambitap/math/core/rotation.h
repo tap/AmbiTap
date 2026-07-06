@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Spherical harmonic rotation matrices from 3x3 Cartesian rotations.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file rotation.h
+/// @brief Spherical harmonic rotation matrices from 3x3 Cartesian rotations.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_ROTATION_H
-#define AMBITAP_MATH_ROTATION_H
+#pragma once
 
 #include <vector>
 
@@ -78,5 +77,3 @@ namespace ambitap {
     };
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_ROTATION_H

@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Fast float math for per-sample audio paths: polynomial log2/exp2 and the
-/// dB conversions built on them.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file fast_math.h
+/// @brief Fast float math for per-sample audio paths: polynomial log2/exp2 and the
+///        dB conversions built on them.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_FAST_MATH_H
-#define AMBITAP_MATH_FAST_MATH_H
+#pragma once
 
 #include <bit>
 #include <cmath>
@@ -85,5 +84,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_FAST_MATH_H

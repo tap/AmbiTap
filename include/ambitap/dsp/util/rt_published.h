@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Wait-free single-reader publication of heap products (RCU-style).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file rt_published.h
+/// @brief Wait-free single-reader publication of heap products (RCU-style).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_UTIL_RT_PUBLISHED_H
-#define AMBITAP_DSP_UTIL_RT_PUBLISHED_H
+#pragma once
 
 #include <atomic>
 #include <chrono>
@@ -139,5 +138,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_UTIL_RT_PUBLISHED_H

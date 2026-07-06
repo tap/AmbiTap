@@ -1,10 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::room — shoebox image-source early reflections + SH-domain
-/// FDN tail. Mirrors of the exact R1-R3 gates and the statistical R4/R10
-/// gates from docs/PERCEPTUAL-VERIFICATION.md (the full R1-R10 suite runs in
-/// notebooks/room_verification.ipynb against tools/room_render output).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_room.cpp
+/// @brief Tests for dsp::room — shoebox image-source early reflections + SH-domain
+///        FDN tail. Mirrors of the exact R1-R3 gates and the statistical R4/R10
+///        gates from docs/PERCEPTUAL-VERIFICATION.md (the full R1-R10 suite runs in
+///        notebooks/room_verification.ipynb against tools/room_render output).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <algorithm>
 #include <array>

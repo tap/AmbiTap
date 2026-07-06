@@ -1,9 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::xtc — the numeric verification gates X1–X6 from
-/// docs/PERCEPTUAL-VERIFICATION.md, computed deterministically from the
-/// designed filters against the KEMAR plant model (P = C·H; no audio).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_xtc.cpp
+/// @brief Tests for dsp::xtc — the numeric verification gates X1–X6 from
+///        docs/PERCEPTUAL-VERIFICATION.md, computed deterministically from the
+///        designed filters against the KEMAR plant model (P = C·H; no audio).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <array>
 #include <cmath>

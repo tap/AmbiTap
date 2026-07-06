@@ -1,8 +1,8 @@
-/// AmbiTap: target-independent ambisonics library
-/// SOFA reader hardening tests. Built only when AMBITAP_ENABLE_SOFA is on
-/// (the reader needs libmysofa); a no-op translation unit otherwise.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_sofa.cpp
+/// @brief SOFA reader hardening tests. Built only when AMBITAP_ENABLE_SOFA is on
+///        (the reader needs libmysofa); a no-op translation unit otherwise.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #ifdef AMBITAP_HAS_SOFA
 

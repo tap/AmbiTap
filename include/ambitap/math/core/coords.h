@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Spherical coordinate type and angle helpers for ambisonics support code.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file coords.h
+/// @brief Spherical coordinate type and angle helpers for ambisonics support code.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_COORDS_H
-#define AMBITAP_MATH_COORDS_H
+#pragma once
 
 #include <cmath>
 
@@ -32,5 +31,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_COORDS_H

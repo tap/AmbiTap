@@ -1,8 +1,8 @@
-/// AmbiTap: target-independent ambisonics library
-/// Hardening tests: input validation and degenerate-input behavior.
-/// Each test is tagged with the audit finding it guards against.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_hardening.cpp
+/// @brief Hardening tests: input validation and degenerate-input behavior.
+///        Each test is tagged with the audit finding it guards against.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <stdexcept>
 #include <vector>

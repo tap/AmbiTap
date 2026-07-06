@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// HOA decoder: HOA bus -> loudspeaker layout, with async matrix rebuild.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file decoder.h
+/// @brief HOA decoder: HOA bus -> loudspeaker layout, with async matrix rebuild.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_DECODER_H
-#define AMBITAP_DSP_DECODER_H
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -225,5 +224,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_DECODER_H

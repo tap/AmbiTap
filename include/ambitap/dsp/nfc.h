@@ -1,12 +1,11 @@
-/// AmbiTap: target-independent ambisonics library
-/// Near-field compensation (NFC-HOA) — per-order bass shelving that corrects
-/// the near-field effect of a spherical wave for HOA signals (Daniel's
-/// formulation).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file nfc.h
+/// @brief Near-field compensation (NFC-HOA) — per-order bass shelving that corrects
+///        the near-field effect of a spherical wave for HOA signals (Daniel's
+///        formulation).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_NFC_H
-#define AMBITAP_DSP_NFC_H
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -451,5 +450,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_NFC_H

@@ -4,7 +4,8 @@
 ///
 /// Build:  cmake -B build && cmake --build build --target encode_rotate_decode
 /// Run:    ./build/examples/encode_rotate_decode
-/// Copyright 2026 Timothy Place. MIT License.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <cstdio>

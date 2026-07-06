@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::doppler, dsp::spatial_compressor, and analysis::energy_vector.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_stateful.cpp
+/// @brief Tests for dsp::doppler, dsp::spatial_compressor, and analysis::energy_vector.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <vector>

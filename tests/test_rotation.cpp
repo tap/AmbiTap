@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for SH rotation matrices.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_rotation.cpp
+/// @brief Tests for SH rotation matrices.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 

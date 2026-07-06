@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Apply directional gain to a higher-order ambisonics signal.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file directional_loudness.h
+/// @brief Apply directional gain to a higher-order ambisonics signal.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
-#define AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -150,5 +149,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H

@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Real spherical harmonic evaluation using ACN/SN3D (AmbiX convention).
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file spherical_harmonics.h
+/// @brief Real spherical harmonic evaluation using ACN/SN3D (AmbiX convention).
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_SPHERICAL_HARMONICS_H
-#define AMBITAP_MATH_SPHERICAL_HARMONICS_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -100,5 +99,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_SPHERICAL_HARMONICS_H

@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Constructor-argument validation helpers.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file validate.h
+/// @brief Constructor-argument validation helpers.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_VALIDATE_H
-#define AMBITAP_MATH_VALIDATE_H
+#pragma once
 
 #include "indexing.h"
 
@@ -52,5 +51,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_VALIDATE_H

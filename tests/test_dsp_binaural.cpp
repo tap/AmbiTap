@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::binaural_renderer.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_binaural.cpp
+/// @brief Tests for dsp::binaural_renderer.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <algorithm>
 #include <cmath>

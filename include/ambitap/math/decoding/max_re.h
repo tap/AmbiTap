@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// max-rE weighting coefficients for ambisonics decoders.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file max_re.h
+/// @brief max-rE weighting coefficients for ambisonics decoders.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_MAX_RE_H
-#define AMBITAP_MATH_MAX_RE_H
+#pragma once
 
 #include <cmath>
 #include <cstddef>
@@ -78,5 +77,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_MAX_RE_H

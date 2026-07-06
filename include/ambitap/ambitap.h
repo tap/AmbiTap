@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Umbrella header for the AmbiTap math layer.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file ambitap.h
+/// @brief Umbrella header for the AmbiTap math layer.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_AMBITAP_H
-#define AMBITAP_AMBITAP_H
+#pragma once
 
 #include "analysis/energy_vector.h"
 #include "analysis/soundfield_grid.h"
@@ -39,5 +38,3 @@
 #include "math/geometry/layouts.h"
 #include "math/geometry/speaker_layout.h"
 #include "math/geometry/tdesigns.h"
-
-#endif // AMBITAP_AMBITAP_H

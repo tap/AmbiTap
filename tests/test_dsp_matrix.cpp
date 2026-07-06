@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::rotator and dsp::decoder (async_rebuilder-based processors).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_matrix.cpp
+/// @brief Tests for dsp::rotator and dsp::decoder (async_rebuilder-based processors).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <atomic>
 #include <chrono>

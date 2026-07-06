@@ -1,12 +1,11 @@
-/// AmbiTap: target-independent ambisonics library
-/// Transaural / crosstalk cancellation (XTC): stereo or binaural program ->
-/// two loudspeaker feeds for a known symmetric speaker geometry, via a
-/// regularized frequency-domain inverse of the KEMAR 2x2 plant.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file xtc.h
+/// @brief Transaural / crosstalk cancellation (XTC): stereo or binaural program ->
+///        two loudspeaker feeds for a known symmetric speaker geometry, via a
+///        regularized frequency-domain inverse of the KEMAR 2x2 plant.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_XTC_H
-#define AMBITAP_DSP_XTC_H
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -601,5 +600,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_XTC_H

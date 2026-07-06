@@ -1,12 +1,11 @@
-/// AmbiTap: target-independent ambisonics library
-/// SOFA file reader for loading custom HRTF datasets at runtime.
-/// Requires libmysofa; gated by the AMBITAP_HAS_SOFA macro, set by the
-/// AMBITAP_ENABLE_SOFA build option.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file sofa_reader.h
+/// @brief SOFA file reader for loading custom HRTF datasets at runtime.
+///        Requires libmysofa; gated by the AMBITAP_HAS_SOFA macro, set by the
+///        AMBITAP_ENABLE_SOFA build option.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_SOFA_READER_H
-#define AMBITAP_MATH_SOFA_READER_H
+#pragma once
 
 #ifdef AMBITAP_HAS_SOFA
 
@@ -187,5 +186,3 @@ namespace ambitap {
 } // namespace ambitap
 
 #endif // AMBITAP_HAS_SOFA
-
-#endif // AMBITAP_MATH_SOFA_READER_H

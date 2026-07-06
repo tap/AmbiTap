@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Standard speaker layout presets (stereo, 5.1, 7.1, 7.1.4, cube, etc.).
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file layouts.h
+/// @brief Standard speaker layout presets (stereo, 5.1, 7.1, 7.1.4, cube, etc.).
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_LAYOUTS_H
-#define AMBITAP_MATH_LAYOUTS_H
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -108,5 +107,3 @@ namespace ambitap {
     } // namespace layouts
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_LAYOUTS_H

@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for the Ooura FFT wrapper, partitioned convolver, and HRTF dataset.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_binaural.cpp
+/// @brief Tests for the Ooura FFT wrapper, partitioned convolver, and HRTF dataset.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <random>

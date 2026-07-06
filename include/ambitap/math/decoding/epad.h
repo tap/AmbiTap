@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// EPAD (Energy-Preserving Ambisonic Decoder) matrix construction.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file epad.h
+/// @brief EPAD (Energy-Preserving Ambisonic Decoder) matrix construction.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_EPAD_H
-#define AMBITAP_MATH_EPAD_H
+#pragma once
 
 #include <cmath>
 #include <stdexcept>
@@ -105,5 +104,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_EPAD_H

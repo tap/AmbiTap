@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// ALLRAD (All-Round Ambisonic Decoder) matrix construction.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file allrad.h
+/// @brief ALLRAD (All-Round Ambisonic Decoder) matrix construction.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_ALLRAD_H
-#define AMBITAP_MATH_ALLRAD_H
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -115,5 +114,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_ALLRAD_H
