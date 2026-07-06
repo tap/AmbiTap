@@ -6,13 +6,13 @@
 /// builds everywhere the library does. Build with -DAMBITAP_BUILD_BENCH=ON.
 /// Copyright 2026 Timothy Place. MIT License.
 
-#include <ambitap/ambitap.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include <ambitap/ambitap.h>
 
 namespace {
 
@@ -38,14 +38,15 @@ namespace {
         }
     };
 
-    template <typename Fn> double bench_us_per_block(Fn&& fn) {
+    template <typename Fn>
+    double bench_us_per_block(Fn&& fn) {
         std::vector<double> runs;
         for (int r = 0; r < k_runs; ++r) {
             const auto t0 = clock_t_::now();
-            for (int i = 0; i < k_reps; ++i) fn();
+            for (int i = 0; i < k_reps; ++i)
+                fn();
             const auto t1 = clock_t_::now();
-            runs.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count()
-                           / static_cast<double>(k_reps));
+            runs.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count() / static_cast<double>(k_reps));
         }
         std::sort(runs.begin(), runs.end());
         return runs[runs.size() / 2];
@@ -53,8 +54,7 @@ namespace {
 
     void report(const std::string& name, double us) {
         const double budget_us = 1e6 * static_cast<double>(k_block) / static_cast<double>(k_fs);
-        std::printf("%-28s %9.2f us/block   %6.2f %% of RT budget\n", name.c_str(), us,
-                    100.0 * us / budget_us);
+        std::printf("%-28s %9.2f us/block   %6.2f %% of RT budget\n", name.c_str(), us, 100.0 * us / budget_us);
     }
 
 } // namespace

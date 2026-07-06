@@ -7,14 +7,14 @@
 #ifndef AMBITAP_DSP_BINAURAL_CORE_H
 #define AMBITAP_DSP_BINAURAL_CORE_H
 
-#include "../math/binaural/convolver_bank.h"
-#include "../math/core/indexing.h"
-#include "../math/core/validate.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <vector>
+
+#include "../math/binaural/convolver_bank.h"
+#include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 namespace ambitap::dsp {
 
@@ -40,18 +40,17 @@ namespace ambitap::dsp {
     /// process() is wait-free and allocation-free.
     class binaural_core {
         size_t m_channels;
-        size_t m_block_size {0};
+        size_t m_block_size{0};
 
         convolver_bank32 m_bank;
 
-        std::atomic<float> m_volume {1.0f};
-        float              m_volume_current {1.0f}; // audio-thread ramp state
+        std::atomic<float> m_volume{1.0f};
+        float              m_volume_current{1.0f}; // audio-thread ramp state
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
         explicit binaural_core(int order)
-            : m_channels(
-                  channel_count(validated_order(order, 1, max_order, "dsp::binaural_core"))) {}
+            : m_channels(channel_count(validated_order(order, 1, max_order, "dsp::binaural_core"))) {}
 
         size_t channels() const { return m_channels; }
         size_t block_size() const { return m_block_size; }
@@ -65,8 +64,7 @@ namespace ambitap::dsp {
         /// @param taps        FIR length (same for every channel and ear),
         ///                    expressed at the host sample rate.
         /// @return false (leaving the core unprepared) on bad arguments.
-        bool prepare(size_t block_size, const float* const* left_firs,
-                     const float* const* right_firs, size_t taps) {
+        bool prepare(size_t block_size, const float* const* left_firs, const float* const* right_firs, size_t taps) {
             m_block_size = 0;
             if (!left_firs || !right_firs) return false;
 
@@ -90,8 +88,7 @@ namespace ambitap::dsp {
         /// block_size() frames; left/right = block_size() samples each.
         /// Emits silence until prepared (or on a block-size mismatch).
         /// Audio thread only; wait-free.
-        void process(const float* const* in, float* left, float* right,
-                     size_t frame_count) noexcept {
+        void process(const float* const* in, float* left, float* right, size_t frame_count) noexcept {
             if (!m_bank.is_prepared() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);

@@ -6,13 +6,13 @@
 
 #ifdef AMBITAP_HAS_SOFA
 
-#include "ambitap/math/binaural/sofa_reader.h"
-
-#include <gtest/gtest.h>
-
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "ambitap/math/binaural/sofa_reader.h"
 
 using namespace ambitap;
 

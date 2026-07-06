@@ -34,7 +34,8 @@ namespace ambitap {
     /// @return Order n such that n^2 <= acn < (n+1)^2.
     constexpr int acn_order(size_t acn) {
         int n = 0;
-        while (static_cast<size_t>((n + 1) * (n + 1)) <= acn) ++n;
+        while (static_cast<size_t>((n + 1) * (n + 1)) <= acn)
+            ++n;
         return n;
     }
 

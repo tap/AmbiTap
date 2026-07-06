@@ -7,14 +7,14 @@
 #ifndef AMBITAP_DSP_DOPPLER_H
 #define AMBITAP_DSP_DOPPLER_H
 
-#include "../math/core/indexing.h"
-#include "../math/core/validate.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <vector>
+
+#include "../math/core/indexing.h"
+#include "../math/core/validate.h"
 
 namespace ambitap::dsp {
 
@@ -44,17 +44,17 @@ namespace ambitap::dsp {
         static constexpr float k_delay_slew = 1.0f / 1024.0f;
 
         size_t             m_channels;
-        float              m_fs {48000.0f};
-        std::atomic<float> m_distance {1.0f};
-        std::atomic<float> m_speed_of_sound {343.0f};
-        float              m_max_distance {50.0f};
+        float              m_fs{48000.0f};
+        std::atomic<float> m_distance{1.0f};
+        std::atomic<float> m_speed_of_sound{343.0f};
+        float              m_max_distance{50.0f};
 
         // Audio-thread state: the smoothed delay actually applied.
-        float m_delay_current {0.f};
+        float m_delay_current{0.f};
 
-        size_t                          m_buffer_size {0};
+        size_t                          m_buffer_size{0};
         std::vector<std::vector<float>> m_buffers; // [channel][circular sample]
-        size_t                          m_write_idx {0};
+        size_t                          m_write_idx{0};
 
       public:
         /// @param order  Ambisonics order in [1, max_order].
@@ -91,8 +91,8 @@ namespace ambitap::dsp {
 
         /// Target delay in samples, clamped to the buffer.
         float current_delay_samples() const {
-            float s = m_distance.load(std::memory_order_relaxed)
-                      / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
+            float s =
+                m_distance.load(std::memory_order_relaxed) / m_speed_of_sound.load(std::memory_order_relaxed) * m_fs;
             // Cap at buffer_size - 2 so the interpolation can read i and i+1.
             const float max_s = static_cast<float>(m_buffer_size) - 2.f;
             if (s < 0.f) s = 0.f;
@@ -104,14 +104,15 @@ namespace ambitap::dsp {
         /// Outputs silence until prepare() has been called.
         void process_frame(const float* in, float* out) noexcept {
             if (m_buffer_size == 0) {
-                for (size_t ch = 0; ch < m_channels; ++ch) out[ch] = 0.f;
+                for (size_t ch = 0; ch < m_channels; ++ch)
+                    out[ch] = 0.f;
                 return;
             }
             const float target = current_delay_samples();
             m_delay_current += (target - m_delay_current) * k_delay_slew;
             for (size_t ch = 0; ch < m_channels; ++ch) {
                 m_buffers[ch][m_write_idx] = in[ch];
-                out[ch] = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
+                out[ch]                    = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
             }
             m_write_idx = (m_write_idx + 1) % m_buffer_size;
         }
@@ -120,7 +121,8 @@ namespace ambitap::dsp {
         void process(const float* const* in, float* const* out, size_t frame_count) noexcept {
             if (m_buffer_size == 0) {
                 for (size_t ch = 0; ch < m_channels; ++ch) {
-                    for (size_t i = 0; i < frame_count; ++i) out[ch][i] = 0.f;
+                    for (size_t i = 0; i < frame_count; ++i)
+                        out[ch][i] = 0.f;
                 }
                 return;
             }
@@ -129,7 +131,7 @@ namespace ambitap::dsp {
                 m_delay_current += (target - m_delay_current) * k_delay_slew;
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     m_buffers[ch][m_write_idx] = in[ch][i];
-                    out[ch][i] = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
+                    out[ch][i]                 = read_interpolated(m_buffers[ch], m_write_idx, m_delay_current);
                 }
                 m_write_idx = (m_write_idx + 1) % m_buffer_size;
             }
@@ -138,28 +140,26 @@ namespace ambitap::dsp {
         /// Clear the delay lines; keep the allocation. Also snaps the delay
         /// slew to the current target.
         void reset() {
-            for (auto& buf : m_buffers) std::fill(buf.begin(), buf.end(), 0.f);
+            for (auto& buf : m_buffers)
+                std::fill(buf.begin(), buf.end(), 0.f);
             m_write_idx     = 0;
             m_delay_current = current_delay_samples();
         }
 
       private:
-        static float read_interpolated(const std::vector<float>& buf, size_t write_idx,
-                                       float delay_samples) {
-            const size_t N     = buf.size();
-            const float  idx_f = static_cast<float>(write_idx) - delay_samples;
-            const float  wrapped_f =
-                idx_f - std::floor(idx_f / static_cast<float>(N)) * static_cast<float>(N);
-            const size_t i0   = static_cast<size_t>(wrapped_f) % N;
-            const size_t i1   = (i0 + 1) % N;
-            const float  frac = wrapped_f - std::floor(wrapped_f);
+        static float read_interpolated(const std::vector<float>& buf, size_t write_idx, float delay_samples) {
+            const size_t N         = buf.size();
+            const float  idx_f     = static_cast<float>(write_idx) - delay_samples;
+            const float  wrapped_f = idx_f - std::floor(idx_f / static_cast<float>(N)) * static_cast<float>(N);
+            const size_t i0        = static_cast<size_t>(wrapped_f) % N;
+            const size_t i1        = (i0 + 1) % N;
+            const float  frac      = wrapped_f - std::floor(wrapped_f);
             return buf[i0] * (1.f - frac) + buf[i1] * frac;
         }
 
         void allocate() {
             // +2 samples of headroom for the interpolator.
-            const size_t needed =
-                static_cast<size_t>(std::ceil(m_max_distance / m_speed_of_sound * m_fs)) + 2;
+            const size_t needed = static_cast<size_t>(std::ceil(m_max_distance / m_speed_of_sound * m_fs)) + 2;
             if (needed == m_buffer_size) return;
 
             m_buffer_size = needed;

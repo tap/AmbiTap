@@ -6,18 +6,6 @@
 #ifndef AMBITAP_DSP_BINAURAL_RENDERER_H
 #define AMBITAP_DSP_BINAURAL_RENDERER_H
 
-#include "../math/binaural/hrtf_data.h"
-#include "../math/binaural/ooura_fft.h"
-#include "../math/binaural/resample.h"
-#include "../math/core/indexing.h"
-#include "../math/core/spherical_harmonics.h"
-#include "../math/core/validate.h"
-#include "binaural_core.h"
-#include "rotator.h"
-
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -26,6 +14,18 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
+#include "../math/binaural/hrtf_data.h"
+#include "../math/binaural/ooura_fft.h"
+#include "../math/binaural/resample.h"
+#include "../math/core/indexing.h"
+#include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
+#include "binaural_core.h"
+#include "rotator.h"
 
 namespace ambitap::dsp {
 
@@ -69,10 +69,10 @@ namespace ambitap::dsp {
       private:
         int    m_order;
         size_t m_channels;
-        size_t m_block_size {0};
-        float  m_sample_rate {builtin_hrtf_sample_rate};
+        size_t m_block_size{0};
+        float  m_sample_rate{builtin_hrtf_sample_rate};
 
-        hrtf_projection m_projection {hrtf_projection::ls};
+        hrtf_projection m_projection{hrtf_projection::ls};
 
         // Custom (e.g. SOFA-loaded) SH-domain HRTFs; empty -> built-in dataset.
         std::vector<std::vector<float>> m_custom_left;
@@ -87,9 +87,9 @@ namespace ambitap::dsp {
 
         // Head orientation as last set; the scene rotator below is driven with
         // the INVERSE of this so sources stay fixed in the world frame.
-        float m_head_yaw {0.0f};
-        float m_head_pitch {0.0f};
-        float m_head_roll {0.0f};
+        float m_head_yaw{0.0f};
+        float m_head_pitch{0.0f};
+        float m_head_roll{0.0f};
 
         rotator m_head; // head-tracking (counter-rotation); owns its worker thread
 
@@ -143,20 +143,17 @@ namespace ambitap::dsp {
         /// e.g. loaded from a SOFA file. Rebuilds convolvers when prepared.
         /// @throws std::invalid_argument when either ear does not have exactly
         ///         channels() FIRs, any FIR is empty, or lengths are unequal.
-        void set_custom_hrtf(std::vector<std::vector<float>> left,
-                             std::vector<std::vector<float>> right) {
+        void set_custom_hrtf(std::vector<std::vector<float>> left, std::vector<std::vector<float>> right) {
             if (left.size() != m_channels || right.size() != m_channels) {
-                throw std::invalid_argument(
-                    "ambitap::dsp::binaural_renderer::set_custom_hrtf: need exactly "
-                    "channels() FIRs per ear");
+                throw std::invalid_argument("ambitap::dsp::binaural_renderer::set_custom_hrtf: need exactly "
+                                            "channels() FIRs per ear");
             }
             const size_t taps = left.front().size();
             for (const auto* ear : {&left, &right}) {
                 for (const auto& fir : *ear) {
                     if (fir.empty() || fir.size() != taps) {
-                        throw std::invalid_argument(
-                            "ambitap::dsp::binaural_renderer::set_custom_hrtf: all FIRs "
-                            "must be non-empty and equal length");
+                        throw std::invalid_argument("ambitap::dsp::binaural_renderer::set_custom_hrtf: all FIRs "
+                                                    "must be non-empty and equal length");
                     }
                 }
             }
@@ -222,8 +219,7 @@ namespace ambitap::dsp {
         /// block_size frames; left/right = block_size output samples each.
         /// Emits silence until prepare() has been called (or if frame_count
         /// doesn't match the prepared block size).
-        void process(const float* const* in, float* left, float* right,
-                     size_t frame_count) noexcept {
+        void process(const float* const* in, float* left, float* right, size_t frame_count) noexcept {
             if (!m_core.is_prepared() || frame_count != m_block_size) {
                 std::fill(left, left + frame_count, 0.f);
                 std::fill(right, right + frame_count, 0.f);
@@ -268,7 +264,8 @@ namespace ambitap::dsp {
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     const float* fir = hrtf_fir(ear, ch, len);
                     const size_t n   = std::min(len, fft_size);
-                    for (size_t t = 0; t < n; ++t) ir[t] += sh[ch] * fir[t];
+                    for (size_t t = 0; t < n; ++t)
+                        ir[t] += sh[ch] * fir[t];
                 }
                 std::vector<float> spec(fft_size);
                 fft.forward(ir.data(), spec.data());
@@ -290,13 +287,13 @@ namespace ambitap::dsp {
             // overall peak -> 0 dB.
             float peak = 1e-9f;
             for (int ear = 0; ear < 2; ++ear)
-                for (float v : mag[ear]) peak = std::max(peak, v);
+                for (float v : mag[ear])
+                    peak = std::max(peak, v);
 
             response r;
             r.frequencies.resize(bins);
             for (size_t k = 0; k < bins; ++k) {
-                r.frequencies[k] =
-                    static_cast<float>(k) * sample_rate / static_cast<float>(fft_size);
+                r.frequencies[k] = static_cast<float>(k) * sample_rate / static_cast<float>(fft_size);
             }
             r.left_db.resize(bins);
             r.right_db.resize(bins);
@@ -312,10 +309,9 @@ namespace ambitap::dsp {
         /// would index off the end of the embedded tables.
         void require_hrtf_coverage(const char* who) const {
             if (!has_custom_hrtf() && m_order > builtin_hrtf_order) {
-                throw std::invalid_argument(
-                    std::string("ambitap::dsp::binaural_renderer::") + who + ": order "
-                    + std::to_string(m_order) + " exceeds the built-in HRTF order "
-                    + std::to_string(builtin_hrtf_order) + "; supply set_custom_hrtf() first");
+                throw std::invalid_argument(std::string("ambitap::dsp::binaural_renderer::") + who + ": order "
+                                            + std::to_string(m_order) + " exceeds the built-in HRTF order "
+                                            + std::to_string(builtin_hrtf_order) + "; supply set_custom_hrtf() first");
             }
         }
 
@@ -353,10 +349,8 @@ namespace ambitap::dsp {
                 const float* left  = hrtf_fir(0, ch, len_l);
                 const float* right = hrtf_fir(1, ch, len_r);
                 if (resample) {
-                    resampled_l.push_back(
-                        resample_fir(left, len_l, builtin_hrtf_sample_rate, m_sample_rate));
-                    resampled_r.push_back(
-                        resample_fir(right, len_r, builtin_hrtf_sample_rate, m_sample_rate));
+                    resampled_l.push_back(resample_fir(left, len_l, builtin_hrtf_sample_rate, m_sample_rate));
+                    resampled_r.push_back(resample_fir(right, len_r, builtin_hrtf_sample_rate, m_sample_rate));
                     left_ptrs[ch]  = resampled_l.back().data();
                     right_ptrs[ch] = resampled_r.back().data();
                     taps           = resampled_l.back().size();

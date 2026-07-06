@@ -6,13 +6,13 @@
 #ifndef AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
 #define AMBITAP_DSP_DIRECTIONAL_LOUDNESS_H
 
+#include <array>
+#include <cstddef>
+
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
-
-#include <array>
-#include <cstddef>
 
 namespace ambitap::dsp {
 
@@ -38,14 +38,14 @@ namespace ambitap::dsp {
     class directional_loudness {
         int                                  m_order;
         size_t                               m_channels;
-        float                                m_azimuth {0.0f};
-        float                                m_elevation {0.0f};
-        std::array<float, max_channel_count> m_sh_at_direction {};
+        float                                m_azimuth{0.0f};
+        float                                m_elevation{0.0f};
+        std::array<float, max_channel_count> m_sh_at_direction{};
 
         smoothed_table<max_channel_count> m_smooth;
-        smoothed_scalar                   m_gain {1.0f};
+        smoothed_scalar                   m_gain{1.0f};
         // 1 / ||SH(d)||^2, recomputed with the direction.
-        smoothed_scalar m_inv_norm {1.0f};
+        smoothed_scalar m_inv_norm{1.0f};
 
       public:
         /// @param order  Ambisonics order in [0, max_order].

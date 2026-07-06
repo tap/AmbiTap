@@ -3,12 +3,12 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/nfc.h"
+#include <cmath>
+#include <vector>
 
 #include <gtest/gtest.h>
 
-#include <cmath>
-#include <vector>
+#include "ambitap/dsp/nfc.h"
 
 using namespace ambitap;
 
@@ -51,8 +51,7 @@ TEST(DspNfc, IdentityAtEqualDistances) {
     planar           io(filt.channels(), frames);
     for (size_t ch = 0; ch < filt.channels(); ++ch) {
         for (size_t i = 0; i < frames; ++i) {
-            io.in_bufs[ch][i] =
-                std::sin(0.01f * static_cast<float>(i + ch)) + 0.25f * static_cast<float>(ch);
+            io.in_bufs[ch][i] = std::sin(0.01f * static_cast<float>(i + ch)) + 0.25f * static_cast<float>(ch);
         }
     }
     filt.process(io.in.data(), io.out.data(), frames);
@@ -87,7 +86,8 @@ TEST(DspNfc, DcGainMatchesClosedForm) {
 
         const size_t       C = filt.channels();
         std::vector<float> in(C, 1.f), out(C, 0.f);
-        for (int i = 0; i < 48000; ++i) filt.process_frame(in.data(), out.data());
+        for (int i = 0; i < 48000; ++i)
+            filt.process_frame(in.data(), out.data());
 
         // Tolerance: the audio path is float32 (embedded contract), and at
         // these corner frequencies the biquad denominator sum 1 + a1 + a2
@@ -97,8 +97,7 @@ TEST(DspNfc, DcGainMatchesClosedForm) {
             const int   m        = acn_order(ch);
             const float expected = std::pow(sc.rref / sc.rs, static_cast<float>(m));
             EXPECT_EQ(expected, filt.dc_gain(m));
-            EXPECT_NEAR(out[ch], expected, 1e-2f * expected)
-                << "rs=" << sc.rs << " rref=" << sc.rref << " ch=" << ch;
+            EXPECT_NEAR(out[ch], expected, 1e-2f * expected) << "rs=" << sc.rs << " rref=" << sc.rref << " ch=" << ch;
         }
     }
 }
@@ -129,7 +128,8 @@ TEST(DspNfc, ImpulseResponseDecaysAtAggressiveDistances) {
         constexpr int      total = 48000, tail_start = 44000;
         for (int i = 0; i < total; ++i) {
             const float v = (i == 0) ? 1.f : 0.f;
-            for (auto& x : in) x = v;
+            for (auto& x : in)
+                x = v;
             filt.process_frame(in.data(), out.data());
             for (size_t ch = 0; ch < C; ++ch) {
                 ASSERT_TRUE(std::isfinite(out[ch])) << "order=" << order << " i=" << i;
@@ -153,7 +153,8 @@ TEST(DspNfc, ParameterChangesRampWithoutSnap) {
 
     const size_t       C = filt.channels();
     std::vector<float> in(C, 1.f), out(C, 0.f);
-    for (int i = 0; i < 4800; ++i) filt.process_frame(in.data(), out.data());
+    for (int i = 0; i < 4800; ++i)
+        filt.process_frame(in.data(), out.data());
     const float before = out[C - 1];
 
     filt.set_source_distance(0.25f); // boost — ramped, not snapped
@@ -162,7 +163,8 @@ TEST(DspNfc, ParameterChangesRampWithoutSnap) {
 
     for (int i = 0; i < 48000; ++i) {
         filt.process_frame(in.data(), out.data());
-        for (size_t ch = 0; ch < C; ++ch) ASSERT_TRUE(std::isfinite(out[ch]));
+        for (size_t ch = 0; ch < C; ++ch)
+            ASSERT_TRUE(std::isfinite(out[ch]));
     }
     EXPECT_NEAR(out[C - 1], filt.dc_gain(2), 1e-2f * filt.dc_gain(2));
 }

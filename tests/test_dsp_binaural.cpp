@@ -3,13 +3,13 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/binaural_renderer.h"
-
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "ambitap/dsp/binaural_renderer.h"
 
 using namespace ambitap;
 
@@ -21,7 +21,8 @@ namespace {
         std::vector<const float*>       ptrs;
         planar(size_t channels, size_t frames)
             : bufs(channels, std::vector<float>(frames, 0.f)) {
-            for (auto& b : bufs) ptrs.push_back(b.data());
+            for (auto& b : bufs)
+                ptrs.push_back(b.data());
         }
     };
 
@@ -108,7 +109,8 @@ TEST(DspBinaural, MaglsProjectionDiffersFromLs) {
     magls.process(in.ptrs.data(), l2.data(), r2.data(), block);
 
     float diff = 0.f;
-    for (size_t i = 0; i < block; ++i) diff += std::fabs(l1[i] - l2[i]);
+    for (size_t i = 0; i < block; ++i)
+        diff += std::fabs(l1[i] - l2[i]);
     EXPECT_GT(diff, 1e-4f);
 }
 
@@ -124,14 +126,16 @@ TEST(DspBinaural, HeadTrackingChangesOutput) {
     planar in(16, block);
     float  sh[max_channel_count];
     evaluate_sh(3, k_pi * 0.5f, 0.f, sh);
-    for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = sh[ch];
+    for (size_t ch = 0; ch < 16; ++ch)
+        in.bufs[ch][0] = sh[ch];
 
     std::vector<float> l1(block), r1(block), l2(block), r2(block);
     still.process(in.ptrs.data(), l1.data(), r1.data(), block);
     turned.process(in.ptrs.data(), l2.data(), r2.data(), block);
 
     float diff = 0.f;
-    for (size_t i = 0; i < block; ++i) diff += std::fabs(l1[i] - l2[i]);
+    for (size_t i = 0; i < block; ++i)
+        diff += std::fabs(l1[i] - l2[i]);
     EXPECT_GT(diff, 1e-4f);
 }
 
@@ -161,7 +165,8 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
     planar in(16, block);
     float  sh[max_channel_count];
     evaluate_sh(order, 0.f, 0.f, sh);
-    for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = sh[ch];
+    for (size_t ch = 0; ch < 16; ++ch)
+        in.bufs[ch][0] = sh[ch];
 
     float              e_left = 0.f, e_right = 0.f;
     std::vector<float> l(block), r(block);
@@ -172,12 +177,12 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
             e_left += l[i] * l[i];
             e_right += r[i] * r[i];
         }
-        for (size_t ch = 0; ch < 16; ++ch) in.bufs[ch][0] = 0.f; // impulse only once
+        for (size_t ch = 0; ch < 16; ++ch)
+            in.bufs[ch][0] = 0.f; // impulse only once
     }
 
-    EXPECT_GT(e_right, 2.0f * e_left)
-        << "head turned left => front source at the right ear (E_L=" << e_left
-        << ", E_R=" << e_right << ")";
+    EXPECT_GT(e_right, 2.0f * e_left) << "head turned left => front source at the right ear (E_L=" << e_left
+                                      << ", E_R=" << e_right << ")";
 }
 
 TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
@@ -191,8 +196,10 @@ TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
 
     // Common normalization: the louder ear peaks at exactly 0 dB.
     float peak = -1e9f;
-    for (float v : r.left_db) peak = std::max(peak, v);
-    for (float v : r.right_db) peak = std::max(peak, v);
+    for (float v : r.left_db)
+        peak = std::max(peak, v);
+    for (float v : r.right_db)
+        peak = std::max(peak, v);
     EXPECT_NEAR(peak, 0.f, 1e-3f);
 }
 
@@ -229,8 +236,7 @@ TEST(DspBinaural, PrepareResamplesBuiltinHrtfToHostRate) {
 
     const double c_native  = centroid(native);
     const double c_doubled = centroid(doubled);
-    EXPECT_NEAR(c_doubled / c_native, 2.0, 0.1)
-        << "native centroid " << c_native << ", 2x-rate centroid " << c_doubled;
+    EXPECT_NEAR(c_doubled / c_native, 2.0, 0.1) << "native centroid " << c_native << ", 2x-rate centroid " << c_doubled;
 
     // Sanity: preparing at the native rate must reproduce the FIR bit-close
     // (the resampling path must not engage).

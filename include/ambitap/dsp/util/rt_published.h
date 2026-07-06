@@ -43,7 +43,8 @@ namespace ambitap::dsp {
     ///     serialized internally.
     ///   - peek()/has_value(): any thread EXCEPT the real-time path — peek()
     ///     takes a mutex the reader never touches.
-    template <typename Product> class rt_published {
+    template <typename Product>
+    class rt_published {
       public:
         /// RAII read region for the reader thread. Wait-free: entry and exit
         /// are one atomic store each. get() may be called any number of times
@@ -122,9 +123,9 @@ namespace ambitap::dsp {
             }
         }
 
-        mutable std::atomic<std::uint64_t> m_epoch {0};
-        std::atomic<Product*>              m_active {nullptr};
-        std::atomic<bool>                  m_has_value {false};
+        mutable std::atomic<std::uint64_t> m_epoch{0};
+        std::atomic<Product*>              m_active{nullptr};
+        std::atomic<bool>                  m_has_value{false};
 
         mutable std::mutex       m_mtx;    // guards m_latest; never touched by the reader
         std::shared_ptr<Product> m_latest; // keep-alive + peek()

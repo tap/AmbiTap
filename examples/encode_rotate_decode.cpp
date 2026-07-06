@@ -6,12 +6,12 @@
 /// Run:    ./build/examples/encode_rotate_decode
 /// Copyright 2026 Timothy Place. MIT License.
 
-#include <ambitap/ambitap.h>
-
 #include <cmath>
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include <ambitap/ambitap.h>
 
 int main() {
     constexpr int    order  = 3;
@@ -29,7 +29,8 @@ int main() {
     }
     std::vector<std::vector<float>> hoa(enc.channels(), std::vector<float>(frames));
     std::vector<float*>             hoa_ptrs;
-    for (auto& b : hoa) hoa_ptrs.push_back(b.data());
+    for (auto& b : hoa)
+        hoa_ptrs.push_back(b.data());
     enc.process(mono.data(), hoa_ptrs.data(), frames);
 
     // 2. Rotate the whole soundfield 90° to the right (yaw = -90°).
@@ -56,8 +57,10 @@ int main() {
     std::vector<std::vector<float>> out(speakers.size(), std::vector<float>(frames));
     std::vector<const float*>       dec_in;
     std::vector<float*>             dec_out;
-    for (size_t ch = 0; ch < rot.channels(); ++ch) dec_in.push_back(rotated[ch].data());
-    for (auto& b : out) dec_out.push_back(b.data());
+    for (size_t ch = 0; ch < rot.channels(); ++ch)
+        dec_in.push_back(rotated[ch].data());
+    for (auto& b : out)
+        dec_out.push_back(b.data());
     dec.process(dec_in.data(), dec_out.data(), speakers.size(), frames);
 
     // Report per-speaker RMS: the source started 45° left, the scene turned
@@ -72,8 +75,7 @@ int main() {
             e += static_cast<double>(out[s][i]) * static_cast<double>(out[s][i]);
         }
         const double rms = std::sqrt(e / static_cast<double>(frames - start));
-        std::printf("  %s  %.4f  %s\n", names[s], rms,
-                    std::string(static_cast<size_t>(rms * 60.0), '#').c_str());
+        std::printf("  %s  %.4f  %s\n", names[s], rms, std::string(static_cast<size_t>(rms * 60.0), '#').c_str());
     }
     return 0;
 }

@@ -53,8 +53,7 @@ namespace ambitap::dsp {
         ///               (in[0][c], out[0][r]); false: planar buffers
         ///               (in[c][i], out[r][i]).
         void apply(const void* key, const float* mat, const float* prev, size_t rows, size_t cols,
-                   const float* const* in, float* const* out, size_t frame_count,
-                   bool frame_layout) noexcept {
+                   const float* const* in, float* const* out, size_t frame_count, bool frame_layout) noexcept {
             if (key != m_fade_ref) { // new matrix adopted: restart the crossfade
                 m_fade_ref = key;
                 m_fade_pos = 0;
@@ -62,9 +61,8 @@ namespace ambitap::dsp {
 
             for (size_t i = 0; i < frame_count; ++i) {
                 const bool  fading = m_fade_pos < k_fade_samples;
-                const float alpha  = fading ? (static_cast<float>(m_fade_pos) + 1.f)
-                                                 / static_cast<float>(k_fade_samples)
-                                            : 1.f;
+                const float alpha =
+                    fading ? (static_cast<float>(m_fade_pos) + 1.f) / static_cast<float>(k_fade_samples) : 1.f;
                 for (size_t r = 0; r < rows; ++r) {
                     float acc_new = 0.f;
                     float acc_old = 0.f;
@@ -86,8 +84,8 @@ namespace ambitap::dsp {
         }
 
       private:
-        const void* m_fade_ref {nullptr};
-        size_t      m_fade_pos {k_fade_samples};
+        const void* m_fade_ref{nullptr};
+        size_t      m_fade_pos{k_fade_samples};
     };
 
 } // namespace ambitap::dsp

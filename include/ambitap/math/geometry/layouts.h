@@ -6,10 +6,10 @@
 #ifndef AMBITAP_MATH_LAYOUTS_H
 #define AMBITAP_MATH_LAYOUTS_H
 
-#include "../core/coords.h"
-
 #include <cmath>
 #include <vector>
+
+#include "../core/coords.h"
 
 namespace ambitap {
 

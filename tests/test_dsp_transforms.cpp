@@ -4,16 +4,16 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/dsp/directional_loudness.h"
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/dsp/format_converter.h"
 #include "ambitap/dsp/mirror.h"
 #include "ambitap/dsp/virtual_mic.h"
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <vector>
 
 using namespace ambitap;
 
@@ -23,7 +23,8 @@ namespace {
         dsp::encoder enc(order);
         enc.set_direction(az, el);
         std::vector<float> v(enc.channels());
-        for (size_t ch = 0; ch < v.size(); ++ch) v[ch] = enc.coefficients()[ch];
+        for (size_t ch = 0; ch < v.size(); ++ch)
+            v[ch] = enc.coefficients()[ch];
         return v;
     }
 
@@ -166,8 +167,7 @@ TEST(DspDirectionalLoudness, AchievesRequestedGainAtLookDirection) {
             dl.process_frame(in.data(), out.data());
 
             for (size_t ch = 0; ch < out.size(); ++ch) {
-                EXPECT_NEAR(out[ch], gain * in[ch], 1e-5f)
-                    << "order=" << order << " gain=" << gain << " ch=" << ch;
+                EXPECT_NEAR(out[ch], gain * in[ch], 1e-5f) << "order=" << order << " gain=" << gain << " ch=" << ch;
             }
         }
     }

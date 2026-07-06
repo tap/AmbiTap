@@ -3,17 +3,17 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+#include <random>
+#include <stdexcept>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/math/core/indexing.h"
 #include "ambitap/math/geometry/convex_hull.h"
 #include "ambitap/math/geometry/layouts.h"
 #include "ambitap/math/geometry/speaker_layout.h"
 #include "ambitap/math/geometry/tdesigns.h"
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <random>
-#include <stdexcept>
 
 using namespace ambitap;
 
@@ -39,13 +39,15 @@ TEST(ConvexHull, CubeCoversAllVertices) {
     std::vector<Eigen::Vector3f> pts;
     for (float x : {-1.0f, 1.0f})
         for (float y : {-1.0f, 1.0f})
-            for (float z : {-1.0f, 1.0f}) pts.push_back(Eigen::Vector3f(x, y, z).normalized());
+            for (float z : {-1.0f, 1.0f})
+                pts.push_back(Eigen::Vector3f(x, y, z).normalized());
 
     const auto tris = convex_hull_3d(pts);
     EXPECT_GE(tris.size(), 12u);
 
     std::vector<bool> seen(pts.size(), false);
-    for (const auto& t : tris) seen[t.a] = seen[t.b] = seen[t.c] = true;
+    for (const auto& t : tris)
+        seen[t.a] = seen[t.b] = seen[t.c] = true;
     for (size_t i = 0; i < seen.size(); ++i) {
         EXPECT_TRUE(seen[i]) << "cube corner " << i << " missing from hull";
     }
@@ -123,10 +125,8 @@ TEST(ConvexHull, DegenerateInputsReturnEmpty) {
     };
 
     EXPECT_TRUE(convex_hull_3d(ring(8)).empty()) << "coplanar ring";
-    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {-1, 0, 0}, {0.5f, 0, 0}, {-0.5f, 0, 0}}).empty())
-        << "collinear";
-    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}}).empty())
-        << "coincident";
+    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {-1, 0, 0}, {0.5f, 0, 0}, {-0.5f, 0, 0}}).empty()) << "collinear";
+    EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}}).empty()) << "coincident";
     EXPECT_TRUE(convex_hull_3d({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}).empty()) << "< 4 points";
 }
 
@@ -148,7 +148,8 @@ TEST(SpeakerLayout, PairwisePanningOn5_1) {
         EXPECT_FLOAT_EQ(g[3], 0.0f);
         EXPECT_FLOAT_EQ(g[4], 0.0f);
         float e = 0.f;
-        for (float v : g) e += v * v;
+        for (float v : g)
+            e += v * v;
         EXPECT_NEAR(e, 1.0f, 1e-5f);
 
         // Exact 2D VBAP solution for speakers at 0°/30°, source at 20°.
@@ -214,7 +215,7 @@ TEST(SpeakerLayout, PairwiseGainsAreEnergyNormalizedOnOctagon) {
 }
 
 TEST(SpeakerLayout, EmptyLayoutThrows) {
-    EXPECT_THROW(speaker_layout(std::vector<spherical_coord> {}), std::invalid_argument);
+    EXPECT_THROW(speaker_layout(std::vector<spherical_coord>{}), std::invalid_argument);
 }
 
 TEST(Tdesigns, PointsAreOnUnitSphere) {
@@ -225,8 +226,7 @@ TEST(Tdesigns, PointsAreOnUnitSphere) {
         // ALLRAD needs t >= 2N+1, which needs at least (N+1)^2 points.
         EXPECT_GE(count, channel_count(order)) << "order " << order;
         for (size_t i = 0; i < count; ++i) {
-            const float norm =
-                std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1] + pts[i][2] * pts[i][2]);
+            const float norm = std::sqrt(pts[i][0] * pts[i][0] + pts[i][1] * pts[i][1] + pts[i][2] * pts[i][2]);
             EXPECT_NEAR(norm, 1.0f, 1e-4f) << "order " << order << " point " << i;
         }
     }
@@ -258,8 +258,7 @@ namespace {
 
     // For sources inside the coverage, the VBAP velocity vector must point at
     // the source exactly (Pulkki's defining property).
-    void expect_velocity_exact(const speaker_layout& layout, float el_lo, float el_hi,
-                               const char* name) {
+    void expect_velocity_exact(const speaker_layout& layout, float el_lo, float el_hi, const char* name) {
         std::mt19937                          rng(29);
         std::uniform_real_distribution<float> ua(-k_pi, k_pi);
         std::uniform_real_distribution<float> ue(el_lo, el_hi);

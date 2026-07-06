@@ -30,17 +30,18 @@ namespace ambitap::dsp {
     /// Threading contract: any number of control-thread set()/snap() calls
     /// (externally serialized, as with all processor setters); exactly ONE
     /// audio thread calling tick().
-    template <size_t MaxN> class smoothed_table {
-        std::array<std::atomic<float>, MaxN> m_target {};
-        std::atomic<std::uint32_t>           m_generation {0};
-        mutable std::atomic<bool>            m_snap {false};
+    template <size_t MaxN>
+    class smoothed_table {
+        std::array<std::atomic<float>, MaxN> m_target{};
+        std::atomic<std::uint32_t>           m_generation{0};
+        mutable std::atomic<bool>            m_snap{false};
 
         // Audio-thread state (single reader).
-        mutable std::array<float, MaxN> m_from {};
-        mutable std::array<float, MaxN> m_to {};
-        mutable std::array<float, MaxN> m_now {};
-        mutable std::uint32_t           m_seen {0};
-        mutable size_t                  m_pos {k_smoothing_samples};
+        mutable std::array<float, MaxN> m_from{};
+        mutable std::array<float, MaxN> m_to{};
+        mutable std::array<float, MaxN> m_now{};
+        mutable std::uint32_t           m_seen{0};
+        mutable size_t                  m_pos{k_smoothing_samples};
 
       public:
         /// Initialize target AND current values (constructor use: no fade-in).
@@ -49,8 +50,7 @@ namespace ambitap::dsp {
                 m_target[i].store(values[i], std::memory_order_relaxed);
                 m_now[i] = m_to[i] = m_from[i] = values[i];
             }
-            m_generation.store(m_generation.load(std::memory_order_relaxed) + 1,
-                               std::memory_order_release);
+            m_generation.store(m_generation.load(std::memory_order_relaxed) + 1, std::memory_order_release);
             m_seen = m_generation.load(std::memory_order_relaxed);
             m_pos  = k_smoothing_samples;
         }
@@ -81,7 +81,8 @@ namespace ambitap::dsp {
                     m_to[i]   = m_target[i].load(std::memory_order_relaxed);
                 }
                 if (m_snap.exchange(false, std::memory_order_acq_rel)) {
-                    for (size_t i = 0; i < count; ++i) m_now[i] = m_to[i];
+                    for (size_t i = 0; i < count; ++i)
+                        m_now[i] = m_to[i];
                     m_pos = k_smoothing_samples;
                 }
                 else {
@@ -89,8 +90,7 @@ namespace ambitap::dsp {
                 }
             }
             if (m_pos < k_smoothing_samples) {
-                const float alpha =
-                    (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
+                const float alpha = (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
                 for (size_t i = 0; i < count; ++i) {
                     m_now[i] = m_from[i] + (m_to[i] - m_from[i]) * alpha;
                 }
@@ -101,22 +101,21 @@ namespace ambitap::dsp {
 
         /// True when the current values have reached the target.
         bool settled() const noexcept {
-            return m_pos >= k_smoothing_samples
-                   && m_generation.load(std::memory_order_acquire) == m_seen;
+            return m_pos >= k_smoothing_samples && m_generation.load(std::memory_order_acquire) == m_seen;
         }
     };
 
     /// Scalar variant of smoothed_table.
     class smoothed_scalar {
-        std::atomic<float>         m_target {0.f};
-        std::atomic<std::uint32_t> m_generation {0};
-        mutable std::atomic<bool>  m_snap {false};
+        std::atomic<float>         m_target{0.f};
+        std::atomic<std::uint32_t> m_generation{0};
+        mutable std::atomic<bool>  m_snap{false};
 
-        mutable float         m_from {0.f};
-        mutable float         m_to {0.f};
-        mutable float         m_now {0.f};
-        mutable std::uint32_t m_seen {0};
-        mutable size_t        m_pos {k_smoothing_samples};
+        mutable float         m_from{0.f};
+        mutable float         m_to{0.f};
+        mutable float         m_now{0.f};
+        mutable std::uint32_t m_seen{0};
+        mutable size_t        m_pos{k_smoothing_samples};
 
       public:
         explicit smoothed_scalar(float initial = 0.f) { init(initial); }
@@ -161,9 +160,8 @@ namespace ambitap::dsp {
                 }
             }
             if (m_pos < k_smoothing_samples) {
-                const float alpha =
-                    (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
-                m_now = m_from + (m_to - m_from) * alpha;
+                const float alpha = (static_cast<float>(m_pos) + 1.f) / static_cast<float>(k_smoothing_samples);
+                m_now             = m_from + (m_to - m_from) * alpha;
                 ++m_pos;
             }
             return m_now;
@@ -171,8 +169,7 @@ namespace ambitap::dsp {
 
         /// True when the current value has reached the target.
         bool settled() const noexcept {
-            return m_pos >= k_smoothing_samples
-                   && m_generation.load(std::memory_order_acquire) == m_seen;
+            return m_pos >= k_smoothing_samples && m_generation.load(std::memory_order_acquire) == m_seen;
         }
     };
 

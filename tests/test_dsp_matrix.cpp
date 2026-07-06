@@ -3,18 +3,18 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/decoder.h"
-#include "ambitap/dsp/encoder.h"
-#include "ambitap/dsp/rotator.h"
-#include "ambitap/math/geometry/layouts.h"
-
-#include <gtest/gtest.h>
-
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "ambitap/dsp/decoder.h"
+#include "ambitap/dsp/encoder.h"
+#include "ambitap/dsp/rotator.h"
+#include "ambitap/math/geometry/layouts.h"
 
 using namespace ambitap;
 
@@ -43,7 +43,8 @@ TEST(DspRotator, PassthroughUntilFirstSetter) {
     EXPECT_FALSE(rot.is_active());
 
     std::vector<float> in(rot.channels()), out(rot.channels());
-    for (size_t i = 0; i < in.size(); ++i) in[i] = static_cast<float>(i) - 3.f;
+    for (size_t i = 0; i < in.size(); ++i)
+        in[i] = static_cast<float>(i) - 3.f;
     rot.process_frame(in.data(), out.data());
     EXPECT_EQ(out, in);
 }
@@ -91,7 +92,8 @@ TEST(DspDecoder, SilenceUntilConfigured) {
     float        in[4] = {1.f, 0.5f, -0.5f, 0.25f};
     float        out[8];
     dec.process_frame(in, out, 8);
-    for (float v : out) EXPECT_EQ(v, 0.f);
+    for (float v : out)
+        EXPECT_EQ(v, 0.f);
 }
 
 TEST(DspDecoder, MatchesDirectConstruction) {
@@ -111,8 +113,7 @@ TEST(DspDecoder, MatchesDirectConstruction) {
     const auto D = compute_mode_matching_decoder(order, speakers);
     for (size_t r = 0; r < m->speakers; ++r) {
         for (size_t c = 0; c < m->channels; ++c) {
-            EXPECT_FLOAT_EQ(m->data[r * m->channels + c],
-                            D(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c)))
+            EXPECT_FLOAT_EQ(m->data[r * m->channels + c], D(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c)))
                 << "r=" << r << " c=" << c;
         }
     }
@@ -146,7 +147,7 @@ TEST(DspDecoder, EmptySpeakerListKeepsPreviousMatrix) {
 }
 
 TEST(DspDecoder, PublishCallbackFires) {
-    std::atomic<int> publishes {0};
+    std::atomic<int> publishes{0};
     dsp::decoder     dec(1, [&publishes] { ++publishes; });
     dec.set_speakers(layouts::quad());
     dec.wait_for_settling();

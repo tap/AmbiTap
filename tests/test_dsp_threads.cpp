@@ -5,20 +5,20 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <atomic>
+#include <cmath>
+#include <memory>
+#include <thread>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/analysis/soundfield_grid.h"
 #include "ambitap/dsp/decoder.h"
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/dsp/util/rt_published.h"
 #include "ambitap/math/geometry/layouts.h"
-
-#include <gtest/gtest.h>
-
-#include <atomic>
-#include <cmath>
-#include <memory>
-#include <thread>
-#include <vector>
 
 using namespace ambitap;
 
@@ -43,8 +43,8 @@ namespace {
 TEST(RtPublished, ReaderNeverSeesTornOrFreedProduct) {
     dsp::rt_published<const std::vector<float>> pub;
 
-    std::atomic<bool> stop {false};
-    std::atomic<int>  inconsistencies {0};
+    std::atomic<bool> stop{false};
+    std::atomic<int>  inconsistencies{0};
 
     std::thread reader([&] {
         while (!stop.load(std::memory_order_relaxed)) {
@@ -77,8 +77,8 @@ TEST(DspThreads, RotatorSetterHammerVsProcess) {
     dsp::rotator  rot(order);
 
     std::vector<float> in(rot.channels(), 0.5f), out(rot.channels());
-    std::atomic<bool>  stop {false};
-    std::atomic<bool>  bad {false};
+    std::atomic<bool>  stop{false};
+    std::atomic<bool>  bad{false};
 
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {
@@ -108,8 +108,8 @@ TEST(DspThreads, DecoderSpeakerHammerVsProcess) {
 
     std::vector<float> in(dec.input_channels(), 0.25f);
     std::vector<float> out(8);
-    std::atomic<bool>  stop {false};
-    std::atomic<bool>  bad {false};
+    std::atomic<bool>  stop{false};
+    std::atomic<bool>  bad{false};
 
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {
@@ -127,8 +127,7 @@ TEST(DspThreads, DecoderSpeakerHammerVsProcess) {
             dec.set_speakers(layouts::octagon());
             break;
         case 2:
-            dec.set_algorithm((i % 2) ? dsp::decoder_algorithm::allrad
-                                      : dsp::decoder_algorithm::mode_match);
+            dec.set_algorithm((i % 2) ? dsp::decoder_algorithm::allrad : dsp::decoder_algorithm::mode_match);
             break;
         }
     }
@@ -145,11 +144,12 @@ TEST(DspThreads, EncoderDirectionHammerVsProcess) {
 
     std::vector<std::vector<float>> bufs(enc.channels(), std::vector<float>(16));
     std::vector<float*>             out;
-    for (auto& b : bufs) out.push_back(b.data());
+    for (auto& b : bufs)
+        out.push_back(b.data());
     std::vector<float> mono(16, 1.f);
 
-    std::atomic<bool> stop {false};
-    std::atomic<bool> bad {false};
+    std::atomic<bool> stop{false};
+    std::atomic<bool> bad{false};
 
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {
@@ -177,9 +177,10 @@ TEST(DspThreads, SoundfieldGridResizeVsProcess) {
 
     std::vector<std::vector<float>> bufs(grid.channels(), std::vector<float>(32, 0.1f));
     std::vector<const float*>       in;
-    for (auto& b : bufs) in.push_back(b.data());
+    for (auto& b : bufs)
+        in.push_back(b.data());
 
-    std::atomic<bool> stop {false};
+    std::atomic<bool> stop{false};
 
     std::thread audio([&] {
         while (!stop.load(std::memory_order_relaxed)) {

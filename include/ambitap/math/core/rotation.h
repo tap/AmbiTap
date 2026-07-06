@@ -6,12 +6,13 @@
 #ifndef AMBITAP_MATH_ROTATION_H
 #define AMBITAP_MATH_ROTATION_H
 
-#include "indexing.h"
-#include "rotation_recurrence.h"
+#include <vector>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <vector>
+
+#include "indexing.h"
+#include "rotation_recurrence.h"
 
 namespace ambitap {
 
@@ -44,8 +45,7 @@ namespace ambitap {
             : m_order(order)
             , m_num_channels(channel_count(order)) {
             Eigen::Matrix3f R;
-            R = Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ())
-                * Eigen::AngleAxisf(pitch, Eigen::Vector3f::UnitY())
+            R = Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(pitch, Eigen::Vector3f::UnitY())
                 * Eigen::AngleAxisf(roll, Eigen::Vector3f::UnitX());
             compute(R);
         }
@@ -64,16 +64,14 @@ namespace ambitap {
         void compute(const Eigen::Matrix3f& R) {
             const auto C = static_cast<Eigen::Index>(m_num_channels);
 
-            const float        R9[9] = {R(0, 0), R(0, 1), R(0, 2), R(1, 0), R(1, 1),
-                                        R(1, 2), R(2, 0), R(2, 1), R(2, 2)};
+            const float R9[9] = {R(0, 0), R(0, 1), R(0, 2), R(1, 0), R(1, 1), R(1, 2), R(2, 0), R(2, 1), R(2, 2)};
             std::vector<float> m(m_num_channels * m_num_channels);
             compute_sh_rotation_from_matrix(m_order, R9, m.data());
 
             m_matrix.resize(C, C);
             for (Eigen::Index r = 0; r < C; ++r) {
                 for (Eigen::Index c = 0; c < C; ++c) {
-                    m_matrix(r, c) =
-                        m[static_cast<size_t>(r) * m_num_channels + static_cast<size_t>(c)];
+                    m_matrix(r, c) = m[static_cast<size_t>(r) * m_num_channels + static_cast<size_t>(c)];
                 }
             }
         }

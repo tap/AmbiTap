@@ -3,13 +3,13 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/analysis/soundfield_grid.h"
-#include "ambitap/dsp/encoder.h"
+#include <cmath>
+#include <vector>
 
 #include <gtest/gtest.h>
 
-#include <cmath>
-#include <vector>
+#include "ambitap/analysis/soundfield_grid.h"
+#include "ambitap/dsp/encoder.h"
 
 using namespace ambitap;
 
@@ -59,7 +59,8 @@ TEST(AnalysisSoundfieldGrid, LocalizesEncodedSource) {
         ptrs.push_back(bufs[c].data());
     }
 
-    for (int b = 0; b < 200; ++b) sg.process(ptrs.data(), frames);
+    for (int b = 0; b < 200; ++b)
+        sg.process(ptrs.data(), frames);
 
     const auto img    = sg.snapshot(40.f);
     size_t     argmax = 0;

@@ -6,15 +6,15 @@
 #ifndef AMBITAP_MATH_SPHERICAL_HARMONICS_H
 #define AMBITAP_MATH_SPHERICAL_HARMONICS_H
 
-#include "coords.h"
-#include "indexing.h"
-#include "normalization.h"
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+
+#include "coords.h"
+#include "indexing.h"
+#include "normalization.h"
 
 namespace ambitap {
 
@@ -57,8 +57,7 @@ namespace ambitap {
 
         // First off-diagonal: P_{m+1}^m
         for (int m = 0; m < N; ++m) {
-            plm[(m + 1) * (max_order + 1) + m] =
-                static_cast<float>(2 * m + 1) * sin_el * plm[m * (max_order + 1) + m];
+            plm[(m + 1) * (max_order + 1) + m] = static_cast<float>(2 * m + 1) * sin_el * plm[m * (max_order + 1) + m];
         }
 
         // General recurrence: P_n^m for n > m+1

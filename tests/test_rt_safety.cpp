@@ -6,6 +6,13 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <atomic>
+#include <cstdlib>
+#include <new>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/analysis/energy_vector.h"
 #include "ambitap/analysis/soundfield_grid.h"
 #include "ambitap/dsp/binaural_renderer.h"
@@ -23,21 +30,14 @@
 #include "ambitap/dsp/xtc.h"
 #include "ambitap/math/geometry/layouts.h"
 
-#include <gtest/gtest.h>
-
-#include <atomic>
-#include <cstdlib>
-#include <new>
-#include <vector>
-
 #if defined(_WIN32)
 #include <malloc.h>
 #endif
 
 namespace {
 
-    std::atomic<long> g_allocs {0};
-    std::atomic<long> g_frees {0};
+    std::atomic<long> g_allocs{0};
+    std::atomic<long> g_frees{0};
     thread_local bool g_armed = false;
 
     struct rt_guard {

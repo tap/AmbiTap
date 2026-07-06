@@ -6,14 +6,14 @@
 #ifndef AMBITAP_DSP_VIRTUAL_MIC_H
 #define AMBITAP_DSP_VIRTUAL_MIC_H
 
+#include <array>
+#include <cstddef>
+
 #include "../math/core/indexing.h"
 #include "../math/core/spherical_harmonics.h"
 #include "../math/core/validate.h"
 #include "../math/decoding/max_re.h"
 #include "util/smoothing.h"
-
-#include <array>
-#include <cstddef>
 
 namespace ambitap::dsp {
 
@@ -33,11 +33,11 @@ namespace ambitap::dsp {
     class virtual_mic {
         int    m_order;
         size_t m_channels;
-        float  m_azimuth {0.0f};
-        float  m_elevation {0.0f};
-        bool   m_max_re {false};
+        float  m_azimuth{0.0f};
+        float  m_elevation{0.0f};
+        bool   m_max_re{false};
 
-        std::array<float, max_channel_count> m_coefficients {};
+        std::array<float, max_channel_count> m_coefficients{};
 
         smoothed_table<max_channel_count> m_smooth;
 

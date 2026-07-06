@@ -6,16 +6,16 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
-#include "ambitap/dsp/room.h"
-
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
 #include <cstring>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "ambitap/dsp/room.h"
 
 using namespace ambitap;
 
@@ -26,12 +26,12 @@ namespace {
     constexpr size_t k_block = 256;
 
     // The seed-11 verification configuration = dsp::room's defaults.
-    constexpr std::array<double, 3> k_dims {7.10, 5.30, 3.10};
-    constexpr std::array<double, 3> k_source {3.674, 1.137, 1.977};
-    constexpr std::array<double, 3> k_listener {1.746, 1.711, 0.668};
-    constexpr std::array<double, 6> k_beta {0.90, 0.92, 0.91, 0.93, 0.89, 0.94};
-    constexpr std::array<double, 5> k_rt60 {0.90, 0.84, 0.76, 0.66, 0.54};
-    constexpr std::array<double, 5> k_centers {250.0, 500.0, 1000.0, 2000.0, 4000.0};
+    constexpr std::array<double, 3> k_dims{7.10, 5.30, 3.10};
+    constexpr std::array<double, 3> k_source{3.674, 1.137, 1.977};
+    constexpr std::array<double, 3> k_listener{1.746, 1.711, 0.668};
+    constexpr std::array<double, 6> k_beta{0.90, 0.92, 0.91, 0.93, 0.89, 0.94};
+    constexpr std::array<double, 5> k_rt60{0.90, 0.84, 0.76, 0.66, 0.54};
+    constexpr std::array<double, 5> k_centers{250.0, 500.0, 1000.0, 2000.0, 4000.0};
 
     /// Render the latency-trimmed SH impulse response of a prepared-from-
     /// scratch room (prepare -> settle -> snap -> impulse through process).
@@ -48,7 +48,8 @@ namespace {
         std::vector<float>              in(k_block, 0.0f);
         std::vector<std::vector<float>> out(channels, std::vector<float>(k_block));
         std::vector<float*>             out_ptrs;
-        for (auto& b : out) out_ptrs.push_back(b.data());
+        for (auto& b : out)
+            out_ptrs.push_back(b.data());
         std::vector<std::vector<float>> ir(channels, std::vector<float>(blocks * k_block, 0.0f));
 
         for (size_t bi = 0; bi < blocks; ++bi) {
@@ -56,8 +57,7 @@ namespace {
             if (bi == 0) in[0] = 1.0f;
             r.process(in.data(), out_ptrs.data(), k_block);
             for (size_t ch = 0; ch < channels; ++ch) {
-                std::copy(out[ch].begin(), out[ch].end(),
-                          ir[ch].begin() + static_cast<std::ptrdiff_t>(bi * k_block));
+                std::copy(out[ch].begin(), out[ch].end(), ir[ch].begin() + static_cast<std::ptrdiff_t>(bi * k_block));
             }
         }
         for (size_t ch = 0; ch < channels; ++ch) {
@@ -94,14 +94,12 @@ namespace {
                                 const int r[3] = {rx, ry, rz};
                                 double    v[3];
                                 for (size_t a = 0; a < 3; ++a) {
-                                    v[a] = (1.0 - 2.0 * p[a]) * k_source[a] + 2.0 * r[a] * k_dims[a]
-                                           - k_listener[a];
+                                    v[a] = (1.0 - 2.0 * p[a]) * k_source[a] + 2.0 * r[a] * k_dims[a] - k_listener[a];
                                 }
-                                const double dist =
-                                    std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-                                const double t = dist / c;
+                                const double dist = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+                                const double t    = dist / c;
                                 if (t > t_max || dist < 1e-6) continue;
-                                image img {};
+                                image img{};
                                 img.t    = t;
                                 img.amp  = 1.0;
                                 img.refl = 0;
@@ -109,11 +107,11 @@ namespace {
                                     const int e0 = std::abs(r[a] - p[a]);
                                     const int e1 = std::abs(r[a]);
                                     img.refl += e0 + e1;
-                                    img.amp *= std::pow(k_beta[2 * a], e0)
-                                               * std::pow(k_beta[2 * a + 1], e1);
+                                    img.amp *= std::pow(k_beta[2 * a], e0) * std::pow(k_beta[2 * a + 1], e1);
                                 }
                                 img.amp /= dist;
-                                for (size_t a = 0; a < 3; ++a) img.u[a] = v[a] / dist;
+                                for (size_t a = 0; a < 3; ++a)
+                                    img.u[a] = v[a] / dist;
                                 out.push_back(img);
                             }
                         }
@@ -147,7 +145,7 @@ namespace {
         const std::complex<double> p = std::polar(1.0, 3.0 * k_pi64 / 4.0);
         const std::complex<double> q = p * (bw / 2.0);
         const std::complex<double> d = std::sqrt(q * q - w0 * w0);
-        std::array<biquad, 2>      out {};
+        std::array<biquad, 2>      out{};
         const std::complex<double> s_poles[2] = {q + d, q - d};
         for (size_t i = 0; i < 2; ++i) {
             const std::complex<double> z = (2.0 * fs + s_poles[i]) / (2.0 * fs - s_poles[i]);
@@ -186,12 +184,15 @@ namespace {
             edc[i] = e;
         }
         const double e0 = edc[0];
-        for (auto& v : edc) v = 10.0 * std::log10(v / e0 + 1e-30);
+        for (auto& v : edc)
+            v = 10.0 * std::log10(v / e0 + 1e-30);
 
         size_t i0 = 0, i1 = 0;
-        while (i0 < edc.size() && edc[i0] > lo_db) ++i0;
+        while (i0 < edc.size() && edc[i0] > lo_db)
+            ++i0;
         i1 = i0;
-        while (i1 < edc.size() && edc[i1] > hi_db) ++i1;
+        while (i1 < edc.size() && edc[i1] > hi_db)
+            ++i1;
         // Least-squares slope of edc against time over [i0, i1).
         double     sx = 0.0, sy = 0.0, sxx = 0.0, sxy = 0.0;
         const auto n = static_cast<double>(i1 - i0);
@@ -222,19 +223,23 @@ TEST(DspRoom, SilentUntilPreparedAndOnBadBlockSize) {
     std::vector<float>              in(k_block, 1.0f);
     std::vector<std::vector<float>> out(4, std::vector<float>(k_block, 0.5f));
     std::vector<float*>             ptrs;
-    for (auto& b : out) ptrs.push_back(b.data());
+    for (auto& b : out)
+        ptrs.push_back(b.data());
 
     r.process(in.data(), ptrs.data(), k_block); // unprepared: must zero
     for (const auto& b : out) {
-        for (float v : b) ASSERT_EQ(v, 0.0f);
+        for (float v : b)
+            ASSERT_EQ(v, 0.0f);
     }
 
     r.prepare(192, static_cast<float>(k_fs)); // not a power of two
     EXPECT_FALSE(r.is_prepared());
-    for (auto& b : out) std::fill(b.begin(), b.end(), 0.5f);
+    for (auto& b : out)
+        std::fill(b.begin(), b.end(), 0.5f);
     r.process(in.data(), ptrs.data(), k_block);
     for (const auto& b : out) {
-        for (float v : b) ASSERT_EQ(v, 0.0f);
+        for (float v : b)
+            ASSERT_EQ(v, 0.0f);
     }
 }
 
@@ -275,8 +280,7 @@ TEST(DspRoom, EarlyReflectionsMatchImageSourceMath) {
         EXPECT_LE(std::abs(static_cast<double>(n_det) - sample), 1.0) << "arrival " << k;
 
         // R3: W carries the arrival amplitude directly in SN3D (Y00 = 1).
-        const double e = static_cast<double>(ir[0][n - 1]) * ir[0][n - 1]
-                         + static_cast<double>(ir[0][n]) * ir[0][n]
+        const double e = static_cast<double>(ir[0][n - 1]) * ir[0][n - 1] + static_cast<double>(ir[0][n]) * ir[0][n]
                          + static_cast<double>(ir[0][n + 1]) * ir[0][n + 1];
         const double level_err_db = 10.0 * std::log10(e / (img.amp * img.amp));
         EXPECT_LE(std::abs(level_err_db), 0.5) << "arrival " << k;
@@ -284,8 +288,8 @@ TEST(DspRoom, EarlyReflectionsMatchImageSourceMath) {
         // R2: first-order channels encode the direction (SN3D: ACN 1/2/3 =
         // u_y, u_z, u_x times the amplitude).
         const double vx = ir[3][n], vy = ir[1][n], vz = ir[2][n];
-        const double len = std::sqrt(vx * vx + vy * vy + vz * vz);
-        const double dot = (vx * img.u[0] + vy * img.u[1] + vz * img.u[2]) / std::max(len, 1e-30);
+        const double len       = std::sqrt(vx * vx + vy * vy + vz * vz);
+        const double dot       = (vx * img.u[0] + vy * img.u[1] + vz * img.u[2]) / std::max(len, 1e-30);
         const double angle_deg = std::acos(std::clamp(dot, -1.0, 1.0)) * 180.0 / k_pi64;
         EXPECT_LE(angle_deg, 5.0) << "arrival " << k;
     }
@@ -327,7 +331,8 @@ TEST(DspRoom, IirAbsorptionApproximatesRt60AndStaysCalibrated) {
     ri.set_absorption_kind(dsp::room::absorption_kind::iir);
     const auto ir_iir = render_ir(ri, 2.0);
 
-    for (float v : ir_iir[0]) ASSERT_TRUE(std::isfinite(v));
+    for (float v : ir_iir[0])
+        ASSERT_TRUE(std::isfinite(v));
 
     for (size_t b = 0; b < k_centers.size(); ++b) {
         const double t20 = fit_decay_time(band_filtfilt(ir_iir[0], k_centers[b]), -5.0, -25.0);
@@ -336,8 +341,10 @@ TEST(DspRoom, IirAbsorptionApproximatesRt60AndStaysCalibrated) {
     }
 
     double ef = 0.0, ei = 0.0;
-    for (float v : ir_fir[0]) ef += static_cast<double>(v) * v;
-    for (float v : ir_iir[0]) ei += static_cast<double>(v) * v;
+    for (float v : ir_fir[0])
+        ef += static_cast<double>(v) * v;
+    for (float v : ir_iir[0])
+        ei += static_cast<double>(v) * v;
     const double ratio_db = 10.0 * std::log10(ei / std::max(ef, 1e-30));
     EXPECT_LT(std::abs(ratio_db), 3.0) << "IIR tail energy " << ratio_db << " dB vs FIR";
 }
@@ -353,7 +360,8 @@ TEST(DspRoom, TailEnergyMatchesCalibrationTarget) {
     const auto ir = render_ir(r, 2.0);
 
     double energy = 0.0;
-    for (float v : ir[0]) energy += static_cast<double>(v) * v;
+    for (float v : ir[0])
+        energy += static_cast<double>(v) * v;
 
     const double t_enum = 0.25, t_fit = 0.20, t_cut = 0.030;
     double       e_mid = 0.0, e_fit = 0.0;
@@ -376,8 +384,7 @@ TEST(DspRoom, DeterministicRender) {
     const auto b = render_ir(r2, 0.6);
     ASSERT_EQ(a.size(), b.size());
     for (size_t ch = 0; ch < a.size(); ++ch) {
-        ASSERT_EQ(0, std::memcmp(a[ch].data(), b[ch].data(), a[ch].size() * sizeof(float)))
-            << "channel " << ch;
+        ASSERT_EQ(0, std::memcmp(a[ch].data(), b[ch].data(), a[ch].size() * sizeof(float))) << "channel " << ch;
     }
 }
 
@@ -398,7 +405,8 @@ TEST(DspRoom, ComponentTogglesCompose) {
 
     double peak = 0.0;
     for (const auto& ch : full) {
-        for (float v : ch) peak = std::max(peak, static_cast<double>(std::abs(v)));
+        for (float v : ch)
+            peak = std::max(peak, static_cast<double>(std::abs(v)));
     }
     for (size_t ch = 0; ch < full.size(); ++ch) {
         for (size_t i = 0; i < full[ch].size(); ++i) {
@@ -422,7 +430,8 @@ TEST(DspRoom, ConsistentAcrossBlockSizes) {
         std::vector<float>              in(block, 0.0f);
         std::vector<std::vector<float>> out(4, std::vector<float>(block));
         std::vector<float*>             ptrs;
-        for (auto& b : out) ptrs.push_back(b.data());
+        for (auto& b : out)
+            ptrs.push_back(b.data());
         std::vector<float> w(total);
         for (size_t off = 0; off < total; off += block) {
             std::fill(in.begin(), in.end(), 0.0f);
@@ -453,7 +462,8 @@ TEST(DspRoom, ParameterChangesKeepAudioFinite) {
     std::vector<float>              in(k_block);
     std::vector<std::vector<float>> out(16, std::vector<float>(k_block));
     std::vector<float*>             ptrs;
-    for (auto& b : out) ptrs.push_back(b.data());
+    for (auto& b : out)
+        ptrs.push_back(b.data());
 
     unsigned seed = 1;
     auto     run  = [&](int blocks) {

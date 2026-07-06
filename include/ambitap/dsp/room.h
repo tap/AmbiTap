@@ -7,14 +7,6 @@
 #ifndef AMBITAP_DSP_ROOM_H
 #define AMBITAP_DSP_ROOM_H
 
-#include "../math/binaural/ooura_fft.h"
-#include "../math/core/indexing.h"
-#include "../math/core/spherical_harmonics.h"
-#include "../math/core/validate.h"
-#include "room_data.h"
-#include "util/async_rebuilder.h"
-#include "util/smoothing.h"
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -26,6 +18,14 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+
+#include "../math/binaural/ooura_fft.h"
+#include "../math/core/indexing.h"
+#include "../math/core/spherical_harmonics.h"
+#include "../math/core/validate.h"
+#include "room_data.h"
+#include "util/async_rebuilder.h"
+#include "util/smoothing.h"
 
 namespace ambitap::dsp {
 
@@ -142,9 +142,8 @@ namespace ambitap::dsp {
         static constexpr size_t k_walls = 6;
         /// Parameterized RT60 octave bands.
         static constexpr size_t                           k_rt60_bands = 5;
-        static constexpr std::array<double, k_rt60_bands> k_rt60_centers_hz {250.0, 500.0, 1000.0,
-                                                                             2000.0, 4000.0};
-        static constexpr float k_speed_of_sound = 343.0f; ///< m/s (prototype constant)
+        static constexpr std::array<double, k_rt60_bands> k_rt60_centers_hz{250.0, 500.0, 1000.0, 2000.0, 4000.0};
+        static constexpr float                            k_speed_of_sound = 343.0f; ///< m/s (prototype constant)
         /// Image sources render below this time; the FDN tail carries t >= it.
         static constexpr float k_er_cutoff_seconds = 0.030f;
         /// Per-line linear-phase absorption FIR length (group delay 127).
@@ -154,9 +153,8 @@ namespace ambitap::dsp {
         /// Mutually-prime FDN delay lengths in samples (9..83 ms at 48 kHz;
         /// the short end bridges the early-recirculation gap — see the
         /// prototype's docstring for the delay-set iteration).
-        static constexpr std::array<size_t, k_lines> k_delays {431,  541,  677,  839,  1039, 1201,
-                                                               1451, 1693, 1949, 2243, 2531, 2857,
-                                                               3163, 3467, 3697, 3989};
+        static constexpr std::array<size_t, k_lines> k_delays{431,  541,  677,  839,  1039, 1201, 1451, 1693,
+                                                              1949, 2243, 2531, 2857, 3163, 3467, 3697, 3989};
 
         static constexpr float k_min_dimension = 1.0f;  ///< m; bounds image counts
         static constexpr float k_max_dimension = 50.0f; ///< m
@@ -194,18 +192,18 @@ namespace ambitap::dsp {
         /// thread. `prev` fields carry the previously published values so the
         /// audio thread can crossfade without holding two products.
         struct model {
-            std::vector<er_tap> taps;
-            std::vector<er_tap> prev_taps;
-            absorption_kind     kind {absorption_kind::fir};
-            std::vector<float>  absorption;       ///< [line][k_absorption_taps] (kind==fir)
-            std::vector<float>  absorption_rev;   ///< absorption, per-line reversed (audio path)
-            std::array<float, k_lines> iir_b0 {}; ///< per-line one-pole b0 (kind==iir)
-            std::array<float, k_lines> iir_a1 {}; ///< per-line one-pole pole (kind==iir)
+            std::vector<er_tap>        taps;
+            std::vector<er_tap>        prev_taps;
+            absorption_kind            kind{absorption_kind::fir};
+            std::vector<float>         absorption;     ///< [line][k_absorption_taps] (kind==fir)
+            std::vector<float>         absorption_rev; ///< absorption, per-line reversed (audio path)
+            std::array<float, k_lines> iir_b0{};       ///< per-line one-pole b0 (kind==iir)
+            std::array<float, k_lines> iir_a1{};       ///< per-line one-pole pole (kind==iir)
             std::vector<double>        inject_spectra; ///< [line][partition][fft], Ooura packing
-            size_t                     partitions {0};
-            size_t                     chunk {0};   ///< partition/block size the spectra assume
-            std::array<float, k_lines> out_gain {}; ///< per-channel sn3d * calibration
-            std::array<float, k_lines> prev_out_gain {};
+            size_t                     partitions{0};
+            size_t                     chunk{0};   ///< partition/block size the spectra assume
+            std::array<float, k_lines> out_gain{}; ///< per-channel sn3d * calibration
+            std::array<float, k_lines> prev_out_gain{};
         };
 
         // ---- Immutable per-instance configuration --------------------------
@@ -213,21 +211,21 @@ namespace ambitap::dsp {
         size_t m_channels;
         /// Signed-Hadamard mixing matrices from the baked seed-11 sign draws:
         /// m_feedback[i][j] = rows[i] * H16[i][j] * cols[j] / 4 (orthogonal).
-        std::array<std::array<float, k_lines>, k_lines> m_feedback {};
-        std::array<std::array<float, k_lines>, k_lines> m_outmix {};
-        std::array<float, k_lines>                      m_sn3d {};
+        std::array<std::array<float, k_lines>, k_lines> m_feedback{};
+        std::array<std::array<float, k_lines>, k_lines> m_outmix{};
+        std::array<float, k_lines>                      m_sn3d{};
 
         // ---- Configuration snapshot (guarded by m_config_mtx; read by the
         //      worker's build callback) --------------------------------------
         mutable std::mutex              m_config_mtx;
-        std::array<float, 3>            m_dims {7.10f, 5.30f, 3.10f};
-        std::array<float, 3>            m_source {3.674f, 1.137f, 1.977f};
-        std::array<float, 3>            m_listener {1.746f, 1.711f, 0.668f};
-        std::array<float, k_walls>      m_beta {0.90f, 0.92f, 0.91f, 0.93f, 0.89f, 0.94f};
-        std::array<float, k_rt60_bands> m_rt60 {0.90f, 0.84f, 0.76f, 0.66f, 0.54f};
-        absorption_kind                 m_absorption_kind {absorption_kind::fir};
-        float                           m_fs {0.0f};
-        size_t                          m_block {0};
+        std::array<float, 3>            m_dims{7.10f, 5.30f, 3.10f};
+        std::array<float, 3>            m_source{3.674f, 1.137f, 1.977f};
+        std::array<float, 3>            m_listener{1.746f, 1.711f, 0.668f};
+        std::array<float, k_walls>      m_beta{0.90f, 0.92f, 0.91f, 0.93f, 0.89f, 0.94f};
+        std::array<float, k_rt60_bands> m_rt60{0.90f, 0.84f, 0.76f, 0.66f, 0.54f};
+        absorption_kind                 m_absorption_kind{absorption_kind::fir};
+        float                           m_fs{0.0f};
+        size_t                          m_block{0};
         /// Burst noise split into octave bands at the prepared sample rate
         /// ([line][band][sample]); RT60-independent, so computed once per
         /// prepare() and only re-shaped on rebuilds. Swapped as a shared_ptr
@@ -236,20 +234,20 @@ namespace ambitap::dsp {
 
         // ---- Audio-thread state (allocated in prepare(); owned by the one
         //      audio thread) -------------------------------------------------
-        size_t m_n0 {0};          ///< tail onset, round(k_er_cutoff_seconds * fs)
-        size_t m_base {0};        ///< injection alignment instant, max(3989, n0)
-        size_t m_audio_block {0}; ///< prepared block size (audio-side copy)
-        size_t m_chunk {0};       ///< min(block, k_max_chunk)
-        size_t m_fft_size {0};    ///< 2 * m_chunk
-        size_t m_partitions {0};
+        size_t m_n0{0};          ///< tail onset, round(k_er_cutoff_seconds * fs)
+        size_t m_base{0};        ///< injection alignment instant, max(3989, n0)
+        size_t m_audio_block{0}; ///< prepared block size (audio-side copy)
+        size_t m_chunk{0};       ///< min(block, k_max_chunk)
+        size_t m_fft_size{0};    ///< 2 * m_chunk
+        size_t m_partitions{0};
 
         std::vector<float>         m_input_ring; ///< mono input history (power-of-two)
-        size_t                     m_input_mask {0};
+        size_t                     m_input_mask{0};
         std::vector<float>         m_line_rings; ///< k_lines * m_line_stride
-        size_t                     m_line_stride {0};
-        size_t                     m_line_mask {0};
-        size_t                     m_write {0};
-        std::array<float, k_lines> m_iir_state {}; ///< per-line one-pole memory (kind==iir)
+        size_t                     m_line_stride{0};
+        size_t                     m_line_mask{0};
+        size_t                     m_write{0};
+        std::array<float, k_lines> m_iir_state{}; ///< per-line one-pole memory (kind==iir)
 
         std::vector<real_fft> m_fft;       ///< exactly one; vector for deferred init
         std::vector<double>   m_conv_time; ///< [prev|curr] input, m_fft_size
@@ -257,14 +255,14 @@ namespace ambitap::dsp {
         std::vector<double>   m_accum;     ///< m_fft_size
         std::vector<double>   m_conv_out;  ///< m_fft_size
         std::vector<float>    m_inject;    ///< [line][m_chunk]
-        size_t                m_spec_pos {0};
+        size_t                m_spec_pos{0};
 
-        smoothed_scalar   m_direct_gain {1.0f};
-        smoothed_scalar   m_early_gain {1.0f};
-        smoothed_scalar   m_tail_gain {1.0f};
-        std::atomic<bool> m_snap {false};
-        const model*      m_last_model {nullptr};
-        size_t            m_fade_pos {k_fade_samples};
+        smoothed_scalar   m_direct_gain{1.0f};
+        smoothed_scalar   m_early_gain{1.0f};
+        smoothed_scalar   m_tail_gain{1.0f};
+        std::atomic<bool> m_snap{false};
+        const model*      m_last_model{nullptr};
+        size_t            m_fade_pos{k_fade_samples};
 
         // Declared after everything the build callback reads (async_rebuilder
         // joins its worker before earlier members are destroyed).
@@ -301,8 +299,7 @@ namespace ambitap::dsp {
         /// unprepared (process() emits silence). Control thread; call before
         /// audio starts. NOT RT-safe (allocates; a few hundred ms of work).
         void prepare(size_t block_size, float sample_rate) {
-            const bool valid =
-                block_size >= 4 && (block_size & (block_size - 1)) == 0 && sample_rate > 0.0f;
+            const bool valid = block_size >= 4 && (block_size & (block_size - 1)) == 0 && sample_rate > 0.0f;
             {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
                 m_block = valid ? block_size : 0;
@@ -319,12 +316,12 @@ namespace ambitap::dsp {
             }
 
             const double fs = static_cast<double>(sample_rate);
-            m_n0 = static_cast<size_t>(std::llround(static_cast<double>(k_er_cutoff_seconds) * fs));
-            m_base        = std::max(k_delays.back(), m_n0);
-            m_audio_block = block_size;
-            m_chunk       = std::min(block_size, k_max_chunk);
-            m_fft_size    = 2 * m_chunk;
-            m_partitions  = (inject_taps() + m_chunk - 1) / m_chunk;
+            m_n0            = static_cast<size_t>(std::llround(static_cast<double>(k_er_cutoff_seconds) * fs));
+            m_base          = std::max(k_delays.back(), m_n0);
+            m_audio_block   = block_size;
+            m_chunk         = std::min(block_size, k_max_chunk);
+            m_fft_size      = 2 * m_chunk;
+            m_partitions    = (inject_taps() + m_chunk - 1) / m_chunk;
 
             m_input_ring.assign(next_pow2(m_base + m_chunk + 1), 0.0f);
             m_input_mask  = m_input_ring.size() - 1;
@@ -453,7 +450,8 @@ namespace ambitap::dsp {
                 std::lock_guard<std::mutex> lock(m_config_mtx);
                 const float                 target = std::clamp(seconds, k_min_rt60, k_max_rt60);
                 const float                 ratio  = target / m_rt60[2]; // 1 kHz band
-                for (auto& v : m_rt60) v = std::clamp(v * ratio, k_min_rt60, k_max_rt60);
+                for (auto& v : m_rt60)
+                    v = std::clamp(v * ratio, k_min_rt60, k_max_rt60);
             }
             m_rebuilder.submit();
         }
@@ -544,7 +542,8 @@ namespace ambitap::dsp {
 
         static size_t next_pow2(size_t n) {
             size_t p = 1;
-            while (p < n) p <<= 1;
+            while (p < n)
+                p <<= 1;
             return p;
         }
 
@@ -569,14 +568,14 @@ namespace ambitap::dsp {
                 a7 += a[k + 7] * b[k + 7];
             }
             float acc = ((a0 + a1) + (a2 + a3)) + ((a4 + a5) + (a6 + a7));
-            for (; k < n; ++k) acc += a[k] * b[k];
+            for (; k < n; ++k)
+                acc += a[k] * b[k];
             return acc;
         }
 
         // ---- Audio path ----------------------------------------------------
 
-        void process_chunk(const model* m, const float* in, float* const* out,
-                           size_t offset) noexcept {
+        void process_chunk(const model* m, const float* in, float* const* out, size_t offset) noexcept {
             const size_t B = m_chunk;
             const size_t F = m_fft_size;
 
@@ -590,8 +589,10 @@ namespace ambitap::dsp {
             // per line (shared-spectrum partitioned overlap-save; the FIR
             // spectra live in the published model, the input history here —
             // so a model swap keeps the history and stays click-free).
-            for (size_t i = 0; i < B; ++i) m_conv_time[i] = m_conv_time[B + i];
-            for (size_t i = 0; i < B; ++i) m_conv_time[B + i] = static_cast<double>(in[i]);
+            for (size_t i = 0; i < B; ++i)
+                m_conv_time[i] = m_conv_time[B + i];
+            for (size_t i = 0; i < B; ++i)
+                m_conv_time[B + i] = static_cast<double>(in[i]);
             double* slot = m_spec_ring.data() + m_spec_pos * F;
             std::copy(m_conv_time.begin(), m_conv_time.end(), slot);
             m_fft[0].forward_inplace(slot);
@@ -630,8 +631,7 @@ namespace ambitap::dsp {
                 float fade_new = 1.0f;
                 float fade_old = 0.0f;
                 if (m_fade_pos < k_fade_samples) {
-                    fade_new = (static_cast<float>(m_fade_pos) + 1.0f)
-                               / static_cast<float>(k_fade_samples);
+                    fade_new = (static_cast<float>(m_fade_pos) + 1.0f) / static_cast<float>(k_fade_samples);
                     fade_old = 1.0f - fade_new;
                     ++m_fade_pos;
                 }
@@ -677,9 +677,9 @@ namespace ambitap::dsp {
                     for (size_t j = 0; j < k_lines; ++j) {
                         const float* ring    = m_line_rings.data() + j * m_line_stride;
                         const float  delayed = ring[(w - k_delays[j]) & m_line_mask];
-                        const float  y = m->iir_b0[j] * delayed + m->iir_a1[j] * m_iir_state[j];
-                        m_iir_state[j] = y;
-                        filtered[j]    = y;
+                        const float  y       = m->iir_b0[j] * delayed + m->iir_a1[j] * m_iir_state[j];
+                        m_iir_state[j]       = y;
+                        filtered[j]          = y;
                     }
                 }
 
@@ -709,11 +709,10 @@ namespace ambitap::dsp {
             m_write += B;
         }
 
-        void mix_er_taps(const std::vector<er_tap>& taps, size_t w, size_t i, size_t offset,
-                         float direct_gain, float early_gain, float* const* out) const noexcept {
+        void mix_er_taps(const std::vector<er_tap>& taps, size_t w, size_t i, size_t offset, float direct_gain,
+                         float early_gain, float* const* out) const noexcept {
             for (const auto& tap : taps) {
-                const float v = m_input_ring[(w - tap.delay) & m_input_mask]
-                                * (tap.direct ? direct_gain : early_gain);
+                const float v = m_input_ring[(w - tap.delay) & m_input_mask] * (tap.direct ? direct_gain : early_gain);
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     out[ch][offset + i] += v * tap.gains[ch];
                 }
@@ -730,8 +729,9 @@ namespace ambitap::dsp {
         /// center representative of its measured band average, gate R4).
         static double rt60_of_freq(double f, const std::array<double, k_rt60_bands>& rt60) {
             const double                     lf = std::log(std::max(f, 1.0));
-            std::array<double, k_rt60_bands> lc {};
-            for (size_t b = 0; b < k_rt60_bands; ++b) lc[b] = std::log(k_rt60_centers_hz[b]);
+            std::array<double, k_rt60_bands> lc{};
+            for (size_t b = 0; b < k_rt60_bands; ++b)
+                lc[b] = std::log(k_rt60_centers_hz[b]);
             double v;
             if (lf <= lc.front()) {
                 const double slope = (rt60[1] - rt60[0]) / (lc[1] - lc[0]);
@@ -744,7 +744,8 @@ namespace ambitap::dsp {
             }
             else {
                 size_t b = 0;
-                while (lf > lc[b + 1]) ++b;
+                while (lf > lc[b + 1])
+                    ++b;
                 const double t = (lf - lc[b]) / (lc[b + 1] - lc[b]);
                 v              = rt60[b] + t * (rt60[b + 1] - rt60[b]);
             }
@@ -756,10 +757,9 @@ namespace ambitap::dsp {
         /// prod(beta^exponent) / distance) and call
         /// fn(t_seconds, amplitude, unit_direction, reflection_count).
         template <typename Fn>
-        static void for_each_image(const std::array<float, 3>&       dims,
-                                   const std::array<float, 3>&       source,
-                                   const std::array<float, 3>&       listener,
-                                   const std::array<float, k_walls>& beta, double t_max, Fn&& fn) {
+        static void for_each_image(const std::array<float, 3>& dims, const std::array<float, 3>& source,
+                                   const std::array<float, 3>& listener, const std::array<float, k_walls>& beta,
+                                   double t_max, Fn&& fn) {
             const double L[3]  = {dims[0], dims[1], dims[2]};
             const double s[3]  = {source[0], source[1], source[2]};
             const double m[3]  = {listener[0], listener[1], listener[2]};
@@ -780,9 +780,8 @@ namespace ambitap::dsp {
                                     for (size_t a = 0; a < 3; ++a) {
                                         v[a] = (1.0 - 2.0 * p[a]) * s[a] + 2.0 * r[a] * L[a] - m[a];
                                     }
-                                    const double dist =
-                                        std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-                                    const double t = dist / static_cast<double>(k_speed_of_sound);
+                                    const double dist = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+                                    const double t    = dist / static_cast<double>(k_speed_of_sound);
                                     if (t > t_max || dist < 1e-6) continue;
                                     int    refl = 0;
                                     double amp  = 1.0;
@@ -810,22 +809,19 @@ namespace ambitap::dsp {
         /// plus the remainder extrapolated at the parameterized mid-band
         /// exponential rate (the prototype's tail_energy_target; feeds the
         /// R6 clarity contract).
-        static double tail_energy_target(const std::array<float, 3>&             dims,
-                                         const std::array<float, 3>&             source,
-                                         const std::array<float, 3>&             listener,
-                                         const std::array<float, k_walls>&       beta,
+        static double tail_energy_target(const std::array<float, 3>& dims, const std::array<float, 3>& source,
+                                         const std::array<float, 3>& listener, const std::array<float, k_walls>& beta,
                                          const std::array<double, k_rt60_bands>& rt60) {
             const double t_enum = k_target_enum_seconds;
             const double t_fit  = t_enum - 0.05;
             const double t_cut  = static_cast<double>(k_er_cutoff_seconds);
             double       e_mid  = 0.0;
             double       e_fit  = 0.0;
-            for_each_image(dims, source, listener, beta, t_enum,
-                           [&](double t, double amp, const double*, int) {
-                               const double e = amp * amp;
-                               if (t >= t_cut && t < t_enum) e_mid += e;
-                               if (t >= t_fit && t < t_enum) e_fit += e;
-                           });
+            for_each_image(dims, source, listener, beta, t_enum, [&](double t, double amp, const double*, int) {
+                const double e = amp * amp;
+                if (t >= t_cut && t < t_enum) e_mid += e;
+                if (t >= t_fit && t < t_enum) e_fit += e;
+            });
             const double rate = 13.8 / rt60_of_freq(1000.0, rt60);
             return e_mid + e_fit / (std::exp(rate * (t_enum - t_fit)) - 1.0);
         }
@@ -842,7 +838,7 @@ namespace ambitap::dsp {
         static std::shared_ptr<const std::vector<float>> split_burst_bands(double fs) {
             constexpr size_t N    = k_burst_length;
             constexpr size_t half = N / 2;
-            auto out = std::make_shared<std::vector<float>>(k_lines * k_noise_bands * N, 0.0f);
+            auto             out  = std::make_shared<std::vector<float>>(k_lines * k_noise_bands * N, 0.0f);
 
             std::vector<double> cs(N), sn(N);
             for (size_t i = 0; i < N; ++i) {
@@ -910,8 +906,7 @@ namespace ambitap::dsp {
         /// scipy.signal.firwin2 (frequency sampling on a 257-point grid,
         /// modeling-delay phase, 512-point inverse rFFT, symmetric Hamming) so
         /// the realized decay matches the verified prototype's.
-        static void design_absorption_fir(size_t loop_delay, double fs,
-                                          const std::array<double, k_rt60_bands>& rt60,
+        static void design_absorption_fir(size_t loop_delay, double fs, const std::array<double, k_rt60_bands>& rt60,
                                           real_fft& fft512, float* taps_out) {
             constexpr size_t taps        = k_absorption_taps;
             constexpr size_t nfreqs      = 257; // 1 + 2^ceil(log2(255))
@@ -922,7 +917,7 @@ namespace ambitap::dsp {
             const double     nyq         = fs / 2.0;
 
             // Design grid: [0] + geomspace(20, nyq, 383), last snapped to nyq.
-            std::array<double, grid> f {}, g {};
+            std::array<double, grid> f{}, g{};
             f[0] = 0.0;
             for (size_t i = 0; i + 1 < grid; ++i) {
                 f[i + 1] = 20.0 * std::pow(nyq / 20.0, static_cast<double>(i) / 382.0);
@@ -936,12 +931,13 @@ namespace ambitap::dsp {
             // shift exp(-j pi 127 x). Ooura's rdft stores +sin imaginary
             // parts (the conjugate of numpy's convention), so the packed
             // imaginary component flips sign.
-            std::array<double, G> spec {};
+            std::array<double, G> spec{};
             size_t                seg = 0;
             for (size_t k = 0; k < nfreqs; ++k) {
                 const double x  = static_cast<double>(k) / static_cast<double>(nfreqs - 1);
                 const double fx = x * nyq;
-                while (seg + 2 < grid && f[seg + 1] < fx) ++seg;
+                while (seg + 2 < grid && f[seg + 1] < fx)
+                    ++seg;
                 const double t   = (fx - f[seg]) / (f[seg + 1] - f[seg]);
                 const double amp = g[seg] + std::clamp(t, 0.0, 1.0) * (g[seg + 1] - g[seg]);
                 const double ph  = k_pi * group_delay * x;
@@ -959,10 +955,8 @@ namespace ambitap::dsp {
             fft512.inverse_inplace(spec.data());
             const double scale = 2.0 / static_cast<double>(G);
             for (size_t t = 0; t < taps; ++t) {
-                const double w = 0.54
-                                 - 0.46
-                                       * std::cos(2.0 * k_pi * static_cast<double>(t)
-                                                  / static_cast<double>(taps - 1));
+                const double w =
+                    0.54 - 0.46 * std::cos(2.0 * k_pi * static_cast<double>(t) / static_cast<double>(taps - 1));
                 taps_out[t] = static_cast<float>(spec[t] * scale * w);
             }
         }
@@ -972,8 +966,7 @@ namespace ambitap::dsp {
         /// at DC and Nyquist (T60 falls with frequency, so a >= 0: a low-pass).
         /// The IIR alternative to design_absorption_fir; the loop carries no
         /// FIR modeling delay, so the gain is fit to the bare line delay d.
-        static void design_absorption_iir(size_t loop_delay, double fs,
-                                          const std::array<double, k_rt60_bands>& rt60,
+        static void design_absorption_iir(size_t loop_delay, double fs, const std::array<double, k_rt60_bands>& rt60,
                                           float& b0_out, float& a1_out) {
             const double d   = static_cast<double>(loop_delay);
             const double g0  = std::pow(10.0, -3.0 * d / (fs * rt60_of_freq(0.0, rt60)));
@@ -989,12 +982,11 @@ namespace ambitap::dsp {
         /// prototype's calibration window. Double arithmetic on the worker
         /// thread (~0.2 s); its ratio against tail_energy_target() is the
         /// calibration scale.
-        double simulate_tail_energy(const model&                                   m,
-                                    const std::array<std::vector<float>, k_lines>& bursts,
-                                    size_t base, size_t n_tail) const {
+        double simulate_tail_energy(const model& m, const std::array<std::vector<float>, k_lines>& bursts, size_t base,
+                                    size_t n_tail) const {
             const size_t                     t_int = base + n_tail;
             std::vector<std::vector<double>> x(k_lines, std::vector<double>(t_int, 0.0));
-            std::array<double, k_lines>      iir_s {}; // per-line one-pole state (kind==iir)
+            std::array<double, k_lines>      iir_s{}; // per-line one-pole state (kind==iir)
             double                           energy = 0.0;
             for (size_t t = 0; t < t_int; ++t) {
                 double filtered[k_lines];
@@ -1002,8 +994,8 @@ namespace ambitap::dsp {
                     const auto& xj = x[j];
                     if (m.kind == absorption_kind::iir) {
                         const double delayed = (t >= k_delays[j]) ? xj[t - k_delays[j]] : 0.0;
-                        const double y       = static_cast<double>(m.iir_b0[j]) * delayed
-                                         + static_cast<double>(m.iir_a1[j]) * iir_s[j];
+                        const double y =
+                            static_cast<double>(m.iir_b0[j]) * delayed + static_cast<double>(m.iir_a1[j]) * iir_s[j];
                         iir_s[j]    = y;
                         filtered[j] = y;
                         continue;
@@ -1066,8 +1058,7 @@ namespace ambitap::dsp {
             }
             if (block == 0 || !bands) return nullptr;
 
-            const size_t n0 =
-                static_cast<size_t>(std::llround(static_cast<double>(k_er_cutoff_seconds) * fs));
+            const size_t n0      = static_cast<size_t>(std::llround(static_cast<double>(k_er_cutoff_seconds) * fs));
             const size_t base    = std::max(k_delays.back(), n0);
             const size_t chunk   = std::min(block, k_max_chunk);
             const size_t latency = base - n0;
@@ -1080,20 +1071,19 @@ namespace ambitap::dsp {
             // evaluate_sh at the image direction.
             for_each_image(dims, source, listener, beta, static_cast<double>(k_er_cutoff_seconds),
                            [&](double t, double amp, const double* u, int refl) {
-                               er_tap tap {};
+                               er_tap tap{};
                                tap.delay      = latency + static_cast<size_t>(std::llround(t * fs));
                                tap.direct     = (refl == 0);
                                const float az = static_cast<float>(std::atan2(u[1], u[0]));
                                // sqrt(x^2 + y^2) rather than std::hypot (equivalent
                                // for a unit direction; dodges the Windows <math.h>
                                // `hypot` macro seen when the Max SDK is in the TU).
-                               const float el = static_cast<float>(
-                                   std::atan2(u[2], std::sqrt(u[0] * u[0] + u[1] * u[1])));
+                               const float el =
+                                   static_cast<float>(std::atan2(u[2], std::sqrt(u[0] * u[0] + u[1] * u[1])));
                                float sh[k_lines];
                                evaluate_sh(m_order, az, el, sh);
                                for (size_t ch = 0; ch < m_channels; ++ch) {
-                                   tap.gains[ch] =
-                                       static_cast<float>(amp * static_cast<double>(sh[ch]));
+                                   tap.gains[ch] = static_cast<float>(amp * static_cast<double>(sh[ch]));
                                }
                                fresh->taps.push_back(tap);
                            });
@@ -1119,15 +1109,14 @@ namespace ambitap::dsp {
             }
             else {
                 for (size_t line = 0; line < k_lines; ++line) {
-                    design_absorption_iir(k_delays[line], fs, rt60, fresh->iir_b0[line],
-                                          fresh->iir_a1[line]);
+                    design_absorption_iir(k_delays[line], fs, rt60, fresh->iir_b0[line], fresh->iir_a1[line]);
                 }
             }
 
             // Per-line input bursts: octave bands re-shaped by the
             // parameterized decay envelopes, then unit-energy normalized.
             std::array<std::vector<float>, k_lines> bursts;
-            std::array<double, k_noise_bands>       band_rate {};
+            std::array<double, k_noise_bands>       band_rate{};
             for (size_t b = 0; b < k_noise_bands; ++b) {
                 const double c = 31.25 * std::pow(2.0, static_cast<double>(b));
                 band_rate[b]   = 6.91 / (fs * rt60_of_freq(c, rt60));
@@ -1137,12 +1126,12 @@ namespace ambitap::dsp {
                 for (size_t b = 0; b < k_noise_bands; ++b) {
                     const float* src = bands->data() + (line * k_noise_bands + b) * k_burst_length;
                     for (size_t n = 0; n < k_burst_length; ++n) {
-                        shaped[n] += static_cast<double>(src[n])
-                                     * std::exp(-band_rate[b] * static_cast<double>(n));
+                        shaped[n] += static_cast<double>(src[n]) * std::exp(-band_rate[b] * static_cast<double>(n));
                     }
                 }
                 double e = 0.0;
-                for (double v : shaped) e += v * v;
+                for (double v : shaped)
+                    e += v * v;
                 const double norm = 1.0 / std::sqrt(e);
                 bursts[line].resize(k_burst_length);
                 for (size_t n = 0; n < k_burst_length; ++n) {
@@ -1171,17 +1160,15 @@ namespace ambitap::dsp {
                         }
                     }
                     fft.forward_inplace(seg.data());
-                    std::copy(
-                        seg.begin(), seg.end(),
-                        fresh->inject_spectra.begin()
-                            + static_cast<std::ptrdiff_t>((line * partitions + p) * fft_size));
+                    std::copy(seg.begin(), seg.end(),
+                              fresh->inject_spectra.begin()
+                                  + static_cast<std::ptrdiff_t>((line * partitions + p) * fft_size));
                 }
             }
 
             // Calibrate the tail's omni energy onto the image-source target.
             const size_t n_tail =
-                static_cast<size_t>(std::llround(static_cast<double>(k_calibration_seconds) * fs))
-                - n0;
+                static_cast<size_t>(std::llround(static_cast<double>(k_calibration_seconds) * fs)) - n0;
             const double realized = simulate_tail_energy(*fresh, bursts, base, n_tail);
             const double target   = tail_energy_target(dims, source, listener, beta, rt60);
             const double scale    = std::sqrt(target / std::max(realized, 1e-30));

@@ -8,15 +8,15 @@
 #ifndef AMBITAP_DSP_NFC_H
 #define AMBITAP_DSP_NFC_H
 
-#include "../math/core/indexing.h"
-#include "../math/core/validate.h"
-#include "util/smoothing.h"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <vector>
+
+#include "../math/core/indexing.h"
+#include "../math/core/validate.h"
+#include "util/smoothing.h"
 
 namespace ambitap::dsp {
 
@@ -29,7 +29,8 @@ namespace ambitap::dsp {
     /// Total cascade sections across the order-1..N filters of an order-N bus.
     constexpr size_t nfc_total_sections(int order) {
         size_t s = 0;
-        for (int m = 1; m <= order; ++m) s += nfc_sections_for_order(m);
+        for (int m = 1; m <= order; ++m)
+            s += nfc_sections_for_order(m);
         return s;
     }
 
@@ -105,10 +106,10 @@ namespace ambitap::dsp {
 
         int    m_order;
         size_t m_channels;
-        float  m_fs {48000.0f};
-        float  m_source_distance {1.0f};
-        float  m_reference_distance {1.0f};
-        float  m_speed_of_sound {343.0f};
+        float  m_fs{48000.0f};
+        float  m_source_distance{1.0f};
+        float  m_reference_distance{1.0f};
+        float  m_speed_of_sound{343.0f};
 
         /// One root of theta_m per section: conjugate pairs stored as
         /// (re, im > 0); the odd-order real root as (re, 0).
@@ -117,10 +118,10 @@ namespace ambitap::dsp {
             double im;
         };
         std::vector<section_root> m_roots; // order-major, orders 1..m_order
-        size_t                    m_total_coeffs {0};
+        size_t                    m_total_coeffs{0};
 
         // Control-side snapshot and the audio-side smoothed table.
-        std::array<float, k_max_coeffs> m_coefficients {};
+        std::array<float, k_max_coeffs> m_coefficients{};
         smoothed_table<k_max_coeffs>    m_smooth;
 
         // Audio-thread filter state: 2 doubles per (channel, section),
@@ -204,8 +205,7 @@ namespace ambitap::dsp {
                 for (size_t ch = first; ch < last; ++ch) {
                     float v = in[ch];
                     for (size_t j = 0; j < sections; ++j) {
-                        v = section_tick(v, co + (coeff_base + j) * k_section_coeffs,
-                                         m_state.data() + state_off);
+                        v = section_tick(v, co + (coeff_base + j) * k_section_coeffs, m_state.data() + state_off);
                         state_off += 2;
                     }
                     out[ch] = v;
@@ -221,7 +221,8 @@ namespace ambitap::dsp {
                 // Fast path: constant coefficients, channel-major blocks.
                 const float* co = m_smooth.tick(m_total_coeffs);
                 if (out[0] != in[0]) {
-                    for (size_t i = 0; i < frame_count; ++i) out[0][i] = in[0][i];
+                    for (size_t i = 0; i < frame_count; ++i)
+                        out[0][i] = in[0][i];
                 }
                 size_t coeff_base = 0, state_off = 0;
                 for (int m = 1; m <= m_order; ++m) {
@@ -231,8 +232,7 @@ namespace ambitap::dsp {
                     for (size_t ch = first; ch < last; ++ch) {
                         for (size_t j = 0; j < sections; ++j) {
                             section_block(j == 0 ? in[ch] : out[ch], out[ch], frame_count,
-                                          co + (coeff_base + j) * k_section_coeffs,
-                                          m_state.data() + state_off);
+                                          co + (coeff_base + j) * k_section_coeffs, m_state.data() + state_off);
                             state_off += 2;
                         }
                     }
@@ -251,8 +251,7 @@ namespace ambitap::dsp {
                     for (size_t ch = first; ch < last; ++ch) {
                         float v = in[ch][i];
                         for (size_t j = 0; j < sections; ++j) {
-                            v = section_tick(v, co + (coeff_base + j) * k_section_coeffs,
-                                             m_state.data() + state_off);
+                            v = section_tick(v, co + (coeff_base + j) * k_section_coeffs, m_state.data() + state_off);
                             state_off += 2;
                         }
                         out[ch][i] = v;
@@ -273,8 +272,7 @@ namespace ambitap::dsp {
             return static_cast<float>(y);
         }
 
-        static void section_block(const float* x, float* y, size_t n, const float* c,
-                                  double* s) noexcept {
+        static void section_block(const float* x, float* y, size_t n, const float* c, double* s) noexcept {
             const double b0 = static_cast<double>(c[0]);
             const double b1 = static_cast<double>(c[1]);
             const double b2 = static_cast<double>(c[2]);
@@ -308,9 +306,7 @@ namespace ambitap::dsp {
         };
         static cplx cadd(cplx a, cplx b) { return {a.re + b.re, a.im + b.im}; }
         static cplx csub(cplx a, cplx b) { return {a.re - b.re, a.im - b.im}; }
-        static cplx cmul(cplx a, cplx b) {
-            return {a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re};
-        }
+        static cplx cmul(cplx a, cplx b) { return {a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re}; }
         static cplx cdiv(cplx a, cplx b) {
             const double d = b.re * b.re + b.im * b.im;
             return {(a.re * b.re + a.im * b.im) / d, (a.im * b.re - a.re * b.im) / d};
@@ -329,12 +325,13 @@ namespace ambitap::dsp {
             double coeff[max_order + 1];
             coeff[0] = 1.0;
             for (int n = 0; n < m; ++n) {
-                coeff[n + 1] = coeff[n] * static_cast<double>((m + n + 1) * (m - n))
-                               / (2.0 * static_cast<double>(n + 1));
+                coeff[n + 1] =
+                    coeff[n] * static_cast<double>((m + n + 1) * (m - n)) / (2.0 * static_cast<double>(n + 1));
             }
             const auto eval = [&](cplx z) {
-                cplx p {1.0, 0.0};
-                for (int n = 1; n <= m; ++n) p = cadd(cmul(p, z), cplx {coeff[n], 0.0});
+                cplx p{1.0, 0.0};
+                for (int n = 1; n <= m; ++n)
+                    p = cadd(cmul(p, z), cplx{coeff[n], 0.0});
                 return p;
             };
 
@@ -342,13 +339,12 @@ namespace ambitap::dsp {
             // of radius m, rotated off the axes so no guess is real.
             for (int i = 0; i < m; ++i) {
                 const double a = k_two_pi * static_cast<double>(i) / static_cast<double>(m) + 0.5;
-                roots[i]       = {static_cast<double>(m) * std::cos(a),
-                                  static_cast<double>(m) * std::sin(a)};
+                roots[i]       = {static_cast<double>(m) * std::cos(a), static_cast<double>(m) * std::sin(a)};
             }
             for (int iter = 0; iter < 256; ++iter) {
                 double worst = 0.0;
                 for (int i = 0; i < m; ++i) {
-                    cplx den {1.0, 0.0};
+                    cplx den{1.0, 0.0};
                     for (int j = 0; j < m; ++j) {
                         if (j != i) den = cmul(den, csub(roots[i], roots[j]));
                     }
@@ -384,7 +380,8 @@ namespace ambitap::dsp {
                 for (int i = 1; i < pair_count; ++i) {
                     const cplx key = pairs[i];
                     int        j   = i - 1;
-                    for (; j >= 0 && pairs[j].re > key.re; --j) pairs[j + 1] = pairs[j];
+                    for (; j >= 0 && pairs[j].re > key.re; --j)
+                        pairs[j + 1] = pairs[j];
                     pairs[j + 1] = key;
                 }
                 for (int i = 0; i < pair_count; ++i) {

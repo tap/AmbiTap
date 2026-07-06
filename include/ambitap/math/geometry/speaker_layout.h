@@ -6,16 +6,17 @@
 #ifndef AMBITAP_MATH_SPEAKER_LAYOUT_H
 #define AMBITAP_MATH_SPEAKER_LAYOUT_H
 
-#include "../core/coords.h"
-#include "convex_hull.h"
-
-#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <numeric>
 #include <stdexcept>
 #include <vector>
+
+#include <Eigen/Dense>
+
+#include "../core/coords.h"
+#include "convex_hull.h"
 
 namespace ambitap {
 
@@ -47,9 +48,9 @@ namespace ambitap {
 
         // 2D pairwise mode (planar layouts): plane basis, per-speaker in-plane
         // angle, and speaker indices sorted by that angle.
-        bool                m_pairwise {false};
-        Eigen::Vector3f     m_plane_u {Eigen::Vector3f::UnitX()};
-        Eigen::Vector3f     m_plane_v {Eigen::Vector3f::UnitY()};
+        bool                m_pairwise{false};
+        Eigen::Vector3f     m_plane_u{Eigen::Vector3f::UnitX()};
+        Eigen::Vector3f     m_plane_v{Eigen::Vector3f::UnitY()};
         std::vector<float>  m_ring_angle; // parallel to m_ring_index
         std::vector<size_t> m_ring_index;
 
@@ -172,8 +173,7 @@ namespace ambitap {
             std::vector<float> gains;
         };
 
-        static compensation distance_compensation(const std::vector<float>& distances,
-                                                  float speed_of_sound = 343.0f) {
+        static compensation distance_compensation(const std::vector<float>& distances, float speed_of_sound = 343.0f) {
             compensation comp;
             const size_t n = distances.size();
             comp.delays.resize(n);
@@ -202,22 +202,22 @@ namespace ambitap {
             if (n < 2) return;
 
             Eigen::MatrixXf P(3, static_cast<Eigen::Index>(n));
-            for (size_t i = 0; i < n; ++i) P.col(static_cast<Eigen::Index>(i)) = m_cart[i];
+            for (size_t i = 0; i < n; ++i)
+                P.col(static_cast<Eigen::Index>(i)) = m_cart[i];
             if (n >= 3) {
                 const Eigen::Vector3f mean = P.rowwise().mean();
                 P.colwise() -= mean;
             }
 
             Eigen::JacobiSVD<Eigen::MatrixXf> svd(P, Eigen::ComputeThinU);
-            if (svd.singularValues()(1) <= 1e-5f * svd.singularValues()(0)
-                || svd.singularValues()(0) <= 1e-6f) {
+            if (svd.singularValues()(1) <= 1e-5f * svd.singularValues()(0) || svd.singularValues()(0) <= 1e-6f) {
                 return; // rank < 2: no plane to pan in
             }
             m_plane_u = svd.matrixU().col(0);
             m_plane_v = svd.matrixU().col(1);
 
             m_ring_index.resize(n);
-            std::iota(m_ring_index.begin(), m_ring_index.end(), size_t {0});
+            std::iota(m_ring_index.begin(), m_ring_index.end(), size_t{0});
             std::vector<float> angles(n);
             for (size_t i = 0; i < n; ++i) {
                 angles[i] = std::atan2(m_cart[i].dot(m_plane_v), m_cart[i].dot(m_plane_u));
@@ -225,7 +225,8 @@ namespace ambitap {
             std::sort(m_ring_index.begin(), m_ring_index.end(),
                       [&](size_t a, size_t b) { return angles[a] < angles[b]; });
             m_ring_angle.resize(n);
-            for (size_t i = 0; i < n; ++i) m_ring_angle[i] = angles[m_ring_index[i]];
+            for (size_t i = 0; i < n; ++i)
+                m_ring_angle[i] = angles[m_ring_index[i]];
 
             m_pairwise = true;
         }
@@ -247,7 +248,8 @@ namespace ambitap {
             // Find the sorted pair (i, i+1) bracketing theta; the wrap-around
             // pair (n-1, 0) covers the remaining arc through +/-pi.
             size_t hi = 0;
-            while (hi < n && m_ring_angle[hi] < theta) ++hi;
+            while (hi < n && m_ring_angle[hi] < theta)
+                ++hi;
             const size_t lo = (hi == 0 || hi == n) ? n - 1 : hi - 1;
             if (hi == n) hi = 0;
 

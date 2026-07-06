@@ -7,10 +7,10 @@
 #ifndef AMBITAP_MATH_ROTATION_RECURRENCE_H
 #define AMBITAP_MATH_ROTATION_RECURRENCE_H
 
-#include "indexing.h"
-
 #include <cmath>
 #include <cstddef>
+
+#include "indexing.h"
 
 namespace ambitap {
 
@@ -39,7 +39,8 @@ namespace ambitap {
     /// result to dsp::matrix_applier).
     inline void compute_sh_rotation_from_matrix(int order, const float* R, float* out) {
         const size_t C = channel_count(order);
-        for (size_t i = 0; i < C * C; ++i) out[i] = 0.f;
+        for (size_t i = 0; i < C * C; ++i)
+            out[i] = 0.f;
 
         // Order 0 is invariant.
         out[0] = 1.f;
@@ -59,9 +60,7 @@ namespace ambitap {
         using detail::kd;
         for (int l = 2; l <= order; ++l) {
             // Previous-order block, read from the output matrix itself.
-            auto prev = [&](int a, int b) {
-                return out[acn_index(l - 1, a) * C + acn_index(l - 1, b)];
-            };
+            auto prev = [&](int a, int b) { return out[acn_index(l - 1, a) * C + acn_index(l - 1, b)]; };
 
             // Ivanic-Ruedenberg helper P (their eq. 8.1, with the erratum's
             // boundary cases for |n| = l).
@@ -77,19 +76,15 @@ namespace ambitap {
 
                 for (int n = -l; n <= l; ++n) {
                     const int   an = n < 0 ? -n : n;
-                    const float dn = (an == l)
-                                         ? static_cast<float>(2 * l) * static_cast<float>(2 * l - 1)
-                                         : static_cast<float>(l + n) * static_cast<float>(l - n);
+                    const float dn = (an == l) ? static_cast<float>(2 * l) * static_cast<float>(2 * l - 1)
+                                               : static_cast<float>(l + n) * static_cast<float>(l - n);
 
                     const float u = std::sqrt(static_cast<float>((l + m) * (l - m)) / dn);
-                    const float v = 0.5f
-                                    * std::sqrt((1.f + d) * static_cast<float>(l + am - 1)
-                                                * static_cast<float>(l + am) / dn)
-                                    * (1.f - 2.f * d);
-                    const float w = -0.5f
-                                    * std::sqrt(static_cast<float>(l - am - 1)
-                                                * static_cast<float>(l - am) / dn)
-                                    * (1.f - d);
+                    const float v =
+                        0.5f * std::sqrt((1.f + d) * static_cast<float>(l + am - 1) * static_cast<float>(l + am) / dn)
+                        * (1.f - 2.f * d);
+                    const float w =
+                        -0.5f * std::sqrt(static_cast<float>(l - am - 1) * static_cast<float>(l - am) / dn) * (1.f - d);
 
                     float acc = 0.f;
                     if (u != 0.f) acc += u * P(0, m, n);
@@ -99,12 +94,10 @@ namespace ambitap {
                             V = P(1, 1, n) + P(-1, -1, n);
                         }
                         else if (m > 0) {
-                            V = P(1, m - 1, n) * std::sqrt(1.f + kd(m, 1))
-                                - P(-1, -(m - 1), n) * (1.f - kd(m, 1));
+                            V = P(1, m - 1, n) * std::sqrt(1.f + kd(m, 1)) - P(-1, -(m - 1), n) * (1.f - kd(m, 1));
                         }
                         else {
-                            V = P(1, m + 1, n) * (1.f - kd(m, -1))
-                                + P(-1, -(m + 1), n) * std::sqrt(1.f + kd(m, -1));
+                            V = P(1, m + 1, n) * (1.f - kd(m, -1)) + P(-1, -(m + 1), n) * std::sqrt(1.f + kd(m, -1));
                         }
                         acc += v * V;
                     }

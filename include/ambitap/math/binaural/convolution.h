@@ -6,13 +6,13 @@
 #ifndef AMBITAP_MATH_CONVOLUTION_H
 #define AMBITAP_MATH_CONVOLUTION_H
 
-#include "ooura_fft.h"
-
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <vector>
+
+#include "ooura_fft.h"
 
 namespace ambitap {
 
@@ -35,23 +35,23 @@ namespace ambitap {
     ///   partitioned_convolver32 — float internals (real_fft32); the embedded
     ///                             real-time profile, for FPUs without hardware
     ///                             doubles (e.g. Cortex-M55, Hexagon).
-    template <typename Real, typename Fft> class basic_partitioned_convolver {
+    template <typename Real, typename Fft>
+    class basic_partitioned_convolver {
         size_t                         m_block_size;
         size_t                         m_fft_size; // 2 * m_block_size
         Fft                            m_fft;
-        size_t                         m_num_partitions {0};
+        size_t                         m_num_partitions{0};
         std::vector<std::vector<Real>> m_ir_freq;    // [partition][fft_size]
         std::vector<std::vector<Real>> m_input_freq; // [partition][fft_size] ring buffer
         std::vector<Real>              m_accum;      // [fft_size] freq-domain sum
         std::vector<Real>              m_input_buf;  // [fft_size] time-domain [prev|curr]
         std::vector<Real>              m_output_buf; // [fft_size] inverse-FFT scratch
 
-        size_t m_ring_pos {0};
+        size_t m_ring_pos{0};
 
       public:
         /// Construct with an IR.
-        explicit basic_partitioned_convolver(size_t block_size, const float* ir = nullptr,
-                                             size_t ir_length = 0)
+        explicit basic_partitioned_convolver(size_t block_size, const float* ir = nullptr, size_t ir_length = 0)
             : m_block_size(block_size)
             , m_fft_size(block_size * 2)
             , m_fft(m_fft_size) {
@@ -144,7 +144,8 @@ namespace ambitap {
 
         /// Reset input history; keep the loaded IR.
         void reset() {
-            for (auto& buf : m_input_freq) std::fill(buf.begin(), buf.end(), Real(0));
+            for (auto& buf : m_input_freq)
+                std::fill(buf.begin(), buf.end(), Real(0));
             std::fill(m_input_buf.begin(), m_input_buf.end(), Real(0));
             m_ring_pos = 0;
         }

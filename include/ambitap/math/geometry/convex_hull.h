@@ -6,13 +6,14 @@
 #ifndef AMBITAP_MATH_CONVEX_HULL_H
 #define AMBITAP_MATH_CONVEX_HULL_H
 
-#include <Eigen/Dense>
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace ambitap {
 
@@ -62,7 +63,8 @@ namespace ambitap {
         // would otherwise turn a flat ring into a fake 3D shell.
         {
             Eigen::Vector3f mean = Eigen::Vector3f::Zero();
-            for (const auto& p : raw_points) mean += p;
+            for (const auto& p : raw_points)
+                mean += p;
             mean /= static_cast<float>(n);
             Eigen::Matrix3f cov = Eigen::Matrix3f::Zero();
             for (const auto& p : raw_points) {
@@ -70,8 +72,7 @@ namespace ambitap {
                 cov += q * q.transpose();
             }
             Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> es(cov);
-            if (es.eigenvalues()(0)
-                <= k_degenerate_dist * k_degenerate_dist * static_cast<float>(n)) {
+            if (es.eigenvalues()(0) <= k_degenerate_dist * k_degenerate_dist * static_cast<float>(n)) {
                 return {}; // coincident, collinear, or coplanar input
             }
         }
@@ -126,9 +127,9 @@ namespace ambitap {
         std::vector<face> faces;
         auto              add_face = [&](size_t a, size_t b, size_t c) {
             face f;
-            f.v[0] = a;
-            f.v[1] = b;
-            f.v[2] = c;
+            f.v[0]                   = a;
+            f.v[1]                   = b;
+            f.v[2]                   = c;
             const Eigen::Vector3f cr = (points[b] - points[a]).cross(points[c] - points[a]);
             // Collinear vertices produce a zero-area sliver (possible when a
             // horizon edge is collinear with the point being added on a
@@ -239,9 +240,8 @@ namespace ambitap {
             for (const auto& e : horizon) {
                 add_face(e.a, e.b, i);
                 // The new face should point away from origin (points lie on a sphere).
-                face&           f = faces.back();
-                Eigen::Vector3f face_center =
-                    (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
+                face&           f           = faces.back();
+                Eigen::Vector3f face_center = (points[f.v[0]] + points[f.v[1]] + points[f.v[2]]) / 3.0f;
                 if (face_center.dot(f.normal) < 0) {
                     std::swap(f.v[1], f.v[2]);
                     f.normal = -f.normal;

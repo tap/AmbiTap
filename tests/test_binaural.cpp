@@ -3,16 +3,16 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+#include <random>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "ambitap/math/binaural/convolution.h"
 #include "ambitap/math/binaural/hrtf_data.h"
 #include "ambitap/math/binaural/ooura_fft.h"
 #include "ambitap/math/core/indexing.h"
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <random>
-#include <vector>
 
 using namespace ambitap;
 
@@ -22,12 +22,12 @@ namespace {
         std::mt19937                          rng(seed);
         std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
         std::vector<float>                    v(length);
-        for (auto& x : v) x = dist(rng);
+        for (auto& x : v)
+            x = dist(rng);
         return v;
     }
 
-    std::vector<float> direct_convolution(const std::vector<float>& x,
-                                          const std::vector<float>& h) {
+    std::vector<float> direct_convolution(const std::vector<float>& x, const std::vector<float>& h) {
         std::vector<float> y(x.size() + h.size() - 1, 0.0f);
         for (size_t i = 0; i < x.size(); ++i) {
             for (size_t j = 0; j < h.size(); ++j) {

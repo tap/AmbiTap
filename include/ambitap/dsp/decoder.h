@@ -6,6 +6,12 @@
 #ifndef AMBITAP_DSP_DECODER_H
 #define AMBITAP_DSP_DECODER_H
 
+#include <cstddef>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
+
 #include "../math/core/coords.h"
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
@@ -14,12 +20,6 @@
 #include "../math/decoding/mode_matching.h"
 #include "util/async_rebuilder.h"
 #include "util/matrix_applier.h"
-
-#include <cstddef>
-#include <memory>
-#include <mutex>
-#include <utility>
-#include <vector>
 
 namespace ambitap::dsp {
 
@@ -66,8 +66,8 @@ namespace ambitap::dsp {
         // cannot be atomics). Read by the worker thread's build callback.
         mutable std::mutex           m_config_mtx;
         std::vector<spherical_coord> m_speakers;
-        decoder_algorithm            m_algorithm {decoder_algorithm::mode_match};
-        bool                         m_max_re {false};
+        decoder_algorithm            m_algorithm{decoder_algorithm::mode_match};
+        bool                         m_max_re{false};
 
         // Crossfading application; owned by the (single) audio thread.
         mutable matrix_applier m_applier;
@@ -151,23 +151,24 @@ namespace ambitap::dsp {
       private:
         // frame_layout == true: in/out are single-frame channel arrays
         // (in[0][c]); false: planar buffers (in[c][i]).
-        void apply_frames(const matrix* m, const float* const* in, float* const* out,
-                          size_t out_channels, size_t frame_count,
-                          bool frame_layout) const noexcept {
+        void apply_frames(const matrix* m, const float* const* in, float* const* out, size_t out_channels,
+                          size_t frame_count, bool frame_layout) const noexcept {
             if (!m || m->speakers != out_channels) {
                 if (frame_layout) {
-                    for (size_t ch = 0; ch < out_channels; ++ch) out[0][ch] = 0.f;
+                    for (size_t ch = 0; ch < out_channels; ++ch)
+                        out[0][ch] = 0.f;
                 }
                 else {
                     for (size_t ch = 0; ch < out_channels; ++ch) {
-                        for (size_t i = 0; i < frame_count; ++i) out[ch][i] = 0.f;
+                        for (size_t i = 0; i < frame_count; ++i)
+                            out[ch][i] = 0.f;
                     }
                 }
                 return;
             }
 
-            m_applier.apply(m, m->data.data(), m->prev.data(), m->speakers, m->channels, in, out,
-                            frame_count, frame_layout);
+            m_applier.apply(m, m->data.data(), m->prev.data(), m->speakers, m->channels, in, out, frame_count,
+                            frame_layout);
         }
 
         std::shared_ptr<const matrix> build() const {

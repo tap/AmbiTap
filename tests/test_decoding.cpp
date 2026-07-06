@@ -3,17 +3,17 @@
 /// Timothy Place
 /// Copyright 2026 Timothy Place.
 
+#include <cmath>
+
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
 #include "ambitap/math/core/spherical_harmonics.h"
 #include "ambitap/math/decoding/allrad.h"
 #include "ambitap/math/decoding/epad.h"
 #include "ambitap/math/decoding/max_re.h"
 #include "ambitap/math/decoding/mode_matching.h"
 #include "ambitap/math/geometry/layouts.h"
-
-#include <gtest/gtest.h>
-
-#include <Eigen/Dense>
-#include <cmath>
 
 using namespace ambitap;
 
@@ -26,7 +26,8 @@ namespace {
         float           sh[max_channel_count];
         for (Eigen::Index i = 0; i < L; ++i) {
             evaluate_sh(order, speakers[static_cast<size_t>(i)], sh);
-            for (Eigen::Index j = 0; j < C; ++j) Y(i, j) = sh[j];
+            for (Eigen::Index j = 0; j < C; ++j)
+                Y(i, j) = sh[j];
         }
         return Y;
     }
@@ -35,7 +36,8 @@ namespace {
         float sh[max_channel_count];
         evaluate_sh(order, dir, sh);
         Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
-        for (Eigen::Index i = 0; i < v.size(); ++i) v(i) = sh[i];
+        for (Eigen::Index i = 0; i < v.size(); ++i)
+            v(i) = sh[i];
         return v;
     }
 
@@ -224,8 +226,8 @@ TEST(ModeMatching, UnderdeterminedRegimeUsesN3dBasis) {
     // identity by a large margin, so this test genuinely discriminates.
     Eigen::MatrixXf                   Ysn = reencoding_matrix(order, speakers);
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(Ysn, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXf pinv_sn = svd.solve(Eigen::MatrixXf::Identity(5, 5)).transpose();
-    Eigen::MatrixXf DYsn    = pinv_sn * Y.transpose();
+    Eigen::MatrixXf                   pinv_sn = svd.solve(Eigen::MatrixXf::Identity(5, 5)).transpose();
+    Eigen::MatrixXf                   DYsn    = pinv_sn * Y.transpose();
     EXPECT_FALSE(DYsn.isApprox(Eigen::MatrixXf::Identity(5, 5), 1e-3f));
 }
 
@@ -240,7 +242,8 @@ TEST(MaxRe, EnergyNormalizedWeightsPreserveTotalEnergy) {
         }
         EXPECT_NEAR(den, num, 1e-3f * num) << "order " << order;
         // Still max-rE-shaped: monotonically decreasing across orders.
-        for (size_t n = 1; n < w.size(); ++n) EXPECT_LT(w[n], w[n - 1]);
+        for (size_t n = 1; n < w.size(); ++n)
+            EXPECT_LT(w[n], w[n - 1]);
     }
 }
 
