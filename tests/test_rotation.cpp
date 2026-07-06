@@ -17,7 +17,7 @@ using namespace ambitap;
 namespace {
 
     Eigen::VectorXf sh_at(int order, const Eigen::Vector3f& d) {
-        float       sh[max_channel_count];
+        float       sh[k_max_channel_count];
         const float az = std::atan2(d.y(), d.x());
         const float el = std::atan2(d.z(), std::sqrt(d.x() * d.x() + d.y() * d.y()));
         evaluate_sh(order, az, el, sh);

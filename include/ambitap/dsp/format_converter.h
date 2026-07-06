@@ -37,7 +37,7 @@ namespace ambitap::dsp {
     /// FuMa convention for higher orders).
     class format_converter {
       public:
-        static constexpr size_t max_channels = 16;
+        static constexpr size_t k_max_channels = 16;
 
       private:
         size_t           m_channels;
@@ -47,12 +47,12 @@ namespace ambitap::dsp {
         // direction change. Element-atomic so a concurrent set_direction()
         // cannot tear an entry; routing changes are structural, so unlike the
         // gain processors they switch per element rather than ramp.
-        std::array<std::atomic<size_t>, max_channels> m_input_index{};
-        std::array<std::atomic<float>, max_channels>  m_input_gain{};
+        std::array<std::atomic<size_t>, k_max_channels> m_input_index{};
+        std::array<std::atomic<float>, k_max_channels>  m_input_gain{};
 
         // FuMa channel order: W, X, Y, Z, R, S, T, U, V, K, L, M, N, O, P, Q.
         // Maps FuMa index -> ACN index.
-        static constexpr std::array<size_t, max_channels> k_fuma_to_acn = {0, 3,  1,  2,  6,  7,  5,  8,
+        static constexpr std::array<size_t, k_max_channels> k_fuma_to_acn = {0, 3,  1,  2,  6,  7,  5,  8,
                                                                            4, 12, 13, 11, 14, 10, 15, 9};
 
         // Per-(n, |m|) factor multiplied when going FROM FuMa TO SN3D; the
@@ -118,7 +118,7 @@ namespace ambitap::dsp {
       private:
         void recalculate() {
             // The inverse permutation (ACN -> FuMa) over the active channels.
-            std::array<size_t, max_channels> acn_to_fuma{};
+            std::array<size_t, k_max_channels> acn_to_fuma{};
             for (size_t i = 0; i < m_channels; ++i)
                 acn_to_fuma[k_fuma_to_acn[i]] = i;
 

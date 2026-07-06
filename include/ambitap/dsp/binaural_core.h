@@ -48,9 +48,9 @@ namespace ambitap::dsp {
         float              m_volume_current{1.0f}; // audio-thread ramp state
 
       public:
-        /// @param order  Ambisonics order in [1, max_order].
+        /// @param order  Ambisonics order in [1, k_max_order].
         explicit binaural_core(int order)
-            : m_channels(channel_count(validated_order(order, 1, max_order, "dsp::binaural_core"))) {}
+            : m_channels(channel_count(validated_order(order, 1, k_max_order, "dsp::binaural_core"))) {}
 
         size_t channels() const { return m_channels; }
         size_t block_size() const { return m_block_size; }

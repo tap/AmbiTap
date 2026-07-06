@@ -40,7 +40,7 @@ namespace ambitap {
     /// plain SN3D pseudoinverse; the N3D weighting matters in the least-squares
     /// (L < C) regime, where it keeps the per-order residuals correctly weighted.
     ///
-    /// @param order       Ambisonics order in [0, max_order].
+    /// @param order       Ambisonics order in [0, k_max_order].
     /// @param speakers    Real speaker directions on the unit sphere (non-empty).
     /// @param use_max_re  If true, apply max-rE per-order weighting.
     /// @return Decoder matrix of shape (num_speakers x (order+1)^2). Each row is
@@ -59,7 +59,7 @@ namespace ambitap {
         // Re-encoding matrix in N3D: row i is the SH basis evaluated at speaker i,
         // column j scaled by the SN3D -> N3D factor sqrt(2n_j + 1).
         Eigen::MatrixXf Y(L, C);
-        float           sh_buf[max_channel_count];
+        float           sh_buf[k_max_channel_count];
         for (Eigen::Index i = 0; i < L; ++i) {
             evaluate_sh(order, speakers[static_cast<size_t>(i)], sh_buf);
             for (Eigen::Index j = 0; j < C; ++j) {
@@ -76,7 +76,7 @@ namespace ambitap {
         // to Y * X = I_LxL, i.e. pinv(Y) of shape (C x L); transpose for (L x C).
         Eigen::JacobiSVD<Eigen::MatrixXf> svd(Y, Eigen::ComputeThinU | Eigen::ComputeThinV);
         svd.setThreshold(1e-4f);
-        Eigen::MatrixXf pinv_Y = svd.solve(Eigen::MatrixXf::Identity(L, L));
+        Eigen::MatrixXf pinv_Y = svd.solve(Eigen::MatrixXf::Identity(L, L));  // NOLINT(readability-identifier-naming): math notation
         Eigen::MatrixXf D      = pinv_Y.transpose() * n3d.asDiagonal();
 
         if (use_max_re) {

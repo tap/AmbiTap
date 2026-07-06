@@ -36,7 +36,7 @@ namespace ambitap {
     /// Reference: Zotter & Frank (2012), "All-Round Ambisonic Panning and Decoding",
     ///            J. Audio Eng. Soc. 60(10), pp. 807-820.
     ///
-    /// @param order       Ambisonics order in [0, max_order].
+    /// @param order       Ambisonics order in [0, k_max_order].
     /// @param speakers    Real speaker directions on the unit sphere (non-empty).
     /// @param use_max_re  If true, apply energy-normalized max-rE per-order weighting.
     /// @return Decoder matrix of shape (num_speakers x (order+1)^2). Each row is
@@ -66,7 +66,7 @@ namespace ambitap {
         // appear here; including it would make ALLRAD ~22 dB hotter than the
         // library's other decoders.
         Eigen::MatrixXf Y_virtual(V, C);
-        float           sh_buf[max_channel_count];
+        float           sh_buf[k_max_channel_count];
 
         for (Eigen::Index v = 0; v < V; ++v) {
             const auto dir = to_spherical(tdesign_pts[v][0], tdesign_pts[v][1], tdesign_pts[v][2]);

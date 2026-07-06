@@ -52,7 +52,7 @@ namespace ambitap {
 
             // Re-encoding matrix Y[i][j] = SH_j evaluated at measurement direction i.
             Eigen::MatrixXf Y(M, C);
-            float           sh_buf[max_channel_count];
+            float           sh_buf[k_max_channel_count];
             for (Eigen::Index i = 0; i < M; ++i) {
                 evaluate_sh(order, azimuth[static_cast<size_t>(i)], elevation[static_cast<size_t>(i)], sh_buf);
                 for (Eigen::Index j = 0; j < C; ++j) {

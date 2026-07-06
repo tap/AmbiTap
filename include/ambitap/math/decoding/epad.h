@@ -47,7 +47,7 @@ namespace ambitap {
     /// for Recording, Studio Production, Sound Reinforcement, and Virtual Reality",
     /// Springer Open. See also Zotter et al. (2012) on All-Round Ambisonic Decoding.
     ///
-    /// @param order       Ambisonics order in [0, max_order].
+    /// @param order       Ambisonics order in [0, k_max_order].
     /// @param speakers    Real speaker directions on the unit sphere (non-empty).
     /// @param use_max_re  If true, apply energy-normalized max-rE column weighting.
     /// @return Decoder matrix (num_speakers x (order+1)^2); speaker_signals = D * hoa.
@@ -63,7 +63,7 @@ namespace ambitap {
         const auto C = static_cast<Eigen::Index>(channel_count(order));
 
         Eigen::MatrixXf Y(L, C);
-        float           sh_buf[max_channel_count];
+        float           sh_buf[k_max_channel_count];
         for (Eigen::Index i = 0; i < L; ++i) {
             evaluate_sh(order, speakers[static_cast<size_t>(i)], sh_buf);
             for (Eigen::Index j = 0; j < C; ++j) {

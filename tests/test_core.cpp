@@ -20,11 +20,11 @@ TEST(Indexing, ChannelCount) {
     EXPECT_EQ(channel_count(1), 4u);
     EXPECT_EQ(channel_count(3), 16u);
     EXPECT_EQ(channel_count(5), 36u);
-    EXPECT_EQ(channel_count(max_order), max_channel_count);
+    EXPECT_EQ(channel_count(k_max_order), k_max_channel_count);
 }
 
 TEST(Indexing, AcnRoundTrip) {
-    for (int n = 0; n <= max_order; ++n) {
+    for (int n = 0; n <= k_max_order; ++n) {
         for (int m = -n; m <= n; ++m) {
             const size_t acn = acn_index(n, m);
             EXPECT_EQ(acn_order(acn), n) << "acn=" << acn;
@@ -32,12 +32,12 @@ TEST(Indexing, AcnRoundTrip) {
         }
     }
     // ACN indices are dense: 0 .. (N+1)^2 - 1.
-    EXPECT_EQ(acn_index(max_order, max_order), max_channel_count - 1);
+    EXPECT_EQ(acn_index(k_max_order, k_max_order), k_max_channel_count - 1);
 }
 
 TEST(Normalization, Sn3dBasics) {
     // (n, 0) terms have epsilon == 1 and factorial ratio == 1.
-    for (int n = 0; n <= max_order; ++n) {
+    for (int n = 0; n <= k_max_order; ++n) {
         EXPECT_FLOAT_EQ(sn3d_factor(n, 0), 1.0f);
     }
     // First-order |m| == 1: sqrt(2 * 0!/2!) == 1.
@@ -45,7 +45,7 @@ TEST(Normalization, Sn3dBasics) {
 }
 
 TEST(Normalization, N3dRelations) {
-    for (int n = 0; n <= max_order; ++n) {
+    for (int n = 0; n <= k_max_order; ++n) {
         for (int m = 0; m <= n; ++m) {
             EXPECT_NEAR(n3d_factor(n, m), sn3d_factor(n, m) * std::sqrt(2.0f * static_cast<float>(n) + 1.0f), 1e-6f);
         }
@@ -54,7 +54,7 @@ TEST(Normalization, N3dRelations) {
 }
 
 TEST(SphericalHarmonics, OmniChannelIsUnity) {
-    float sh[max_channel_count];
+    float sh[k_max_channel_count];
     for (float az : {0.0f, 0.7f, -2.1f, 3.0f}) {
         for (float el : {0.0f, 0.5f, -1.2f}) {
             evaluate_sh(5, az, el, sh);
@@ -88,7 +88,7 @@ TEST(SphericalHarmonics, OrthonormalUnderTdesignQuadrature) {
     ASSERT_GT(count, 0u);
 
     std::vector<std::vector<float>> Y(count, std::vector<float>(C));
-    float                           sh[max_channel_count];
+    float                           sh[k_max_channel_count];
     for (size_t v = 0; v < count; ++v) {
         const float az = std::atan2(pts[v][1], pts[v][0]);
         const float el = std::atan2(pts[v][2], std::sqrt(pts[v][0] * pts[v][0] + pts[v][1] * pts[v][1]));

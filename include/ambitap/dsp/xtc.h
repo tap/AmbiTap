@@ -292,7 +292,7 @@ namespace ambitap::dsp {
         /// KEMAR HRIR at (azimuth, elevation 0) for one ear, reconstructed
         /// from the built-in LS SH set (the probe_response inner loop).
         static std::vector<float> kemar_hrir(float azimuth, int ear) {
-            float sh[max_channel_count];
+            float sh[k_max_channel_count];
             evaluate_sh(builtin_hrtf_order, azimuth, 0.0f, sh);
             std::vector<float> ir(builtin_hrtf_length, 0.0f);
             for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {

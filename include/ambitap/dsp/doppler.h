@@ -57,7 +57,7 @@ namespace ambitap::dsp {
         size_t                          m_write_idx{0};
 
       public:
-        /// @param order  Ambisonics order in [1, max_order].
+        /// @param order  Ambisonics order in [1, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
         explicit doppler(int order)
             : m_channels(channel_count(validated_order(order, "dsp::doppler"))) {}

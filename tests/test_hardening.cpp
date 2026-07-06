@@ -28,11 +28,11 @@
 
 using namespace ambitap;
 
-// Audit finding C6: orders beyond max_order used to overflow evaluate_sh's
+// Audit finding C6: orders beyond k_max_order used to overflow evaluate_sh's
 // fixed-size Legendre table (stack corruption) via any processor constructor.
 // Every constructor taking an order must validate it.
 TEST(Hardening, ProcessorConstructorsRejectOutOfRangeOrders) {
-    for (int bad : {-1, max_order + 1, 100}) {
+    for (int bad : {-1, k_max_order + 1, 100}) {
         EXPECT_THROW(dsp::encoder e(bad), std::invalid_argument) << bad;
         EXPECT_THROW(dsp::mirror m(bad), std::invalid_argument) << bad;
         EXPECT_THROW(dsp::virtual_mic v(bad), std::invalid_argument) << bad;
@@ -45,7 +45,7 @@ TEST(Hardening, ProcessorConstructorsRejectOutOfRangeOrders) {
     }
     // Boundary orders construct fine.
     EXPECT_NO_THROW(dsp::encoder e(0));
-    EXPECT_NO_THROW(dsp::encoder e(max_order));
+    EXPECT_NO_THROW(dsp::encoder e(k_max_order));
 }
 
 // Audit finding C6 (format_converter variant): FuMa is only defined through
@@ -61,9 +61,9 @@ TEST(Hardening, FormatConverterRejectsOrdersAboveThree) {
 // of the embedded order-5 HRTF tables (ASan-verified global-buffer-overflow).
 TEST(Hardening, BinauralRendererRejectsOrdersBeyondBuiltinHrtf) {
     EXPECT_THROW(dsp::binaural_renderer b(0), std::invalid_argument);
-    EXPECT_THROW(dsp::binaural_renderer b(max_order + 1), std::invalid_argument);
+    EXPECT_THROW(dsp::binaural_renderer b(k_max_order + 1), std::invalid_argument);
 
-    // Order within [1, max_order] but above the built-in dataset: construction
+    // Order within [1, k_max_order] but above the built-in dataset: construction
     // is fine (a custom HRTF may follow), prepare() without one is not.
     dsp::binaural_renderer bin(builtin_hrtf_order + 1);
     EXPECT_THROW(bin.prepare(64), std::invalid_argument);
@@ -103,9 +103,9 @@ TEST(Hardening, BinauralRendererValidatesCustomHrtfShape) {
 TEST(Hardening, DecoderConstructionRejectsBadInput) {
     const auto cube = layouts::cube();
     EXPECT_THROW(compute_mode_matching_decoder(-1, cube), std::invalid_argument);
-    EXPECT_THROW(compute_mode_matching_decoder(max_order + 1, cube), std::invalid_argument);
-    EXPECT_THROW(compute_epad_decoder(max_order + 1, cube), std::invalid_argument);
-    EXPECT_THROW(compute_allrad_decoder(max_order + 1, cube), std::invalid_argument);
+    EXPECT_THROW(compute_mode_matching_decoder(k_max_order + 1, cube), std::invalid_argument);
+    EXPECT_THROW(compute_epad_decoder(k_max_order + 1, cube), std::invalid_argument);
+    EXPECT_THROW(compute_allrad_decoder(k_max_order + 1, cube), std::invalid_argument);
 
     const std::vector<spherical_coord> none;
     EXPECT_THROW(compute_mode_matching_decoder(1, none), std::invalid_argument);

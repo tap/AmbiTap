@@ -67,7 +67,7 @@ namespace ambitap::dsp {
         async_rebuilder<const product> m_rebuilder;
 
       public:
-        /// @param order  Ambisonics order in [0, max_order]. Order 0 is a passthrough.
+        /// @param order  Ambisonics order in [0, k_max_order]. Order 0 is a passthrough.
         /// @throws std::invalid_argument on out-of-range order.
         explicit rotator(int order)
             : m_order(validated_order(order, "dsp::rotator"))

@@ -124,7 +124,7 @@ TEST(DspBinaural, HeadTrackingChangesOutput) {
 
     // A lateral source (left) so rotation has an audible effect.
     planar in(16, block);
-    float  sh[max_channel_count];
+    float  sh[k_max_channel_count];
     evaluate_sh(3, k_pi * 0.5f, 0.f, sh);
     for (size_t ch = 0; ch < 16; ++ch)
         in.bufs[ch][0] = sh[ch];
@@ -163,7 +163,7 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
 
     // Front source, impulse excitation.
     planar in(16, block);
-    float  sh[max_channel_count];
+    float  sh[k_max_channel_count];
     evaluate_sh(order, 0.f, 0.f, sh);
     for (size_t ch = 0; ch < 16; ++ch)
         in.bufs[ch][0] = sh[ch];
