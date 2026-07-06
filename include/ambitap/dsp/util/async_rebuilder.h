@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Generic worker-thread rebuild + wait-free publish utility.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file async_rebuilder.h
+/// @brief Generic worker-thread rebuild + wait-free publish utility.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_UTIL_ASYNC_REBUILDER_H
-#define AMBITAP_DSP_UTIL_ASYNC_REBUILDER_H
+#pragma once
 
 #include <condition_variable>
 #include <cstdint>
@@ -155,5 +154,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_UTIL_ASYNC_REBUILDER_H

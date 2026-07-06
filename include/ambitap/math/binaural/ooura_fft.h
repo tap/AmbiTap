@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Modern C++ wrapper around the Ooura split-radix real FFT.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file ooura_fft.h
+/// @brief Modern C++ wrapper around the Ooura split-radix real FFT.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_OOURA_FFT_H
-#define AMBITAP_MATH_OOURA_FFT_H
+#pragma once
 
 #include <cassert>
 #include <cmath>
@@ -127,5 +126,3 @@ namespace ambitap {
     };
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_OOURA_FFT_H

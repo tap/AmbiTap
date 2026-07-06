@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for convex hull, VBAP speaker layouts, presets, and T-designs.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_geometry.cpp
+/// @brief Tests for convex hull, VBAP speaker layouts, presets, and T-designs.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <random>

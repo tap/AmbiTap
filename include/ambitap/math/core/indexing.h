@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// ACN (Ambisonic Channel Number) indexing and channel count utilities.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file indexing.h
+/// @brief ACN (Ambisonic Channel Number) indexing and channel count utilities.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_INDEXING_H
-#define AMBITAP_MATH_INDEXING_H
+#pragma once
 
 #include <cstddef>
 
@@ -55,5 +54,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_INDEXING_H

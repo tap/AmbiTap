@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Real-SH rotation matrices via the Ivanic-Ruedenberg recurrence —
-/// exact (to roundoff), dependency-free, allocation-free.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file rotation_recurrence.h
+/// @brief Real-SH rotation matrices via the Ivanic-Ruedenberg recurrence —
+///        exact (to roundoff), dependency-free, allocation-free.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_ROTATION_RECURRENCE_H
-#define AMBITAP_MATH_ROTATION_RECURRENCE_H
+#pragma once
 
 #include <cmath>
 #include <cstddef>
@@ -162,5 +161,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_ROTATION_RECURRENCE_H

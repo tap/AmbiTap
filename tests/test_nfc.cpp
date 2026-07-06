@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::nfc — near-field compensation (NFC-HOA, Daniel).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_nfc.cpp
+/// @brief Tests for dsp::nfc — near-field compensation (NFC-HOA, Daniel).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <vector>

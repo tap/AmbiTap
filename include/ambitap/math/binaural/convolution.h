@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Real-time partitioned overlap-save convolver using Ooura FFT.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file convolution.h
+/// @brief Real-time partitioned overlap-save convolver using Ooura FFT.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_CONVOLUTION_H
-#define AMBITAP_MATH_CONVOLUTION_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -162,5 +161,3 @@ namespace ambitap {
     using partitioned_convolver32 = basic_partitioned_convolver<float, real_fft32>;
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_CONVOLUTION_H

@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for ACN indexing, SN3D/N3D normalization, and SH evaluation.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_core.cpp
+/// @brief Tests for ACN indexing, SN3D/N3D normalization, and SH evaluation.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <vector>

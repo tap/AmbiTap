@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Crossfading matrix application — the audio-thread half of the rotator and
-/// decoder, and the embedded profile's entry point for precomputed matrices.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file matrix_applier.h
+/// @brief Crossfading matrix application — the audio-thread half of the rotator and
+///        decoder, and the embedded profile's entry point for precomputed matrices.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_MATRIX_APPLIER_H
-#define AMBITAP_DSP_MATRIX_APPLIER_H
+#pragma once
 
 #include <cstddef>
 
@@ -93,5 +92,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_MATRIX_APPLIER_H

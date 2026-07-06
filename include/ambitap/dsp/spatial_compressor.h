@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Omnidirectional spatial-preserving compressor for higher-order ambisonics.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file spatial_compressor.h
+/// @brief Omnidirectional spatial-preserving compressor for higher-order ambisonics.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_SPATIAL_COMPRESSOR_H
-#define AMBITAP_DSP_SPATIAL_COMPRESSOR_H
+#pragma once
 
 #include <algorithm>
 #include <atomic>
@@ -145,5 +144,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_SPATIAL_COMPRESSOR_H

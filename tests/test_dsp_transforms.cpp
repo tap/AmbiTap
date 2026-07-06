@@ -1,8 +1,8 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for dsp::mirror, dsp::format_converter, dsp::virtual_mic, and
-/// dsp::directional_loudness.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_transforms.cpp
+/// @brief Tests for dsp::mirror, dsp::format_converter, dsp::virtual_mic, and
+///        dsp::directional_loudness.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <vector>

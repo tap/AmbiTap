@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Block-diagonal SH matrix application — the rotation-shaped specialization
-/// of matrix_applier.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file sh_block_applier.h
+/// @brief Block-diagonal SH matrix application — the rotation-shaped specialization
+///        of matrix_applier.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_SH_BLOCK_APPLIER_H
-#define AMBITAP_DSP_SH_BLOCK_APPLIER_H
+#pragma once
 
 #include <cstddef>
 
@@ -103,5 +102,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_SH_BLOCK_APPLIER_H

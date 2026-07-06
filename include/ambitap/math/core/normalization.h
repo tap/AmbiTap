@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// SN3D and N3D normalization factors for spherical harmonics.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file normalization.h
+/// @brief SN3D and N3D normalization factors for spherical harmonics.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_NORMALIZATION_H
-#define AMBITAP_MATH_NORMALIZATION_H
+#pragma once
 
 #include <cmath>
 #include <cstddef>
@@ -45,5 +44,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_NORMALIZATION_H

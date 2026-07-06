@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for max-rE weights and the three decoder constructions.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_decoding.cpp
+/// @brief Tests for max-rE weights and the three decoder constructions.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 

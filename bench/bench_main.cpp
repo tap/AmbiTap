@@ -4,7 +4,8 @@
 ///
 /// Dependency-free by design (std::chrono; median of repeated runs) so it
 /// builds everywhere the library does. Build with -DAMBITAP_BUILD_BENCH=ON.
-/// Copyright 2026 Timothy Place. MIT License.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <algorithm>
 #include <chrono>

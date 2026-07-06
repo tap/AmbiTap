@@ -1,8 +1,8 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for the embedded real-time profile: fast math, the float32
-/// convolver, the freestanding matrix applier, and the binaural core.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_embedded_core.cpp
+/// @brief Tests for the embedded real-time profile: fast math, the float32
+///        convolver, the freestanding matrix applier, and the binaural core.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <random>

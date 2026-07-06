@@ -1,9 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Concurrency stress tests: control-thread setters hammering against a live
-/// audio thread, and construction/destruction races. Run these under TSan
-/// (CI has a dedicated leg); they also catch use-after-free under ASan.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_threads.cpp
+/// @brief Concurrency stress tests: control-thread setters hammering against a live
+///        audio thread, and construction/destruction races. Run these under TSan
+///        (CI has a dedicated leg); they also catch use-after-free under ASan.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <atomic>
 #include <cmath>

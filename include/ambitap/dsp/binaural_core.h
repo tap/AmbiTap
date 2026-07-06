@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Binaural convolution core: the freestanding audio-path half of the
-/// binaural renderer — per-channel SH-domain HRTF convolver bank + volume.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file binaural_core.h
+/// @brief Binaural convolution core: the freestanding audio-path half of the
+///        binaural renderer — per-channel SH-domain HRTF convolver bank + volume.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_BINAURAL_CORE_H
-#define AMBITAP_DSP_BINAURAL_CORE_H
+#pragma once
 
 #include <algorithm>
 #include <atomic>
@@ -123,5 +122,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_BINAURAL_CORE_H

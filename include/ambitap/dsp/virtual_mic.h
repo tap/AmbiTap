@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Virtual microphone: extract a mono directional signal from a HOA bus.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file virtual_mic.h
+/// @brief Virtual microphone: extract a mono directional signal from a HOA bus.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_VIRTUAL_MIC_H
-#define AMBITAP_DSP_VIRTUAL_MIC_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -135,5 +134,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_VIRTUAL_MIC_H

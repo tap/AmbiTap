@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Binaural renderer: HOA bus -> stereo via SH-domain HRTF convolution.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file binaural_renderer.h
+/// @brief Binaural renderer: HOA bus -> stereo via SH-domain HRTF convolution.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_BINAURAL_RENDERER_H
-#define AMBITAP_DSP_BINAURAL_RENDERER_H
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -385,5 +384,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_BINAURAL_RENDERER_H

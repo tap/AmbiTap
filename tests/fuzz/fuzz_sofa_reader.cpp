@@ -1,22 +1,22 @@
-/// AmbiTap: target-independent ambisonics library
-/// libFuzzer harness for the SOFA reader load + SH-decompose path.
+/// @file fuzz_sofa_reader.cpp
+/// @brief libFuzzer harness for the SOFA reader load + SH-decompose path.
 ///
-/// The SOFA reader (math/binaural/sofa_reader.h) is the library's only
-/// consumer of untrusted external files: users load arbitrary HRTF SOFA
-/// files, which are HDF5 containers parsed by libmysofa. This fuzzes the
-/// whole path a host would drive — parse, validate, and project onto the SH
-/// basis — against adversarial bytes, so a malformed or hostile file fails
-/// cleanly (exception or rejection) rather than crashing, reading out of
-/// bounds, or looping.
+///        The SOFA reader (math/binaural/sofa_reader.h) is the library's only
+///        consumer of untrusted external files: users load arbitrary HRTF SOFA
+///        files, which are HDF5 containers parsed by libmysofa. This fuzzes the
+///        whole path a host would drive — parse, validate, and project onto the SH
+///        basis — against adversarial bytes, so a malformed or hostile file fails
+///        cleanly (exception or rejection) rather than crashing, reading out of
+///        bounds, or looping.
 ///
-/// libmysofa parses the HDF5/NetCDF container; that third-party surface is
-/// in scope here too (AmbiTap ships it as an optional dependency and is
-/// responsible for feeding it safely).
+///        libmysofa parses the HDF5/NetCDF container; that third-party surface is
+///        in scope here too (AmbiTap ships it as an optional dependency and is
+///        responsible for feeding it safely).
 ///
-/// Build: -DAMBITAP_BUILD_FUZZERS=ON with a Clang toolchain (needs
-/// -fsanitize=fuzzer). See tests/fuzz/CMakeLists.txt.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+///        Build: -DAMBITAP_BUILD_FUZZERS=ON with a Clang toolchain (needs
+///        -fsanitize=fuzzer). See tests/fuzz/CMakeLists.txt.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cstddef>
 #include <cstdint>

@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// Mode-matching ambisonics decoder matrix construction.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file mode_matching.h
+/// @brief Mode-matching ambisonics decoder matrix construction.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_MODE_MATCHING_H
-#define AMBITAP_MATH_MODE_MATCHING_H
+#pragma once
 
 #include <cmath>
 #include <stdexcept>
@@ -92,5 +91,3 @@ namespace ambitap {
     }
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_MODE_MATCHING_H

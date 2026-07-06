@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Race-free, click-free parameter smoothing between a control thread and
-/// one audio thread.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file smoothing.h
+/// @brief Race-free, click-free parameter smoothing between a control thread and
+///        one audio thread.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_UTIL_SMOOTHING_H
-#define AMBITAP_DSP_UTIL_SMOOTHING_H
+#pragma once
 
 #include <array>
 #include <atomic>
@@ -175,5 +174,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_UTIL_SMOOTHING_H

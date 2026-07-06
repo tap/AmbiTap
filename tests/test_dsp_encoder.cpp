@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for the dsp::encoder processor.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_dsp_encoder.cpp
+/// @brief Tests for the dsp::encoder processor.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <vector>
 

@@ -1,10 +1,9 @@
-/// AmbiTap: target-independent ambisonics library
-/// HOA rotator: Euler-angle SH rotation with async matrix rebuild.
-/// Timothy Place
-/// Copyright 2025-2026 Timothy Place.
+/// @file rotator.h
+/// @brief HOA rotator: Euler-angle SH rotation with async matrix rebuild.
+// SPDX-License-Identifier: MIT
+// Copyright 2025-2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_ROTATOR_H
-#define AMBITAP_DSP_ROTATOR_H
+#pragma once
 
 #include <atomic>
 #include <cstddef>
@@ -184,5 +183,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_ROTATOR_H

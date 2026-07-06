@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Shared-spectrum partitioned convolver bank: many inputs, few outputs,
-/// one forward FFT per input and one inverse FFT per output.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file convolver_bank.h
+/// @brief Shared-spectrum partitioned convolver bank: many inputs, few outputs,
+///        one forward FFT per input and one inverse FFT per output.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_MATH_CONVOLVER_BANK_H
-#define AMBITAP_MATH_CONVOLVER_BANK_H
+#pragma once
 
 #include <algorithm>
 #include <cstddef>
@@ -200,5 +199,3 @@ namespace ambitap {
     using convolver_bank32 = basic_convolver_bank<float, real_fft32>;
 
 } // namespace ambitap
-
-#endif // AMBITAP_MATH_CONVOLVER_BANK_H

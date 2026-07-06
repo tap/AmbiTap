@@ -1,11 +1,10 @@
-/// AmbiTap: target-independent ambisonics library
-/// Shoebox room simulation for an HOA bus: image-source early reflections
-/// plus a 16-line SH-domain FDN late tail (mono in, (order+1)^2 SH out).
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file room.h
+/// @brief Shoebox room simulation for an HOA bus: image-source early reflections
+///        plus a 16-line SH-domain FDN late tail (mono in, (order+1)^2 SH out).
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
-#ifndef AMBITAP_DSP_ROOM_H
-#define AMBITAP_DSP_ROOM_H
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -1221,5 +1220,3 @@ namespace ambitap::dsp {
     };
 
 } // namespace ambitap::dsp
-
-#endif // AMBITAP_DSP_ROOM_H

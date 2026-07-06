@@ -1,7 +1,7 @@
-/// AmbiTap: target-independent ambisonics library
-/// Tests for analysis::soundfield_grid.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+/// @file test_analysis_soundfield.cpp
+/// @brief Tests for analysis::soundfield_grid.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
 
 #include <cmath>
 #include <vector>
