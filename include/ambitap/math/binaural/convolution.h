@@ -36,18 +36,6 @@ namespace ambitap {
     ///                             doubles (e.g. Cortex-M55, Hexagon).
     template <typename Real, typename Fft>
     class basic_partitioned_convolver {
-        size_t                         m_block_size;
-        size_t                         m_fft_size; // 2 * m_block_size
-        Fft                            m_fft;
-        size_t                         m_num_partitions{0};
-        std::vector<std::vector<Real>> m_ir_freq;    // [partition][fft_size]
-        std::vector<std::vector<Real>> m_input_freq; // [partition][fft_size] ring buffer
-        std::vector<Real>              m_accum;      // [fft_size] freq-domain sum
-        std::vector<Real>              m_input_buf;  // [fft_size] time-domain [prev|curr]
-        std::vector<Real>              m_output_buf; // [fft_size] inverse-FFT scratch
-
-        size_t m_ring_pos{0};
-
       public:
         /// Construct with an IR.
         explicit basic_partitioned_convolver(size_t block_size, const float* ir = nullptr, size_t ir_length = 0)
@@ -155,6 +143,19 @@ namespace ambitap {
             std::fill(m_input_buf.begin(), m_input_buf.end(), Real(0));
             m_ring_pos = 0;
         }
+
+      private:
+        size_t                         m_block_size;
+        size_t                         m_fft_size; // 2 * m_block_size
+        Fft                            m_fft;
+        size_t                         m_num_partitions{0};
+        std::vector<std::vector<Real>> m_ir_freq;    // [partition][fft_size]
+        std::vector<std::vector<Real>> m_input_freq; // [partition][fft_size] ring buffer
+        std::vector<Real>              m_accum;      // [fft_size] freq-domain sum
+        std::vector<Real>              m_input_buf;  // [fft_size] time-domain [prev|curr]
+        std::vector<Real>              m_output_buf; // [fft_size] inverse-FFT scratch
+
+        size_t m_ring_pos{0};
     };
 
     using partitioned_convolver   = basic_partitioned_convolver<double, real_fft>;

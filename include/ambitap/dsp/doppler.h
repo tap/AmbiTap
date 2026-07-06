@@ -39,22 +39,6 @@ namespace ambitap::dsp {
     /// the Doppler pitch glide rather than a click; the slew also makes
     /// set_distance() race-free (it is a single atomic store).
     class doppler {
-        /// One-pole coefficient of the per-sample delay slew.
-        static constexpr float k_delay_slew = 1.0f / 1024.0f;
-
-        size_t             m_channels;
-        float              m_fs{48000.0f};
-        std::atomic<float> m_distance{1.0f};
-        std::atomic<float> m_speed_of_sound{343.0f};
-        float              m_max_distance{50.0f};
-
-        // Audio-thread state: the smoothed delay actually applied.
-        float m_delay_current{0.f};
-
-        size_t                          m_buffer_size{0};
-        std::vector<std::vector<float>> m_buffers; // [channel][circular sample]
-        size_t                          m_write_idx{0};
-
       public:
         /// @param order  Ambisonics order in [1, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
@@ -175,6 +159,22 @@ namespace ambitap::dsp {
             m_write_idx     = 0;
             m_delay_current = current_delay_samples();
         }
+
+        /// One-pole coefficient of the per-sample delay slew.
+        static constexpr float k_delay_slew = 1.0f / 1024.0f;
+
+        size_t             m_channels;
+        float              m_fs{48000.0f};
+        std::atomic<float> m_distance{1.0f};
+        std::atomic<float> m_speed_of_sound{343.0f};
+        float              m_max_distance{50.0f};
+
+        // Audio-thread state: the smoothed delay actually applied.
+        float m_delay_current{0.f};
+
+        size_t                          m_buffer_size{0};
+        std::vector<std::vector<float>> m_buffers; // [channel][circular sample]
+        size_t                          m_write_idx{0};
     };
 
 } // namespace ambitap::dsp

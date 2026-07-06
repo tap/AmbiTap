@@ -32,16 +32,6 @@ namespace ambitap::dsp {
     /// (a sign flip is a full polarity crossfade — click-free); call
     /// snap_parameters() for offline/exact use. The audio path is wait-free.
     class mirror {
-        int    m_order;
-        size_t m_channels;
-        bool   m_flip_lr{false};
-        bool   m_flip_fb{false};
-        bool   m_flip_ud{false};
-
-        std::array<float, k_max_channel_count> m_sign{};
-
-        smoothed_table<k_max_channel_count> m_smooth;
-
       public:
         /// @throws std::invalid_argument on out-of-range order.
         explicit mirror(int order)
@@ -140,6 +130,16 @@ namespace ambitap::dsp {
         }
 
         void publish() { m_smooth.set(m_sign.data(), m_channels); }
+
+        int    m_order;
+        size_t m_channels;
+        bool   m_flip_lr{false};
+        bool   m_flip_fb{false};
+        bool   m_flip_ud{false};
+
+        std::array<float, k_max_channel_count> m_sign{};
+
+        smoothed_table<k_max_channel_count> m_smooth;
     };
 
 } // namespace ambitap::dsp

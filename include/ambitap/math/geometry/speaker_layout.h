@@ -40,19 +40,6 @@ namespace ambitap {
     ///   - Nearest-speaker, for layouts too degenerate for either (e.g. one
     ///     speaker, or coincident positions).
     class speaker_layout {
-        std::vector<spherical_coord> m_speakers;
-        std::vector<Eigen::Vector3f> m_cart;
-        std::vector<triangle>        m_triangles;
-        std::vector<Eigen::Matrix3f> m_inv_matrices;
-
-        // 2D pairwise mode (planar layouts): plane basis, per-speaker in-plane
-        // angle, and speaker indices sorted by that angle.
-        bool                m_pairwise{false};
-        Eigen::Vector3f     m_plane_u{Eigen::Vector3f::UnitX()};
-        Eigen::Vector3f     m_plane_v{Eigen::Vector3f::UnitY()};
-        std::vector<float>  m_ring_angle; // parallel to m_ring_index
-        std::vector<size_t> m_ring_index;
-
       public:
         /// @throws std::invalid_argument when speakers is empty.
         explicit speaker_layout(const std::vector<spherical_coord>& speakers)
@@ -301,6 +288,19 @@ namespace ambitap {
             gains[b] = g(1);
             return true;
         }
+
+        std::vector<spherical_coord> m_speakers;
+        std::vector<Eigen::Vector3f> m_cart;
+        std::vector<triangle>        m_triangles;
+        std::vector<Eigen::Matrix3f> m_inv_matrices;
+
+        // 2D pairwise mode (planar layouts): plane basis, per-speaker in-plane
+        // angle, and speaker indices sorted by that angle.
+        bool                m_pairwise{false};
+        Eigen::Vector3f     m_plane_u{Eigen::Vector3f::UnitX()};
+        Eigen::Vector3f     m_plane_v{Eigen::Vector3f::UnitY()};
+        std::vector<float>  m_ring_angle; // parallel to m_ring_index
+        std::vector<size_t> m_ring_index;
     };
 
 } // namespace ambitap

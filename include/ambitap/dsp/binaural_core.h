@@ -38,14 +38,6 @@ namespace ambitap::dsp {
     /// threads, no Eigen. prepare() allocates (init/control time);
     /// process() is wait-free and allocation-free.
     class binaural_core {
-        size_t m_channels;
-        size_t m_block_size{0};
-
-        convolver_bank32 m_bank;
-
-        std::atomic<float> m_volume{1.0f};
-        float              m_volume_current{1.0f}; // audio-thread ramp state
-
       public:
         /// @param order  Ambisonics order in [1, k_max_order].
         explicit binaural_core(int order)
@@ -119,6 +111,15 @@ namespace ambitap::dsp {
 
         /// Clear convolver input history; keep the FIRs and allocation.
         void reset() { m_bank.reset(); }
+
+      private:
+        size_t m_channels;
+        size_t m_block_size{0};
+
+        convolver_bank32 m_bank;
+
+        std::atomic<float> m_volume{1.0f};
+        float              m_volume_current{1.0f}; // audio-thread ramp state
     };
 
 } // namespace ambitap::dsp

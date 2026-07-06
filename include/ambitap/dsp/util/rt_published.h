@@ -49,8 +49,6 @@ namespace ambitap::dsp {
         /// are one atomic store each. get() may be called any number of times
         /// inside the region; the pointer stays valid until the guard dies.
         class read_guard {
-            const rt_published* m_owner;
-
           public:
             explicit read_guard(const rt_published& owner)
                 : m_owner(&owner) {
@@ -68,6 +66,9 @@ namespace ambitap::dsp {
 
             /// Latest product, or nullptr before the first publish.
             Product* get() const { return m_owner->m_active.load(std::memory_order_seq_cst); }
+
+          private:
+            const rt_published* m_owner;
         };
 
         rt_published() = default;
