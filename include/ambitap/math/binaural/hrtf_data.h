@@ -1,3 +1,4 @@
+// NOLINTBEGIN(readability-identifier-naming) — generated table; naming is the generator's concern.
 /// AmbiTap: target-independent ambisonics library
 /// Built-in SH-domain HRTF dataset for binaural rendering.
 /// Auto-generated from MIT KEMAR (normal pinna) via SOFA + scripts/generate_hrtf.py.
@@ -2647,3 +2648,4 @@ inline constexpr float builtin_hrtf_magls_right[36][128] = {
 } // namespace ambitap
 
 #endif // AMBITAP_MATH_HRTF_DATA_H
+// NOLINTEND(readability-identifier-naming)

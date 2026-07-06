@@ -23,7 +23,7 @@ namespace {
         const auto      L = static_cast<Eigen::Index>(speakers.size());
         const auto      C = static_cast<Eigen::Index>(channel_count(order));
         Eigen::MatrixXf Y(L, C);
-        float           sh[max_channel_count];
+        float           sh[k_max_channel_count];
         for (Eigen::Index i = 0; i < L; ++i) {
             evaluate_sh(order, speakers[static_cast<size_t>(i)], sh);
             for (Eigen::Index j = 0; j < C; ++j)
@@ -33,7 +33,7 @@ namespace {
     }
 
     Eigen::VectorXf encode(int order, spherical_coord dir) {
-        float sh[max_channel_count];
+        float sh[k_max_channel_count];
         evaluate_sh(order, dir, sh);
         Eigen::VectorXf v(static_cast<Eigen::Index>(channel_count(order)));
         for (Eigen::Index i = 0; i < v.size(); ++i)

@@ -28,7 +28,7 @@ namespace {
     /// KEMAR HRIR at (azimuth, elevation 0), reconstructed from the built-in
     /// LS SH set — the plant definition from the verification doc.
     std::vector<float> kemar_hrir(double azimuth, int ear) {
-        float sh[max_channel_count];
+        float sh[k_max_channel_count];
         evaluate_sh(builtin_hrtf_order, static_cast<float>(azimuth), 0.0f, sh);
         std::vector<float> ir(builtin_hrtf_length, 0.0f);
         for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {

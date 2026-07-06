@@ -31,14 +31,14 @@ namespace ambitap::dsp {
         float  m_elevation{0.0f};
 
         // Control-side snapshot for the coefficient accessors.
-        std::array<float, max_channel_count> m_coefficients{};
+        std::array<float, k_max_channel_count> m_coefficients{};
 
         // Audio-side smoothed values.
-        smoothed_table<max_channel_count> m_smooth;
+        smoothed_table<k_max_channel_count> m_smooth;
         smoothed_scalar                   m_gain{1.0f};
 
       public:
-        /// @param order  Ambisonics order in [0, max_order]; channel count is (order+1)^2.
+        /// @param order  Ambisonics order in [0, k_max_order]; channel count is (order+1)^2.
         /// @throws std::invalid_argument on out-of-range order.
         explicit encoder(int order)
             : m_order(validated_order(order, "dsp::encoder"))

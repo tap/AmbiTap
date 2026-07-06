@@ -219,7 +219,7 @@ TEST(SpeakerLayout, EmptyLayoutThrows) {
 }
 
 TEST(Tdesigns, PointsAreOnUnitSphere) {
-    for (int order = 1; order <= max_order; ++order) {
+    for (int order = 1; order <= k_max_order; ++order) {
         size_t count         = 0;
         const float(*pts)[3] = tdesign_for_order(order, count);
         ASSERT_NE(pts, nullptr) << "order " << order;

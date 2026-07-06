@@ -40,15 +40,15 @@ namespace ambitap::dsp {
         size_t                               m_channels;
         float                                m_azimuth{0.0f};
         float                                m_elevation{0.0f};
-        std::array<float, max_channel_count> m_sh_at_direction{};
+        std::array<float, k_max_channel_count> m_sh_at_direction{};
 
-        smoothed_table<max_channel_count> m_smooth;
+        smoothed_table<k_max_channel_count> m_smooth;
         smoothed_scalar                   m_gain{1.0f};
         // 1 / ||SH(d)||^2, recomputed with the direction.
         smoothed_scalar m_inv_norm{1.0f};
 
       public:
-        /// @param order  Ambisonics order in [0, max_order].
+        /// @param order  Ambisonics order in [0, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
         explicit directional_loudness(int order)
             : m_order(validated_order(order, "dsp::directional_loudness"))
@@ -134,7 +134,7 @@ namespace ambitap::dsp {
 
       private:
         void recalculate() {
-            float sh[max_channel_count];
+            float sh[k_max_channel_count];
             evaluate_sh(m_order, m_azimuth, m_elevation, sh);
             float norm = 0.f;
             for (size_t ch = 0; ch < m_channels; ++ch) {

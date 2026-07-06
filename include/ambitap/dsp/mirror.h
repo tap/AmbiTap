@@ -39,9 +39,9 @@ namespace ambitap::dsp {
         bool   m_flip_fb{false};
         bool   m_flip_ud{false};
 
-        std::array<float, max_channel_count> m_sign{};
+        std::array<float, k_max_channel_count> m_sign{};
 
-        smoothed_table<max_channel_count> m_smooth;
+        smoothed_table<k_max_channel_count> m_smooth;
 
       public:
         /// @throws std::invalid_argument on out-of-range order.

@@ -76,7 +76,7 @@ namespace ambitap::dsp {
         async_rebuilder<const matrix> m_rebuilder;
 
       public:
-        /// @param order       Ambisonics order in [1, max_order].
+        /// @param order       Ambisonics order in [1, k_max_order].
         /// @param on_publish  Optional callback run on the worker thread after
         ///                    each successful matrix publish (e.g. UI emission).
         /// @throws std::invalid_argument on out-of-range order.

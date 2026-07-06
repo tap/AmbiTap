@@ -102,7 +102,7 @@ namespace ambitap::dsp {
       private:
         /// [b0, b1, b2, a1, a2] per section.
         static constexpr size_t k_section_coeffs = 5;
-        static constexpr size_t k_max_coeffs     = k_section_coeffs * nfc_total_sections(max_order);
+        static constexpr size_t k_max_coeffs     = k_section_coeffs * nfc_total_sections(k_max_order);
 
         int    m_order;
         size_t m_channels;
@@ -130,7 +130,7 @@ namespace ambitap::dsp {
         std::vector<double> m_state;
 
       public:
-        /// @param order  Ambisonics order in [0, max_order]; channel count is
+        /// @param order  Ambisonics order in [0, k_max_order]; channel count is
         ///               (order+1)^2. Order 0 is a valid degenerate passthrough.
         /// @throws std::invalid_argument on out-of-range order.
         explicit nfc(int order)
@@ -315,14 +315,14 @@ namespace ambitap::dsp {
 
         /// Find the m roots of the monic reverse Bessel polynomial theta_m by
         /// Durand–Kerner iteration. theta_m's coefficients are exact integers
-        /// (at most (2m)!/(m! 2^m) ≈ 6.5e8 for m = max_order) and its roots
+        /// (at most (2m)!/(m! 2^m) ≈ 6.5e8 for m = k_max_order) and its roots
         /// are simple and well separated, so the iteration converges quickly
         /// from a generic circular start. Construction time only.
         static void bessel_roots(int m, cplx* roots) {
             constexpr double k_two_pi = 6.28318530717958647692;
 
             // coeff[n] multiplies x^(m-n): (m+n)! / ((m-n)! n! 2^n).
-            double coeff[max_order + 1];
+            double coeff[k_max_order + 1];
             coeff[0] = 1.0;
             for (int n = 0; n < m; ++n) {
                 coeff[n + 1] =
@@ -361,11 +361,11 @@ namespace ambitap::dsp {
             m_roots.clear();
             m_roots.reserve(nfc_total_sections(m_order));
             for (int m = 1; m <= m_order; ++m) {
-                cplx roots[max_order];
+                cplx roots[k_max_order];
                 bessel_roots(m, roots);
 
                 // Conjugate pairs (im > 0), most-damped first for determinism.
-                cplx pairs[max_order / 2];
+                cplx pairs[k_max_order / 2];
                 int  pair_count = 0;
                 int  real_idx   = 0;
                 for (int i = 1; i < m; ++i) {

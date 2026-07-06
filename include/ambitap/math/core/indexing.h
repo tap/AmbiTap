@@ -18,10 +18,10 @@ namespace ambitap {
     }
 
     /// Maximum supported ambisonics order.
-    constexpr int max_order = 10;
+    constexpr int k_max_order = 10;
 
     /// Maximum channel count (for order 10): 121.
-    constexpr size_t max_channel_count = channel_count(max_order);
+    constexpr size_t k_max_channel_count = channel_count(k_max_order);
 
     /// Compute the ACN (Ambisonic Channel Number) index from order and degree.
     ///

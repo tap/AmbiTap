@@ -19,7 +19,7 @@ TEST(DspEncoder, CoefficientsMatchEvaluateSh) {
 
     enc.set_direction(0.7f, -0.3f);
 
-    float expected[max_channel_count];
+    float expected[k_max_channel_count];
     evaluate_sh(3, 0.7f, -0.3f, expected);
     for (size_t ch = 0; ch < enc.channels(); ++ch) {
         EXPECT_FLOAT_EQ(enc.coefficients()[ch], expected[ch]) << "ch=" << ch;
@@ -31,7 +31,7 @@ TEST(DspEncoder, IndividualAngleSettersRecalculate) {
     enc.set_azimuth(1.1f);
     enc.set_elevation(0.4f);
 
-    float expected[max_channel_count];
+    float expected[k_max_channel_count];
     evaluate_sh(2, 1.1f, 0.4f, expected);
     for (size_t ch = 0; ch < enc.channels(); ++ch) {
         EXPECT_FLOAT_EQ(enc.coefficients()[ch], expected[ch]) << "ch=" << ch;

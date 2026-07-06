@@ -89,7 +89,7 @@ namespace ambitap::analysis {
         std::vector<float> m_cov;
 
       public:
-        /// @param order          Ambisonics order in [0, max_order].
+        /// @param order          Ambisonics order in [0, k_max_order].
         /// @param azimuth_steps  Initial grid azimuth resolution (columns).
         /// @throws std::invalid_argument on out-of-range order.
         explicit soundfield_grid(int order, int azimuth_steps = 32)

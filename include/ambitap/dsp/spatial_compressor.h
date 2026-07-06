@@ -47,7 +47,7 @@ namespace ambitap::dsp {
         float m_envelope{0.f}; // audio-thread state
 
       public:
-        /// @param order  Ambisonics order in [1, max_order].
+        /// @param order  Ambisonics order in [1, k_max_order].
         /// @throws std::invalid_argument on out-of-range order.
         explicit spatial_compressor(int order)
             : m_channels(channel_count(validated_order(order, "dsp::spatial_compressor"))) {

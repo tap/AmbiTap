@@ -46,9 +46,9 @@ namespace ambitap {
         return order;
     }
 
-    /// Overload with the library-wide default range [0, max_order].
+    /// Overload with the library-wide default range [0, k_max_order].
     inline int validated_order(int order, const char* context) {
-        return validated_order(order, 0, max_order, context);
+        return validated_order(order, 0, k_max_order, context);
     }
 
 } // namespace ambitap

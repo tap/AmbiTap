@@ -74,7 +74,7 @@ TEST(DspNfc, DcGainMatchesClosedForm) {
     const scenario cases[] = {
         {2.0f, 1.0f, 5},        // cut: source beyond the reference
         {0.5f, 1.0f, 5},        // boost: source inside the reference
-        {1.5f, 1.0f, max_order} // exercises the Bessel roots at every order
+        {1.5f, 1.0f, k_max_order} // exercises the Bessel roots at every order
     };
 
     for (const auto& sc : cases) {

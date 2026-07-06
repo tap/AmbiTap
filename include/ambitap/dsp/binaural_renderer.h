@@ -94,12 +94,12 @@ namespace ambitap::dsp {
         rotator m_head; // head-tracking (counter-rotation); owns its worker thread
 
       public:
-        /// @param order  Ambisonics order in [1, max_order]. Orders above
+        /// @param order  Ambisonics order in [1, k_max_order]. Orders above
         ///               builtin_hrtf_order require set_custom_hrtf() before
         ///               prepare(); prepare() throws otherwise.
         /// @throws std::invalid_argument on out-of-range order.
         explicit binaural_renderer(int order)
-            : m_order(validated_order(order, 1, max_order, "dsp::binaural_renderer"))
+            : m_order(validated_order(order, 1, k_max_order, "dsp::binaural_renderer"))
             , m_channels(channel_count(order))
             , m_core(order)
             , m_head(order) {}
@@ -251,7 +251,7 @@ namespace ambitap::dsp {
         response probe_response(float azimuth, float elevation, size_t fft_size = 512,
                                 float sample_rate = builtin_hrtf_sample_rate) const {
             require_hrtf_coverage("probe_response");
-            float sh[max_channel_count];
+            float sh[k_max_channel_count];
             evaluate_sh(m_order, azimuth, elevation, sh);
 
             real_fft     fft(fft_size);

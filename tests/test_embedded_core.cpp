@@ -284,7 +284,7 @@ TEST(RotationRecurrence, SatisfiesRotationProperty) {
     std::mt19937                          rng(5);
     std::uniform_real_distribution<float> ang(-3.1f, 3.1f);
 
-    for (int order : {1, 2, 3, 5, max_order}) {
+    for (int order : {1, 2, 3, 5, k_max_order}) {
         const size_t       C = channel_count(order);
         std::vector<float> M(C * C);
         for (int trial = 0; trial < 6; ++trial) {
@@ -315,7 +315,7 @@ TEST(RotationRecurrence, SatisfiesRotationProperty) {
                     rd[r] = R[r * 3] * d[0] + R[r * 3 + 1] * d[1] + R[r * 3 + 2] * d[2];
                 }
 
-                float sh_d[max_channel_count], sh_rd[max_channel_count];
+                float sh_d[k_max_channel_count], sh_rd[k_max_channel_count];
                 evaluate_sh(order, az, el, sh_d);
                 evaluate_sh(order, std::atan2(rd[1], rd[0]), std::atan2(rd[2], std::hypot(rd[0], rd[1])), sh_rd);
 
@@ -334,7 +334,7 @@ TEST(RotationRecurrence, MatricesAreOrthogonal) {
     std::mt19937                          rng(17);
     std::uniform_real_distribution<float> ang(-3.1f, 3.1f);
 
-    for (int order : {3, max_order}) {
+    for (int order : {3, k_max_order}) {
         const size_t       C = channel_count(order);
         std::vector<float> M(C * C);
         compute_sh_rotation(order, ang(rng), 0.5f * ang(rng), ang(rng), M.data());
