@@ -1,20 +1,25 @@
-# AmbiTap house style: 4-space indent (also inside namespaces), aligned
-# declaration/assignment columns, Stroustrup braces, comma-first constructor
-# initializers, left-bound pointers, 100-column limit.
+# Tap family house style. Copy verbatim into every *Tap repo.
+# 4-space indent (incl. namespaces), aligned declaration/assignment columns,
+# attached braces (else/catch break), comma-first ctor initializers,
+# left-bound pointers, 120-column limit. Layout only — naming and mandatory
+# braces are enforced separately by .clang-tidy (clang-format cannot check
+# identifier names, and its brace insertion is not semantically aware).
 Language: Cpp
 BasedOnStyle: LLVM
 Standard: c++20
 
-ColumnLimit: 100
+ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -2
 NamespaceIndentation: All
 
 PointerAlignment: Left
+DerivePointerAlignment: false
 BreakBeforeBinaryOperators: NonAssignment
-SpaceBeforeCpp11BracedList: true
-# House style: braces attach everywhere (including functions); only `else`
-# gets its own line.
+SpaceBeforeCpp11BracedList: false
+AlwaysBreakTemplateDeclarations: Yes
+
+# Braces attach everywhere (including functions); only else/catch break.
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterFunction: false
@@ -34,9 +39,23 @@ AlignTrailingComments: true
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortLambdasOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: WithoutElse
-AllowShortLoopsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
 
 BreakStringLiterals: false
-SortIncludes: CaseSensitive
-IncludeBlocks: Preserve
 KeepEmptyLinesAtTheStartOfBlocks: false
+InsertNewlineAtEOF: true
+
+# Include ordering: main header (auto, priority 0) -> C++ standard ->
+# third-party -> this project. Regroup enforces it; blank lines between groups.
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # C++ standard library: <angle> with no '/' and no '.' (e.g. <vector>)
+  - Regex: '^<[[:alnum:]_]+>$'
+    Priority: 2
+  # Other angle-bracket headers (third-party, e.g. <gtest/gtest.h>)
+  - Regex: '^<.*>$'
+    Priority: 3
+  # This project: quoted includes
+  - Regex: '^".*"$'
+    Priority: 4
