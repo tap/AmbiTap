@@ -81,8 +81,9 @@ namespace ambitap::dsp {
                     m_to[i]   = m_target[i].load(std::memory_order_relaxed);
                 }
                 if (m_snap.exchange(false, std::memory_order_acq_rel)) {
-                    for (size_t i = 0; i < count; ++i)
+                    for (size_t i = 0; i < count; ++i) {
                         m_now[i] = m_to[i];
+                    }
                     m_pos = k_smoothing_samples;
                 }
                 else {

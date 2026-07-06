@@ -22,7 +22,8 @@ namespace {
         const std::string path = std::string("/tmp/ambitap_sofa_test_") + tag + ".sofa";
         std::FILE*        f    = std::fopen(path.c_str(), "wb");
         if (f) {
-            if (!bytes.empty()) std::fwrite(bytes.data(), 1, bytes.size(), f);
+            if (!bytes.empty())
+                std::fwrite(bytes.data(), 1, bytes.size(), f);
             std::fclose(f);
         }
         return path;

@@ -61,7 +61,9 @@ namespace ambitap::dsp {
                 m_exiting = true;
             }
             m_worker_cv.notify_one();
-            if (m_worker.joinable()) m_worker.join();
+            if (m_worker.joinable()) {
+                m_worker.join();
+            }
         }
 
         async_rebuilder(const async_rebuilder&)            = delete;
@@ -113,7 +115,9 @@ namespace ambitap::dsp {
                 {
                     std::unique_lock<std::mutex> lock(m_mtx);
                     m_worker_cv.wait(lock, [this, &last_seen] { return m_exiting || m_pending_seq > last_seen; });
-                    if (m_exiting) return;
+                    if (m_exiting) {
+                        return;
+                    }
                     seq_to_run = m_pending_seq;
                 }
 
@@ -121,7 +125,9 @@ namespace ambitap::dsp {
                 const bool published = (fresh != nullptr);
                 if (published) {
                     m_published.publish(std::move(fresh)); // may block for grace
-                    if (m_on_publish) m_on_publish();
+                    if (m_on_publish) {
+                        m_on_publish();
+                    }
                 }
 
                 last_seen = seq_to_run;

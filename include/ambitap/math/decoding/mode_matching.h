@@ -76,8 +76,9 @@ namespace ambitap {
         // to Y * X = I_LxL, i.e. pinv(Y) of shape (C x L); transpose for (L x C).
         Eigen::JacobiSVD<Eigen::MatrixXf> svd(Y, Eigen::ComputeThinU | Eigen::ComputeThinV);
         svd.setThreshold(1e-4f);
-        Eigen::MatrixXf pinv_Y = svd.solve(Eigen::MatrixXf::Identity(L, L));  // NOLINT(readability-identifier-naming): math notation
-        Eigen::MatrixXf D      = pinv_Y.transpose() * n3d.asDiagonal();
+        Eigen::MatrixXf pinv_Y =
+            svd.solve(Eigen::MatrixXf::Identity(L, L)); // NOLINT(readability-identifier-naming): math notation
+        Eigen::MatrixXf D = pinv_Y.transpose() * n3d.asDiagonal();
 
         if (use_max_re) {
             auto weights = max_re_weights_energy_normalized(order);

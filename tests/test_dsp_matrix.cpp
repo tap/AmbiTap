@@ -43,8 +43,9 @@ TEST(DspRotator, PassthroughUntilFirstSetter) {
     EXPECT_FALSE(rot.is_active());
 
     std::vector<float> in(rot.channels()), out(rot.channels());
-    for (size_t i = 0; i < in.size(); ++i)
+    for (size_t i = 0; i < in.size(); ++i) {
         in[i] = static_cast<float>(i) - 3.f;
+    }
     rot.process_frame(in.data(), out.data());
     EXPECT_EQ(out, in);
 }
@@ -92,8 +93,9 @@ TEST(DspDecoder, SilenceUntilConfigured) {
     float        in[4] = {1.f, 0.5f, -0.5f, 0.25f};
     float        out[8];
     dec.process_frame(in, out, 8);
-    for (float v : out)
+    for (float v : out) {
         EXPECT_EQ(v, 0.f);
+    }
 }
 
 TEST(DspDecoder, MatchesDirectConstruction) {
@@ -128,7 +130,9 @@ TEST(DspDecoder, MatchesDirectConstruction) {
 
     size_t loudest = 0;
     for (size_t s = 1; s < 8; ++s) {
-        if (std::fabs(out[s]) > std::fabs(out[loudest])) loudest = s;
+        if (std::fabs(out[s]) > std::fabs(out[loudest])) {
+            loudest = s;
+        }
     }
     EXPECT_EQ(loudest, 2u);
 }

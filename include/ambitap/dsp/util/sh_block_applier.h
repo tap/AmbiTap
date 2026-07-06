@@ -78,7 +78,9 @@ namespace ambitap::dsp {
                             const size_t col = base + c;
                             const float  x   = frame_layout ? in[0][col] : in[col][i];
                             acc_new += mat[row * C + col] * x;
-                            if (fading) acc_old += prev[row * C + col] * x;
+                            if (fading) {
+                                acc_old += prev[row * C + col] * x;
+                            }
                         }
                         const float y = fading ? acc_old + (acc_new - acc_old) * alpha : acc_new;
                         if (frame_layout) {
@@ -89,7 +91,9 @@ namespace ambitap::dsp {
                         }
                     }
                 }
-                if (fading) ++m_fade_pos;
+                if (fading) {
+                    ++m_fade_pos;
+                }
             }
         }
 

@@ -111,7 +111,9 @@ namespace ambitap::dsp {
         /// (UI/tests); the audio path uses process()/process_frame().
         std::shared_ptr<const std::vector<float>> matrix() const {
             auto p = m_rebuilder.peek();
-            if (!p) return nullptr;
+            if (!p) {
+                return nullptr;
+            }
             return {p, &p->m}; // aliasing: shares ownership, points at the matrix
         }
 
@@ -139,13 +141,15 @@ namespace ambitap::dsp {
                           bool frame_layout) const noexcept {
             if (!p) {
                 if (frame_layout) {
-                    for (size_t ch = 0; ch < m_channels; ++ch)
+                    for (size_t ch = 0; ch < m_channels; ++ch) {
                         out[0][ch] = in[0][ch];
+                    }
                 }
                 else {
                     for (size_t ch = 0; ch < m_channels; ++ch) {
-                        for (size_t i = 0; i < frame_count; ++i)
+                        for (size_t i = 0; i < frame_count; ++i) {
                             out[ch][i] = in[ch][i];
+                        }
                     }
                 }
                 return;

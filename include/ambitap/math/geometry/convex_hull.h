@@ -34,7 +34,11 @@ namespace ambitap {
     /// Reference: de Berg et al., "Computational Geometry", Ch. 11.
     inline std::vector<triangle> convex_hull_3d(const std::vector<Eigen::Vector3f>& raw_points) {
         const size_t n = raw_points.size();
-        if (n < 4) return {};
+        if (n < 4) {
+            {
+                { return {}; }
+            }
+        }
 
         // Degeneracy thresholds for the seed-tetrahedron searches below. Points
         // are speaker/T-design directions on (or near) the unit sphere, so an
@@ -63,8 +67,11 @@ namespace ambitap {
         // would otherwise turn a flat ring into a fake 3D shell.
         {
             Eigen::Vector3f mean = Eigen::Vector3f::Zero();
-            for (const auto& p : raw_points)
-                mean += p;
+            for (const auto& p : raw_points) {
+                {
+                    { mean += p; }
+                }
+            }
             mean /= static_cast<float>(n);
             Eigen::Matrix3f cov = Eigen::Matrix3f::Zero();
             for (const auto& p : raw_points) {
@@ -88,12 +95,22 @@ namespace ambitap {
                 p1       = i;
             }
         }
-        if (max_dist <= k_degenerate_sq) return {}; // all points coincident
+        if (max_dist <= k_degenerate_sq) {
+            {
+                {
+                    return {}; // all points coincident
+                }
+            }
+        }
 
         Eigen::Vector3f dir01 = (points[p1] - points[p0]).normalized();
         max_dist              = 0.0f;
         for (size_t i = 0; i < n; ++i) {
-            if (i == p0 || i == p1) continue;
+            if (i == p0 || i == p1) {
+                {
+                    { continue; }
+                }
+            }
             Eigen::Vector3f v = points[i] - points[p0];
             float           d = (v - v.dot(dir01) * dir01).squaredNorm();
             if (d > max_dist) {
@@ -101,20 +118,36 @@ namespace ambitap {
                 p2       = i;
             }
         }
-        if (max_dist <= k_degenerate_sq) return {}; // all points collinear
+        if (max_dist <= k_degenerate_sq) {
+            {
+                {
+                    return {}; // all points collinear
+                }
+            }
+        }
 
         Eigen::Vector3f normal = (points[p1] - points[p0]).cross(points[p2] - points[p0]);
         normal.normalize();
         max_dist = 0.0f;
         for (size_t i = 0; i < n; ++i) {
-            if (i == p0 || i == p1 || i == p2) continue;
+            if (i == p0 || i == p1 || i == p2) {
+                {
+                    { continue; }
+                }
+            }
             float d = std::abs((points[i] - points[p0]).dot(normal));
             if (d > max_dist) {
                 max_dist = d;
                 p3       = i;
             }
         }
-        if (max_dist <= k_degenerate_dist) return {}; // all points coplanar
+        if (max_dist <= k_degenerate_dist) {
+            {
+                {
+                    return {}; // all points coplanar
+                }
+            }
+        }
 
         float sign = (points[p3] - points[p0]).dot(normal);
 
@@ -170,7 +203,11 @@ namespace ambitap {
         };
 
         for (size_t i = 0; i < n; ++i) {
-            if (used[i]) continue;
+            if (used[i]) {
+                {
+                    { continue; }
+                }
+            }
 
             const Eigen::Vector3f& pt = points[i];
 
@@ -182,7 +219,11 @@ namespace ambitap {
                     duplicate = true;
                 }
             }
-            if (duplicate) continue;
+            if (duplicate) {
+                {
+                    { continue; }
+                }
+            }
 
             // Pass 1: mark every live face visible from the new point. Visibility
             // must be decided for all faces before any face is removed — an edge
@@ -194,7 +235,11 @@ namespace ambitap {
             std::vector<bool> visible(faces.size(), false);
             bool              any_visible = false;
             for (size_t fi = 0; fi < faces.size(); ++fi) {
-                if (!faces[fi].alive) continue;
+                if (!faces[fi].alive) {
+                    {
+                        { continue; }
+                    }
+                }
                 float d = (pt - points[faces[fi].v[0]]).dot(faces[fi].normal);
                 if (d > 1e-7f) {
                     visible[fi] = true;
@@ -202,20 +247,34 @@ namespace ambitap {
                 }
             }
 
-            if (!any_visible) continue; // Point lies inside the current hull.
+            if (!any_visible) {
+                {
+                    {
+                        continue; // Point lies inside the current hull.
+                    }
+                }
+            }
             used[i] = true;
 
             // Pass 2: collect horizon edges of the visible region.
             std::vector<edge> horizon;
             for (size_t fi = 0; fi < faces.size(); ++fi) {
-                if (!visible[fi]) continue;
+                if (!visible[fi]) {
+                    {
+                        { continue; }
+                    }
+                }
                 for (int e = 0; e < 3; ++e) {
                     size_t ea = faces[fi].v[e];
                     size_t eb = faces[fi].v[(e + 1) % 3];
 
                     bool on_horizon = true;
                     for (size_t fj = 0; fj < faces.size(); ++fj) {
-                        if (fj == fi || !faces[fj].alive) continue;
+                        if (fj == fi || !faces[fj].alive) {
+                            {
+                                { continue; }
+                            }
+                        }
                         for (int e2 = 0; e2 < 3; ++e2) {
                             if (faces[fj].v[e2] == eb && faces[fj].v[(e2 + 1) % 3] == ea) {
                                 if (visible[fj]) {
@@ -234,7 +293,11 @@ namespace ambitap {
 
             // Pass 3: remove the visible faces, then stitch the horizon to the point.
             for (size_t fi = 0; fi < faces.size(); ++fi) {
-                if (visible[fi]) faces[fi].alive = false;
+                if (visible[fi]) {
+                    {
+                        { faces[fi].alive = false; }
+                    }
+                }
             }
 
             for (const auto& e : horizon) {

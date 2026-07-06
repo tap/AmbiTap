@@ -21,8 +21,9 @@ namespace {
         std::vector<const float*>       ptrs;
         planar(size_t channels, size_t frames)
             : bufs(channels, std::vector<float>(frames, 0.f)) {
-            for (auto& b : bufs)
+            for (auto& b : bufs) {
                 ptrs.push_back(b.data());
+            }
         }
     };
 
@@ -54,7 +55,9 @@ TEST(DspBinaural, WImpulseReproducesOmniHrtf) {
     const size_t       blocks_needed = builtin_hrtf_length / block;
     for (size_t b = 0; b < blocks_needed; ++b) {
         std::fill(in.bufs[0].begin(), in.bufs[0].end(), 0.f);
-        if (b == 0) in.bufs[0][0] = 1.f;
+        if (b == 0) {
+            in.bufs[0][0] = 1.f;
+        }
         bin.process(in.ptrs.data(), left.data(), right.data(), block);
         left_all.insert(left_all.end(), left.begin(), left.end());
         right_all.insert(right_all.end(), right.begin(), right.end());
@@ -109,8 +112,9 @@ TEST(DspBinaural, MaglsProjectionDiffersFromLs) {
     magls.process(in.ptrs.data(), l2.data(), r2.data(), block);
 
     float diff = 0.f;
-    for (size_t i = 0; i < block; ++i)
+    for (size_t i = 0; i < block; ++i) {
         diff += std::fabs(l1[i] - l2[i]);
+    }
     EXPECT_GT(diff, 1e-4f);
 }
 
@@ -126,16 +130,18 @@ TEST(DspBinaural, HeadTrackingChangesOutput) {
     planar in(16, block);
     float  sh[k_max_channel_count];
     evaluate_sh(3, k_pi * 0.5f, 0.f, sh);
-    for (size_t ch = 0; ch < 16; ++ch)
+    for (size_t ch = 0; ch < 16; ++ch) {
         in.bufs[ch][0] = sh[ch];
+    }
 
     std::vector<float> l1(block), r1(block), l2(block), r2(block);
     still.process(in.ptrs.data(), l1.data(), r1.data(), block);
     turned.process(in.ptrs.data(), l2.data(), r2.data(), block);
 
     float diff = 0.f;
-    for (size_t i = 0; i < block; ++i)
+    for (size_t i = 0; i < block; ++i) {
         diff += std::fabs(l1[i] - l2[i]);
+    }
     EXPECT_GT(diff, 1e-4f);
 }
 
@@ -165,8 +171,9 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
     planar in(16, block);
     float  sh[k_max_channel_count];
     evaluate_sh(order, 0.f, 0.f, sh);
-    for (size_t ch = 0; ch < 16; ++ch)
+    for (size_t ch = 0; ch < 16; ++ch) {
         in.bufs[ch][0] = sh[ch];
+    }
 
     float              e_left = 0.f, e_right = 0.f;
     std::vector<float> l(block), r(block);
@@ -177,8 +184,9 @@ TEST(DspBinaural, HeadTrackingCounterRotatesTheScene) {
             e_left += l[i] * l[i];
             e_right += r[i] * r[i];
         }
-        for (size_t ch = 0; ch < 16; ++ch)
+        for (size_t ch = 0; ch < 16; ++ch) {
             in.bufs[ch][0] = 0.f; // impulse only once
+        }
     }
 
     EXPECT_GT(e_right, 2.0f * e_left) << "head turned left => front source at the right ear (E_L=" << e_left
@@ -196,10 +204,12 @@ TEST(DspBinaural, ProbeResponseShapeAndNormalization) {
 
     // Common normalization: the louder ear peaks at exactly 0 dB.
     float peak = -1e9f;
-    for (float v : r.left_db)
+    for (float v : r.left_db) {
         peak = std::max(peak, v);
-    for (float v : r.right_db)
+    }
+    for (float v : r.right_db) {
         peak = std::max(peak, v);
+    }
     EXPECT_NEAR(peak, 0.f, 1e-3f);
 }
 
@@ -257,7 +267,9 @@ TEST(ResampleFir, DeltaAndIdentity) {
     ASSERT_EQ(up.size(), 128u);
     size_t peak = 0;
     for (size_t i = 1; i < up.size(); ++i) {
-        if (std::fabs(up[i]) > std::fabs(up[peak])) peak = i;
+        if (std::fabs(up[i]) > std::fabs(up[peak])) {
+            peak = i;
+        }
     }
     EXPECT_EQ(peak, 40u);
     EXPECT_NEAR(up[peak], 1.f, 0.02f);

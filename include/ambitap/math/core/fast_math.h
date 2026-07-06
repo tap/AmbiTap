@@ -27,7 +27,9 @@ namespace ambitap {
     /// everywhere.
     inline float fast_log2(float x) {
         constexpr float k_min_normal = 1.17549435e-38f;
-        if (x < k_min_normal) x = k_min_normal;
+        if (x < k_min_normal) {
+            x = k_min_normal;
+        }
 
         const auto  bits = std::bit_cast<std::uint32_t>(x);
         const float e    = static_cast<float>(static_cast<int>(bits >> 23) - 127);
@@ -49,8 +51,12 @@ namespace ambitap {
     /// bit shift. Maximum relative error ~1e-7 (float32-measured). Inputs
     /// are clamped to the representable exponent range.
     inline float fast_exp2(float x) {
-        if (x < -125.f) x = -125.f;
-        if (x > 127.f) x = 127.f;
+        if (x < -125.f) {
+            x = -125.f;
+        }
+        if (x > 127.f) {
+            x = 127.f;
+        }
 
         const float xi = std::floor(x);
         const float f  = x - xi; // [0, 1)

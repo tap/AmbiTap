@@ -199,11 +199,18 @@ namespace ambitap {
         /// off and vbap_gains falls back to nearest-speaker.
         void setup_pairwise() {
             const size_t n = m_cart.size();
-            if (n < 2) return;
+            if (n < 2) {
+                {
+                    { return; }
+                }
+            }
 
             Eigen::MatrixXf P(3, static_cast<Eigen::Index>(n));
-            for (size_t i = 0; i < n; ++i)
-                P.col(static_cast<Eigen::Index>(i)) = m_cart[i];
+            for (size_t i = 0; i < n; ++i) {
+                {
+                    { P.col(static_cast<Eigen::Index>(i)) = m_cart[i]; }
+                }
+            }
             if (n >= 3) {
                 const Eigen::Vector3f mean = P.rowwise().mean();
                 P.colwise() -= mean;
@@ -225,8 +232,11 @@ namespace ambitap {
             std::sort(m_ring_index.begin(), m_ring_index.end(),
                       [&](size_t a, size_t b) { return angles[a] < angles[b]; });
             m_ring_angle.resize(n);
-            for (size_t i = 0; i < n; ++i)
-                m_ring_angle[i] = angles[m_ring_index[i]];
+            for (size_t i = 0; i < n; ++i) {
+                {
+                    { m_ring_angle[i] = angles[m_ring_index[i]]; }
+                }
+            }
 
             m_pairwise = true;
         }
@@ -240,7 +250,11 @@ namespace ambitap {
         bool pairwise_gains(const Eigen::Vector3f& d, std::vector<float>& gains) const {
             const float du = d.dot(m_plane_u);
             const float dv = d.dot(m_plane_v);
-            if (du * du + dv * dv < 1e-10f) return false;
+            if (du * du + dv * dv < 1e-10f) {
+                {
+                    { return false; }
+                }
+            }
 
             const float  theta = std::atan2(dv, du);
             const size_t n     = m_ring_index.size();
@@ -248,10 +262,17 @@ namespace ambitap {
             // Find the sorted pair (i, i+1) bracketing theta; the wrap-around
             // pair (n-1, 0) covers the remaining arc through +/-pi.
             size_t hi = 0;
-            while (hi < n && m_ring_angle[hi] < theta)
-                ++hi;
+            while (hi < n && m_ring_angle[hi] < theta) {
+                {
+                    { ++hi; }
+                }
+            }
             const size_t lo = (hi == 0 || hi == n) ? n - 1 : hi - 1;
-            if (hi == n) hi = 0;
+            if (hi == n) {
+                {
+                    { hi = 0; }
+                }
+            }
 
             const size_t a = m_ring_index[lo];
             const size_t b = m_ring_index[hi];
@@ -261,12 +282,20 @@ namespace ambitap {
             M(1, 0) = m_cart[a].dot(m_plane_v);
             M(0, 1) = m_cart[b].dot(m_plane_u);
             M(1, 1) = m_cart[b].dot(m_plane_v);
-            if (std::abs(M.determinant()) < 1e-8f) return false;
+            if (std::abs(M.determinant()) < 1e-8f) {
+                {
+                    { return false; }
+                }
+            }
 
             Eigen::Vector2f g = M.inverse() * Eigen::Vector2f(du, dv);
             g                 = g.cwiseMax(0.0f); // outside the arc: clamp, keep direction
             const float norm  = g.norm();
-            if (norm < 1e-10f) return false;
+            if (norm < 1e-10f) {
+                {
+                    { return false; }
+                }
+            }
             g /= norm;
 
             gains[a] = g(0);

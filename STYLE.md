@@ -1,4 +1,6 @@
-# Tap Family C++ Style & Conventions
+# Tap House Rules
+
+> *The Tap house style — always on tap.*
 
 The shared house style for the Tap libraries (AmbiTap, SampleRateTap, OscTap,
 and future `*Tap` libraries). Anchored to the C++ standard library's own
@@ -52,9 +54,11 @@ input/local clarity.
 
 - **Indent:** 4 spaces, including inside namespaces.
 - **Braces:** attached everywhere (functions included); only `else` and
-  `catch` break onto their own line. Every control-flow body is braced,
-  including one-line `if`/`for`/`while` (enforced by clang-tidy
-  `readability-braces-around-statements`).
+  `catch` break onto their own line. Every control-flow body is braced *and
+  expanded* onto its own lines — no single-line `if`/`for`/`while`, even for
+  guard clauses (braces via clang-tidy `readability-braces-around-statements`;
+  expansion via `AllowShortBlocksOnASingleLine: Never`). Short accessor
+  functions and lambdas may still be inline.
 - **Brace-init spacing:** no space before a braced-init list — `float x{0.0f}`,
   not `x {0.0f}`.
 - **Column alignment:** consecutive declarations, assignments, and trailing

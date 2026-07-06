@@ -83,8 +83,11 @@ namespace ambitap {
 
         // Truncate: keep only singular pairs the layout can actually reproduce.
         Eigen::Index r = 0;
-        while (r < S.size() && S(r) > 1e-3f * S(0))
-            ++r;
+        while (r < S.size() && S(r) > 1e-3f * S(0)) {
+            {
+                ++r;
+            }
+        }
 
         const float     scale = 1.0f / std::sqrt(static_cast<float>(L));
         Eigen::MatrixXf D =

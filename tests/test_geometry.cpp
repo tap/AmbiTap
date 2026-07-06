@@ -37,17 +37,21 @@ TEST(ConvexHull, CubeCoversAllVertices) {
     // That is benign for VBAP, which only needs *an* enclosing triangle per
     // direction — so assert coverage, not an exact count.
     std::vector<Eigen::Vector3f> pts;
-    for (float x : {-1.0f, 1.0f})
-        for (float y : {-1.0f, 1.0f})
-            for (float z : {-1.0f, 1.0f})
+    for (float x : {-1.0f, 1.0f}) {
+        for (float y : {-1.0f, 1.0f}) {
+            for (float z : {-1.0f, 1.0f}) {
                 pts.push_back(Eigen::Vector3f(x, y, z).normalized());
+            }
+        }
+    }
 
     const auto tris = convex_hull_3d(pts);
     EXPECT_GE(tris.size(), 12u);
 
     std::vector<bool> seen(pts.size(), false);
-    for (const auto& t : tris)
+    for (const auto& t : tris) {
         seen[t.a] = seen[t.b] = seen[t.c] = true;
+    }
     for (size_t i = 0; i < seen.size(); ++i) {
         EXPECT_TRUE(seen[i]) << "cube corner " << i << " missing from hull";
     }
@@ -91,7 +95,9 @@ TEST(SpeakerLayout, VbapGainsAreEnergyNormalized) {
             for (float g : gains) {
                 EXPECT_GE(g, 0.0f);
                 energy += g * g;
-                if (g > 1e-6f) ++active;
+                if (g > 1e-6f) {
+                    ++active;
+                }
             }
             EXPECT_NEAR(energy, 1.0f, 1e-4f) << "az=" << az << " el=" << el;
             EXPECT_LE(active, 3) << "VBAP uses at most one triangle";
@@ -148,8 +154,9 @@ TEST(SpeakerLayout, PairwisePanningOn5_1) {
         EXPECT_FLOAT_EQ(g[3], 0.0f);
         EXPECT_FLOAT_EQ(g[4], 0.0f);
         float e = 0.f;
-        for (float v : g)
+        for (float v : g) {
             e += v * v;
+        }
         EXPECT_NEAR(e, 1.0f, 1e-5f);
 
         // Exact 2D VBAP solution for speakers at 0°/30°, source at 20°.
@@ -207,7 +214,9 @@ TEST(SpeakerLayout, PairwiseGainsAreEnergyNormalizedOnOctagon) {
         for (float v : g) {
             EXPECT_GE(v, 0.0f);
             e += v * v;
-            if (v > 1e-6f) ++active;
+            if (v > 1e-6f) {
+                ++active;
+            }
         }
         EXPECT_NEAR(e, 1.0f, 1e-4f) << "az=" << az;
         EXPECT_LE(active, 2) << "pairwise panning uses at most one pair";

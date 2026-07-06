@@ -72,8 +72,9 @@ namespace ambitap::analysis {
                 , directions(az * (az / 2))
                 , Y(static_cast<size_t>(directions) * channels, 0.f)
                 , energy(static_cast<size_t>(directions)) {
-                for (auto& e : energy)
+                for (auto& e : energy) {
                     e.store(0.f, std::memory_order_relaxed);
+                }
             }
         };
 
@@ -139,7 +140,9 @@ namespace ambitap::analysis {
         void process(const float* const* in, size_t frame_count) noexcept {
             auto        guard = m_grid.read_lock();
             const grid* g     = guard.get();
-            if (!g || g->directions == 0 || frame_count == 0) return;
+            if (!g || g->directions == 0 || frame_count == 0) {
+                return;
+            }
 
             // One-pole alpha per block: alpha_block = 1 - exp(-dt / tau).
             const float fs     = m_fs.load(std::memory_order_relaxed);
@@ -153,8 +156,9 @@ namespace ambitap::analysis {
             for (size_t c = 0; c < m_channels; ++c) {
                 for (size_t c2 = c; c2 < m_channels; ++c2) {
                     float acc = 0.f;
-                    for (size_t i = 0; i < frame_count; ++i)
+                    for (size_t i = 0; i < frame_count; ++i) {
                         acc += in[c][i] * in[c2][i];
+                    }
                     acc *= inv_n;
                     R[c * m_channels + c2] = acc;
                     R[c2 * m_channels + c] = acc;
@@ -185,7 +189,9 @@ namespace ambitap::analysis {
         image snapshot(float dynamic_range_db) const {
             image out;
             auto  g = m_grid.peek();
-            if (!g || g->directions == 0) return out;
+            if (!g || g->directions == 0) {
+                return out;
+            }
 
             out.rows = g->el_steps;
             out.cols = g->az_steps;
@@ -197,14 +203,20 @@ namespace ambitap::analysis {
                 const auto  idx = static_cast<size_t>(d);
                 const float e   = g->energy[idx].load(std::memory_order_relaxed);
                 db[idx]         = 10.f * std::log10(std::max(e, 1e-12f));
-                if (db[idx] > peak_db) peak_db = db[idx];
+                if (db[idx] > peak_db) {
+                    peak_db = db[idx];
+                }
             }
             out.peak_db = peak_db;
 
             for (size_t d = 0; d < out.data.size(); ++d) {
                 float n = (db[d] - peak_db + dynamic_range_db) / dynamic_range_db;
-                if (n < 0.f) n = 0.f;
-                if (n > 1.f) n = 1.f;
+                if (n < 0.f) {
+                    n = 0.f;
+                }
+                if (n > 1.f) {
+                    n = 1.f;
+                }
                 out.data[d] = n;
             }
             return out;

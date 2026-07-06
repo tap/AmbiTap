@@ -53,21 +53,33 @@ namespace ambitap::dsp {
         // FuMa channel order: W, X, Y, Z, R, S, T, U, V, K, L, M, N, O, P, Q.
         // Maps FuMa index -> ACN index.
         static constexpr std::array<size_t, k_max_channels> k_fuma_to_acn = {0, 3,  1,  2,  6,  7,  5,  8,
-                                                                           4, 12, 13, 11, 14, 10, 15, 9};
+                                                                             4, 12, 13, 11, 14, 10, 15, 9};
 
         // Per-(n, |m|) factor multiplied when going FROM FuMa TO SN3D; the
         // inverse direction uses the reciprocal.
         static float fuma_to_sn3d_gain(int n, int abs_m) {
-            if (n == 0) return std::sqrt(2.f);
-            if (n == 1) return 1.f;
+            if (n == 0) {
+                return std::sqrt(2.f);
+            }
+            if (n == 1) {
+                return 1.f;
+            }
             if (n == 2) {
-                if (abs_m == 0) return 1.f;
+                if (abs_m == 0) {
+                    return 1.f;
+                }
                 return std::sqrt(3.f) * 0.5f;
             }
             // n == 3
-            if (abs_m == 0) return 1.f;
-            if (abs_m == 1) return std::sqrt(45.f / 32.f);
-            if (abs_m == 2) return 3.f / std::sqrt(5.f);
+            if (abs_m == 0) {
+                return 1.f;
+            }
+            if (abs_m == 1) {
+                return std::sqrt(45.f / 32.f);
+            }
+            if (abs_m == 2) {
+                return 3.f / std::sqrt(5.f);
+            }
             return std::sqrt(8.f / 5.f);
         }
 
@@ -119,8 +131,9 @@ namespace ambitap::dsp {
         void recalculate() {
             // The inverse permutation (ACN -> FuMa) over the active channels.
             std::array<size_t, k_max_channels> acn_to_fuma{};
-            for (size_t i = 0; i < m_channels; ++i)
+            for (size_t i = 0; i < m_channels; ++i) {
                 acn_to_fuma[k_fuma_to_acn[i]] = i;
+            }
 
             for (size_t out_ch = 0; out_ch < m_channels; ++out_ch) {
                 if (m_direction == format_direction::fuma_to_ambix) {

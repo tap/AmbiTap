@@ -20,8 +20,12 @@ namespace ambitap {
     /// Unity passband gain; when downsampling, the kernel cutoff is lowered
     /// to the output Nyquist to anti-alias.
     inline std::vector<float> resample_fir(const float* in, size_t in_len, float in_rate, float out_rate) {
-        if (in_len == 0) return {};
-        if (in_rate == out_rate) return {in, in + in_len};
+        if (in_len == 0) {
+            return {};
+        }
+        if (in_rate == out_rate) {
+            return {in, in + in_len};
+        }
 
         const double ratio   = static_cast<double>(out_rate) / static_cast<double>(in_rate);
         const auto   out_len = static_cast<size_t>(std::ceil(static_cast<double>(in_len) * ratio));
@@ -31,9 +35,13 @@ namespace ambitap {
 
         auto kernel = [&](double x) -> double {
             const double ax = std::abs(x);
-            if (ax >= half) return 0.0;
+            if (ax >= half) {
+                return 0.0;
+            }
             const double window = 0.5 * (1.0 + std::cos(pi * ax / half));
-            if (ax < 1e-9) return fc * window;
+            if (ax < 1e-9) {
+                return fc * window;
+            }
             return fc * std::sin(pi * fc * x) / (pi * fc * x) * window;
         };
 
@@ -43,7 +51,9 @@ namespace ambitap {
             const auto   j0     = static_cast<long>(std::floor(center)) - half + 1;
             double       acc    = 0.0;
             for (long j = j0; j < j0 + 2 * half; ++j) {
-                if (j < 0 || j >= static_cast<long>(in_len)) continue;
+                if (j < 0 || j >= static_cast<long>(in_len)) {
+                    continue;
+                }
                 acc += static_cast<double>(in[static_cast<size_t>(j)]) * kernel(center - static_cast<double>(j));
             }
             out[n] = static_cast<float>(acc);

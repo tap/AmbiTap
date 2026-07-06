@@ -39,12 +39,19 @@ namespace ambitap {
     /// result to dsp::matrix_applier).
     inline void compute_sh_rotation_from_matrix(int order, const float* R, float* out) {
         const size_t C = channel_count(order);
-        for (size_t i = 0; i < C * C; ++i)
-            out[i] = 0.f;
+        for (size_t i = 0; i < C * C; ++i) {
+            {
+                out[i] = 0.f;
+            }
+        }
 
         // Order 0 is invariant.
         out[0] = 1.f;
-        if (order < 1) return;
+        if (order < 1) {
+            {
+                return;
+            }
+        }
 
         // Order 1: the SH basis (ACN 1..3) is (y, z, x), so the block is the
         // Cartesian matrix conjugated by that axis permutation.
@@ -65,8 +72,16 @@ namespace ambitap {
             // Ivanic-Ruedenberg helper P (their eq. 8.1, with the erratum's
             // boundary cases for |n| = l).
             auto P = [&](int i, int a, int b) {
-                if (b == l) return r1(i, 1) * prev(a, l - 1) - r1(i, -1) * prev(a, -(l - 1));
-                if (b == -l) return r1(i, 1) * prev(a, -(l - 1)) + r1(i, -1) * prev(a, l - 1);
+                if (b == l) {
+                    {
+                        return r1(i, 1) * prev(a, l - 1) - r1(i, -1) * prev(a, -(l - 1));
+                    }
+                }
+                if (b == -l) {
+                    {
+                        return r1(i, 1) * prev(a, -(l - 1)) + r1(i, -1) * prev(a, l - 1);
+                    }
+                }
                 return r1(i, 0) * prev(a, b);
             };
 
@@ -87,7 +102,11 @@ namespace ambitap {
                         -0.5f * std::sqrt(static_cast<float>(l - am - 1) * static_cast<float>(l - am) / dn) * (1.f - d);
 
                     float acc = 0.f;
-                    if (u != 0.f) acc += u * P(0, m, n);
+                    if (u != 0.f) {
+                        {
+                            acc += u * P(0, m, n);
+                        }
+                    }
                     if (v != 0.f) {
                         float V;
                         if (m == 0) {

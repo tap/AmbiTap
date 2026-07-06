@@ -135,7 +135,9 @@ namespace ambitap::dsp {
         /// prepared (not RT-safe). Ignored while a custom HRTF set is loaded.
         void set_projection(hrtf_projection projection) {
             m_projection = projection;
-            if (is_prepared()) rebuild_convolvers();
+            if (is_prepared()) {
+                rebuild_convolvers();
+            }
         }
         hrtf_projection projection() const { return m_projection; }
 
@@ -159,14 +161,18 @@ namespace ambitap::dsp {
             }
             m_custom_left  = std::move(left);
             m_custom_right = std::move(right);
-            if (is_prepared()) rebuild_convolvers();
+            if (is_prepared()) {
+                rebuild_convolvers();
+            }
         }
 
         /// Drop any custom HRTF set and return to the built-in dataset.
         void clear_custom_hrtf() {
             m_custom_left.clear();
             m_custom_right.clear();
-            if (is_prepared()) rebuild_convolvers();
+            if (is_prepared()) {
+                rebuild_convolvers();
+            }
         }
 
         bool has_custom_hrtf() const { return !m_custom_left.empty(); }
@@ -264,8 +270,9 @@ namespace ambitap::dsp {
                 for (size_t ch = 0; ch < m_channels; ++ch) {
                     const float* fir = hrtf_fir(ear, ch, len);
                     const size_t n   = std::min(len, fft_size);
-                    for (size_t t = 0; t < n; ++t)
+                    for (size_t t = 0; t < n; ++t) {
                         ir[t] += sh[ch] * fir[t];
+                    }
                 }
                 std::vector<float> spec(fft_size);
                 fft.forward(ir.data(), spec.data());
@@ -286,9 +293,11 @@ namespace ambitap::dsp {
             // Common normalization (preserve ILD): both ears referenced to the
             // overall peak -> 0 dB.
             float peak = 1e-9f;
-            for (int ear = 0; ear < 2; ++ear)
-                for (float v : mag[ear])
+            for (int ear = 0; ear < 2; ++ear) {
+                for (float v : mag[ear]) {
                     peak = std::max(peak, v);
+                }
+            }
 
             response r;
             r.frequencies.resize(bins);
@@ -334,7 +343,9 @@ namespace ambitap::dsp {
 
         void rebuild_convolvers() {
             require_hrtf_coverage("prepare");
-            if (m_block_size == 0) return;
+            if (m_block_size == 0) {
+                return;
+            }
 
             // Built-in FIRs are stored at 44.1 kHz; adapt them to the host
             // rate here (control thread; allocation is fine). Custom FIRs are

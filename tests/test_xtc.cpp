@@ -33,8 +33,9 @@ namespace {
         std::vector<float> ir(builtin_hrtf_length, 0.0f);
         for (size_t ch = 0; ch < builtin_hrtf_channels; ++ch) {
             const float* fir = (ear == 0) ? builtin_hrtf_left[ch] : builtin_hrtf_right[ch];
-            for (size_t t = 0; t < builtin_hrtf_length; ++t)
+            for (size_t t = 0; t < builtin_hrtf_length; ++t) {
                 ir[t] += sh[ch] * fir[t];
+            }
         }
         return ir;
     }
@@ -162,8 +163,9 @@ namespace {
                 const size_t a   = (k < static_cast<size_t>(w)) ? 0 : k - static_cast<size_t>(w);
                 const size_t b   = std::min(n - 1, k + static_cast<size_t>(w));
                 double       acc = 0.0;
-                for (size_t j = a; j <= b; ++j)
+                for (size_t j = a; j <= b; ++j) {
                     acc += mag2[j];
+                }
                 smoothed[k] = 10.0 * std::log10(acc / static_cast<double>(b - a + 1) + 1e-30);
             }
             double ref = 0.0;
@@ -176,7 +178,9 @@ namespace {
             }
             ref /= static_cast<double>(nr);
             for (size_t k = 0; k < n; ++k) {
-                if (freqs[k] < 200.0 || freqs[k] > 8000.0) continue;
+                if (freqs[k] < 200.0 || freqs[k] > 8000.0) {
+                    continue;
+                }
                 worst = std::max(worst, std::abs(smoothed[k] - ref));
             }
         }
@@ -334,8 +338,12 @@ TEST(DspXtc, X6Determinism) {
             for (size_t i = 0; i < 2; ++i) {
                 const auto& fa = a.fir(s, i);
                 const auto& fb = b.fir(s, i);
-                if (fa.size() != fb.size()) return false;
-                if (std::memcmp(fa.data(), fb.data(), fa.size() * sizeof(float)) != 0) return false;
+                if (fa.size() != fb.size()) {
+                    return false;
+                }
+                if (std::memcmp(fa.data(), fb.data(), fa.size() * sizeof(float)) != 0) {
+                    return false;
+                }
             }
         }
         return a.makeup_gain() == b.makeup_gain();
@@ -379,8 +387,9 @@ TEST(DspXtc, ProcessRealizesShippedFirs) {
 
     // Mismatched block: silence (and no state corruption).
     x.process(in.data(), in.data(), out_l.data(), out_r.data(), 32);
-    for (size_t i = 0; i < 32; ++i)
+    for (size_t i = 0; i < 32; ++i) {
         ASSERT_EQ(out_l[i], 0.0f);
+    }
 
     // Impulse on the left input -> fir(0,0) on the left speaker, fir(1,0) on
     // the right speaker.
@@ -388,7 +397,9 @@ TEST(DspXtc, ProcessRealizesShippedFirs) {
     std::vector<float> zeros(64, 0.0f), got_l, got_r;
     for (size_t b = 0; b < blocks; ++b) {
         std::vector<float> imp(64, 0.0f);
-        if (b == 0) imp[0] = 1.0f;
+        if (b == 0) {
+            imp[0] = 1.0f;
+        }
         x.process(imp.data(), zeros.data(), out_l.data(), out_r.data(), 64);
         got_l.insert(got_l.end(), out_l.begin(), out_l.end());
         got_r.insert(got_r.end(), out_r.begin(), out_r.end());
@@ -420,7 +431,8 @@ TEST(DspXtc, DesignAtCommonHostRates) {
 
         std::vector<float> in(128, 0.5f), l(128), r(128);
         x.process(in.data(), in.data(), l.data(), r.data(), 128);
-        for (const float v : l)
+        for (const float v : l) {
             ASSERT_TRUE(std::isfinite(v));
+        }
     }
 }

@@ -35,8 +35,10 @@ namespace {
         static unsigned long counter = 0;
         std::string          path    = "/tmp/ambitap_fuzz_" + std::to_string(counter++) + ".sofa";
         std::FILE*           f       = std::fopen(path.c_str(), "wb");
-        if (!f) return {};
-        if (size > 0) std::fwrite(data, 1, size, f);
+        if (!f)
+            return {};
+        if (size > 0)
+            std::fwrite(data, 1, size, f);
         std::fclose(f);
         return path;
     }
@@ -46,10 +48,12 @@ namespace {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     // Cap input size: HDF5 parsing of huge inputs is slow and adds no
     // coverage past a point; keep iterations fast.
-    if (size > (1u << 20)) return 0;
+    if (size > (1u << 20))
+        return 0;
 
     const std::string path = write_temp(data, size);
-    if (path.empty()) return 0;
+    if (path.empty())
+        return 0;
 
     try {
         const ambitap::hrtf_data hrtf = ambitap::load_sofa(path);

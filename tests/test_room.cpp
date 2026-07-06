@@ -48,13 +48,16 @@ namespace {
         std::vector<float>              in(k_block, 0.0f);
         std::vector<std::vector<float>> out(channels, std::vector<float>(k_block));
         std::vector<float*>             out_ptrs;
-        for (auto& b : out)
+        for (auto& b : out) {
             out_ptrs.push_back(b.data());
+        }
         std::vector<std::vector<float>> ir(channels, std::vector<float>(blocks * k_block, 0.0f));
 
         for (size_t bi = 0; bi < blocks; ++bi) {
             std::fill(in.begin(), in.end(), 0.0f);
-            if (bi == 0) in[0] = 1.0f;
+            if (bi == 0) {
+                in[0] = 1.0f;
+            }
             r.process(in.data(), out_ptrs.data(), k_block);
             for (size_t ch = 0; ch < channels; ++ch) {
                 std::copy(out[ch].begin(), out[ch].end(), ir[ch].begin() + static_cast<std::ptrdiff_t>(bi * k_block));
@@ -98,7 +101,9 @@ namespace {
                                 }
                                 const double dist = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
                                 const double t    = dist / c;
-                                if (t > t_max || dist < 1e-6) continue;
+                                if (t > t_max || dist < 1e-6) {
+                                    continue;
+                                }
                                 image img{};
                                 img.t    = t;
                                 img.amp  = 1.0;
@@ -110,8 +115,9 @@ namespace {
                                     img.amp *= std::pow(k_beta[2 * a], e0) * std::pow(k_beta[2 * a + 1], e1);
                                 }
                                 img.amp /= dist;
-                                for (size_t a = 0; a < 3; ++a)
+                                for (size_t a = 0; a < 3; ++a) {
                                     img.u[a] = v[a] / dist;
+                                }
                                 out.push_back(img);
                             }
                         }
@@ -184,15 +190,18 @@ namespace {
             edc[i] = e;
         }
         const double e0 = edc[0];
-        for (auto& v : edc)
+        for (auto& v : edc) {
             v = 10.0 * std::log10(v / e0 + 1e-30);
+        }
 
         size_t i0 = 0, i1 = 0;
-        while (i0 < edc.size() && edc[i0] > lo_db)
+        while (i0 < edc.size() && edc[i0] > lo_db) {
             ++i0;
+        }
         i1 = i0;
-        while (i1 < edc.size() && edc[i1] > hi_db)
+        while (i1 < edc.size() && edc[i1] > hi_db) {
             ++i1;
+        }
         // Least-squares slope of edc against time over [i0, i1).
         double     sx = 0.0, sy = 0.0, sxx = 0.0, sxy = 0.0;
         const auto n = static_cast<double>(i1 - i0);
@@ -223,23 +232,27 @@ TEST(DspRoom, SilentUntilPreparedAndOnBadBlockSize) {
     std::vector<float>              in(k_block, 1.0f);
     std::vector<std::vector<float>> out(4, std::vector<float>(k_block, 0.5f));
     std::vector<float*>             ptrs;
-    for (auto& b : out)
+    for (auto& b : out) {
         ptrs.push_back(b.data());
+    }
 
     r.process(in.data(), ptrs.data(), k_block); // unprepared: must zero
     for (const auto& b : out) {
-        for (float v : b)
+        for (float v : b) {
             ASSERT_EQ(v, 0.0f);
+        }
     }
 
     r.prepare(192, static_cast<float>(k_fs)); // not a power of two
     EXPECT_FALSE(r.is_prepared());
-    for (auto& b : out)
+    for (auto& b : out) {
         std::fill(b.begin(), b.end(), 0.5f);
+    }
     r.process(in.data(), ptrs.data(), k_block);
     for (const auto& b : out) {
-        for (float v : b)
+        for (float v : b) {
             ASSERT_EQ(v, 0.0f);
+        }
     }
 }
 
@@ -275,7 +288,9 @@ TEST(DspRoom, EarlyReflectionsMatchImageSourceMath) {
         const auto lo    = static_cast<size_t>(std::floor(sample)) - 3;
         size_t     n_det = lo;
         for (size_t i = lo; i < lo + 7; ++i) {
-            if (std::abs(ir[0][i]) > std::abs(ir[0][n_det])) n_det = i;
+            if (std::abs(ir[0][i]) > std::abs(ir[0][n_det])) {
+                n_det = i;
+            }
         }
         EXPECT_LE(std::abs(static_cast<double>(n_det) - sample), 1.0) << "arrival " << k;
 
@@ -331,8 +346,9 @@ TEST(DspRoom, IirAbsorptionApproximatesRt60AndStaysCalibrated) {
     ri.set_absorption_kind(dsp::room::absorption_kind::iir);
     const auto ir_iir = render_ir(ri, 2.0);
 
-    for (float v : ir_iir[0])
+    for (float v : ir_iir[0]) {
         ASSERT_TRUE(std::isfinite(v));
+    }
 
     for (size_t b = 0; b < k_centers.size(); ++b) {
         const double t20 = fit_decay_time(band_filtfilt(ir_iir[0], k_centers[b]), -5.0, -25.0);
@@ -341,10 +357,12 @@ TEST(DspRoom, IirAbsorptionApproximatesRt60AndStaysCalibrated) {
     }
 
     double ef = 0.0, ei = 0.0;
-    for (float v : ir_fir[0])
+    for (float v : ir_fir[0]) {
         ef += static_cast<double>(v) * v;
-    for (float v : ir_iir[0])
+    }
+    for (float v : ir_iir[0]) {
         ei += static_cast<double>(v) * v;
+    }
     const double ratio_db = 10.0 * std::log10(ei / std::max(ef, 1e-30));
     EXPECT_LT(std::abs(ratio_db), 3.0) << "IIR tail energy " << ratio_db << " dB vs FIR";
 }
@@ -360,14 +378,19 @@ TEST(DspRoom, TailEnergyMatchesCalibrationTarget) {
     const auto ir = render_ir(r, 2.0);
 
     double energy = 0.0;
-    for (float v : ir[0])
+    for (float v : ir[0]) {
         energy += static_cast<double>(v) * v;
+    }
 
     const double t_enum = 0.25, t_fit = 0.20, t_cut = 0.030;
     double       e_mid = 0.0, e_fit = 0.0;
     for (const auto& img : image_list(t_enum)) {
-        if (img.t >= t_cut && img.t < t_enum) e_mid += img.amp * img.amp;
-        if (img.t >= t_fit && img.t < t_enum) e_fit += img.amp * img.amp;
+        if (img.t >= t_cut && img.t < t_enum) {
+            e_mid += img.amp * img.amp;
+        }
+        if (img.t >= t_fit && img.t < t_enum) {
+            e_fit += img.amp * img.amp;
+        }
     }
     const double rate   = 13.8 / 0.76; // parameterized 1 kHz RT60
     const double target = e_mid + e_fit / (std::exp(rate * (t_enum - t_fit)) - 1.0);
@@ -405,8 +428,9 @@ TEST(DspRoom, ComponentTogglesCompose) {
 
     double peak = 0.0;
     for (const auto& ch : full) {
-        for (float v : ch)
+        for (float v : ch) {
             peak = std::max(peak, static_cast<double>(std::abs(v)));
+        }
     }
     for (size_t ch = 0; ch < full.size(); ++ch) {
         for (size_t i = 0; i < full[ch].size(); ++i) {
@@ -430,12 +454,15 @@ TEST(DspRoom, ConsistentAcrossBlockSizes) {
         std::vector<float>              in(block, 0.0f);
         std::vector<std::vector<float>> out(4, std::vector<float>(block));
         std::vector<float*>             ptrs;
-        for (auto& b : out)
+        for (auto& b : out) {
             ptrs.push_back(b.data());
+        }
         std::vector<float> w(total);
         for (size_t off = 0; off < total; off += block) {
             std::fill(in.begin(), in.end(), 0.0f);
-            if (off == 0) in[0] = 1.0f;
+            if (off == 0) {
+                in[0] = 1.0f;
+            }
             r.process(in.data(), ptrs.data(), block);
             std::copy(out[0].begin(), out[0].end(), w.begin() + static_cast<std::ptrdiff_t>(off));
         }
@@ -462,8 +489,9 @@ TEST(DspRoom, ParameterChangesKeepAudioFinite) {
     std::vector<float>              in(k_block);
     std::vector<std::vector<float>> out(16, std::vector<float>(k_block));
     std::vector<float*>             ptrs;
-    for (auto& b : out)
+    for (auto& b : out) {
         ptrs.push_back(b.data());
+    }
 
     unsigned seed = 1;
     auto     run  = [&](int blocks) {

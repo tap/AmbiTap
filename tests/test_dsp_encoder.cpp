@@ -48,8 +48,9 @@ TEST(DspEncoder, ProcessAppliesCoefficientsAndGain) {
     std::vector<float>              in     = {1.0f, -0.5f, 0.25f, 0.0f, 0.75f, -1.0f, 0.1f, 0.9f};
     std::vector<std::vector<float>> out(enc.channels(), std::vector<float>(frames));
     std::vector<float*>             ptrs;
-    for (auto& v : out)
+    for (auto& v : out) {
         ptrs.push_back(v.data());
+    }
 
     enc.process(in.data(), ptrs.data(), frames);
 
