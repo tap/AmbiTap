@@ -191,10 +191,12 @@ namespace {
     /// the 6 kHz band edge — denser than the ~43 Hz ripple period of the
     /// 1024-tap realization, so the minimum can't hide between points.
     const std::vector<double>& band_grid() {
+        // NOLINTNEXTLINE(readability-identifier-naming): throwaway test grid
         static const auto g = log_freqs(dsp::xtc::k_band_low_hz, dsp::xtc::k_band_high_hz, 240);
         return g;
     }
     const std::vector<double>& audit_grid() {
+        // NOLINTNEXTLINE(readability-identifier-naming): throwaway test grid
         static const auto g = log_freqs(200.0 * std::pow(2.0, -1.0 / 6.0), 8000.0 * std::pow(2.0, 1.0 / 6.0), 96);
         return g;
     }
