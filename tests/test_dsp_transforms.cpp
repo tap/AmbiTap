@@ -39,6 +39,7 @@ TEST(DspMirror, MirrorsMatchReflectedEncoding) {
 
     const auto src = encode_at(order, az, el);
 
+    // NOLINTNEXTLINE(readability-identifier-naming): "case" is a keyword
     struct Case {
         bool  lr, fb, ud;
         float ref_az, ref_el;
