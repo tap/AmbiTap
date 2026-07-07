@@ -1,29 +1,33 @@
-/// AmbiTap: target-independent ambisonics library
-/// Embedded real-time profile gate.
+/// @file rt_core_check.cpp
+/// @brief Embedded real-time profile gate.
 ///
-/// Cross-compiled for bare-metal Cortex-M55 in CI (arm-none-eabi-g++
-/// -mcpu=cortex-m55 -fno-exceptions -fno-rtti; see .github/workflows/ci.yml)
-/// to prove the RT-profile subset stays free of exceptions, RTTI,
-/// std::thread, Eigen, and hardware doubles — and then EXECUTED on the
-/// target ISA under QEMU (mps3-an547, semihosting; startup + linker script
-/// in tools/embedded/qemu/). Each processor runs real blocks and self-checks
-/// its output; the program prints RT-PROFILE-PASS and exits 0 on success.
-/// It also builds and runs as a plain host program.
+///        Cross-compiled for bare-metal Cortex-M55 in CI (arm-none-eabi-g++
+///        -mcpu=cortex-m55 -fno-exceptions -fno-rtti; see .github/workflows/ci.yml)
+///        to prove the RT-profile subset stays free of exceptions, RTTI,
+///        std::thread, Eigen, and hardware doubles — and then EXECUTED on the
+///        target ISA under QEMU (mps3-an547, semihosting; startup + linker script
+///        in tools/embedded/qemu/). Each processor runs real blocks and self-checks
+///        its output; the program prints RT-PROFILE-PASS and exits 0 on success.
+///        It also builds and runs as a plain host program.
 ///
-/// The profile (allocation happens at construction/prepare time only; every
-/// process path is allocation-free and wait-free — enforced on the host by
-/// tests/test_rt_safety.cpp):
-///   encoder, mirror, virtual_mic, directional_loudness, spatial_compressor,
-///   doppler, format_converter, matrix_applier + sh_block_applier (rotation
-///   matrices built on-device via compute_sh_rotation, decode matrices
-///   precomputed), binaural_core (float32 shared-spectrum convolver bank),
-///   and analysis::energy_vector.
+///        The profile (allocation happens at construction/prepare time only; every
+///        process path is allocation-free and wait-free — enforced on the host by
+///        tests/test_rt_safety.cpp):
+///          encoder, mirror, virtual_mic, directional_loudness, spatial_compressor,
+///          doppler, format_converter, matrix_applier + sh_block_applier (rotation
+///          matrices built on-device via compute_sh_rotation, decode matrices
+///          precomputed), binaural_core (float32 shared-spectrum convolver bank),
+///          and analysis::energy_vector.
 ///
-/// NOT in the profile (host/control side): decode-matrix construction
-/// (Eigen), async_rebuilder (std::thread), binaural_renderer's
-/// resampling/orientation layer, soundfield_grid, the SOFA reader.
-/// Timothy Place
-/// Copyright 2026 Timothy Place.
+///        NOT in the profile (host/control side): decode-matrix construction
+///        (Eigen), async_rebuilder (std::thread), binaural_renderer's
+///        resampling/orientation layer, soundfield_grid, the SOFA reader.
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Timothy Place.
+
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
 
 #include <ambitap/analysis/energy_vector.h>
 #include <ambitap/dsp/binaural_core.h>
@@ -39,10 +43,6 @@
 #include <ambitap/math/binaural/hrtf_data.h>
 #include <ambitap/math/core/fast_math.h>
 #include <ambitap/math/core/rotation_recurrence.h>
-
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
 
 namespace {
 
@@ -70,7 +70,8 @@ namespace {
 
     bool finite_block(const float* x, size_t n) {
         for (size_t i = 0; i < n; ++i) {
-            if (!(x[i] > -1e9f && x[i] < 1e9f)) return false;
+            if (!(x[i] > -1e9f && x[i] < 1e9f))
+                return false;
         }
         return true;
     }
@@ -87,7 +88,8 @@ int main() {
         in[c]   = g_in[c];
         out[c]  = g_out[c];
         out2[c] = g_out2[c];
-        for (size_t i = 0; i < k_block; ++i) g_in[c][i] = 0.25f;
+        for (size_t i = 0; i < k_block; ++i)
+            g_in[c][i] = 0.25f;
     }
 
     {
@@ -137,7 +139,8 @@ int main() {
         dop.prepare(48000.f);
         dop.process(in, out, k_block);
         check(near(g_out[0][0], 0.f, 1e-9f), "doppler silent inside time-of-flight");
-        for (int b = 0; b < 6; ++b) dop.process(in, out, k_block); // past the onset
+        for (int b = 0; b < 6; ++b)
+            dop.process(in, out, k_block); // past the onset
         check(near(g_out[0][k_block - 1], 0.25f, 1e-3f), "doppler passes signal after delay");
     }
     {
@@ -191,7 +194,8 @@ int main() {
         bin.process(in, l, r, k_block);
         check(finite_block(l, k_block) && finite_block(r, k_block), "binaural output finite");
         float peak = 0.f;
-        for (size_t i = 0; i < k_block; ++i) peak = peak > l[i] ? peak : l[i];
+        for (size_t i = 0; i < k_block; ++i)
+            peak = peak > l[i] ? peak : l[i];
         check(peak > 1e-4f, "binaural output nonzero");
     }
     {
