@@ -522,7 +522,9 @@ struct ambitap_encoder_handle {
     dsp::encoder        enc;
     std::vector<float*> ptrs;
 
-    explicit ambitap_encoder_handle(int order) : enc(order), ptrs(enc.channels()) {}
+    explicit ambitap_encoder_handle(int order)
+        : enc(order)
+        , ptrs(enc.channels()) {}
 };
 
 ambitap_encoder_handle* ambitap_encoder_create(int order) {
@@ -657,8 +659,8 @@ int ambitap_vector_process(ambitap_vector_handle* handle, const float* hoa, int 
         if (handle->scratch.size() < 3 * n) {
             handle->scratch.resize(3 * n);
         }
-        const float* in[4] = {hoa, hoa + n, hoa + 2 * n, hoa + 3 * n};
-        float* xyz[3] = {handle->scratch.data(), handle->scratch.data() + n, handle->scratch.data() + 2 * n};
+        const float* in[4]  = {hoa, hoa + n, hoa + 2 * n, hoa + 3 * n};
+        float*       xyz[3] = {handle->scratch.data(), handle->scratch.data() + n, handle->scratch.data() + 2 * n};
         handle->vec.process(in, xyz, n);
         return 0;
     }

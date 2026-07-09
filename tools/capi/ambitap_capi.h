@@ -146,8 +146,8 @@ AMBITAP_API int ambitap_energy_vector(int order, float sample_rate, float smooth
 /// Direction changes ramp click-free across the following samples, exactly
 /// as the library object does.
 typedef struct ambitap_encoder_handle ambitap_encoder_handle;
-AMBITAP_API ambitap_encoder_handle* ambitap_encoder_create(int order);
-AMBITAP_API void                    ambitap_encoder_destroy(ambitap_encoder_handle* handle);
+AMBITAP_API ambitap_encoder_handle*   ambitap_encoder_create(int order);
+AMBITAP_API void                      ambitap_encoder_destroy(ambitap_encoder_handle* handle);
 AMBITAP_API int ambitap_encoder_set_direction(ambitap_encoder_handle* handle, float azimuth, float elevation);
 AMBITAP_API int ambitap_encoder_set_gain(ambitap_encoder_handle* handle, float linear);
 AMBITAP_API int ambitap_encoder_process(ambitap_encoder_handle* handle, const float* mono, int n_frames, float* out);
@@ -158,16 +158,16 @@ AMBITAP_API int ambitap_encoder_process(ambitap_encoder_handle* handle, const fl
 /// normalized over dynamic_range_db below the peak, which lands in
 /// *peak_db).
 typedef struct ambitap_grid_handle ambitap_grid_handle;
-AMBITAP_API ambitap_grid_handle* ambitap_grid_create(int order, int az_steps, float sample_rate, float smoothing_ms);
-AMBITAP_API void                 ambitap_grid_destroy(ambitap_grid_handle* handle);
-AMBITAP_API int ambitap_grid_process(ambitap_grid_handle* handle, const float* hoa, int n_frames);
+AMBITAP_API ambitap_grid_handle*   ambitap_grid_create(int order, int az_steps, float sample_rate, float smoothing_ms);
+AMBITAP_API void                   ambitap_grid_destroy(ambitap_grid_handle* handle);
+AMBITAP_API int                    ambitap_grid_process(ambitap_grid_handle* handle, const float* hoa, int n_frames);
 AMBITAP_API int ambitap_grid_snapshot(ambitap_grid_handle* handle, float dynamic_range_db, float* out, float* peak_db);
 
 /// analysis::energy_vector — feed channel-major planar HOA blocks (>= 4
 /// channels used), read the smoothed intensity vector {x, y, z} on demand.
 typedef struct ambitap_vector_handle ambitap_vector_handle;
-AMBITAP_API ambitap_vector_handle* ambitap_vector_create(float sample_rate, float smoothing_s);
-AMBITAP_API void                   ambitap_vector_destroy(ambitap_vector_handle* handle);
+AMBITAP_API ambitap_vector_handle*   ambitap_vector_create(float sample_rate, float smoothing_s);
+AMBITAP_API void                     ambitap_vector_destroy(ambitap_vector_handle* handle);
 AMBITAP_API int ambitap_vector_process(ambitap_vector_handle* handle, const float* hoa, int n_channels, int n_frames);
 AMBITAP_API int ambitap_vector_value(ambitap_vector_handle* handle, float* out3);
 
@@ -178,8 +178,8 @@ AMBITAP_API int ambitap_vector_value(ambitap_vector_handle* handle, float* out3)
 /// matches dsp::rotator: intrinsic Z-Y'-X'', yaw about +Z first. Buffers
 /// are channel-major planar; out must NOT alias in.
 typedef struct ambitap_rotator_handle ambitap_rotator_handle;
-AMBITAP_API ambitap_rotator_handle* ambitap_rotator_create(int order);
-AMBITAP_API void                    ambitap_rotator_destroy(ambitap_rotator_handle* handle);
+AMBITAP_API ambitap_rotator_handle*   ambitap_rotator_create(int order);
+AMBITAP_API void                      ambitap_rotator_destroy(ambitap_rotator_handle* handle);
 AMBITAP_API int ambitap_rotator_set_orientation(ambitap_rotator_handle* handle, float yaw, float pitch, float roll);
 AMBITAP_API int ambitap_rotator_process(ambitap_rotator_handle* handle, const float* in, int n_frames, float* out);
 
@@ -202,12 +202,12 @@ AMBITAP_API int ambitap_room_image_sources(const float* dims3, const float* sour
 /// the data behind the UI layer's XTC filter-response plot. No audio path
 /// is prepared; this is control-thread design math only.
 typedef struct ambitap_xtc_handle ambitap_xtc_handle;
-AMBITAP_API ambitap_xtc_handle* ambitap_xtc_create(void);
-AMBITAP_API void                ambitap_xtc_destroy(ambitap_xtc_handle* handle);
+AMBITAP_API ambitap_xtc_handle*   ambitap_xtc_create(void);
+AMBITAP_API void                  ambitap_xtc_destroy(ambitap_xtc_handle* handle);
 /// Set the geometry and redesign. span_deg is the full speaker angle
 /// (clamped 5-120), distance in meters (>= 0.1), regularization in [0, 1].
-AMBITAP_API int ambitap_xtc_design(ambitap_xtc_handle* handle, float span_deg, float distance_m,
-                                   float regularization, float sample_rate);
+AMBITAP_API int ambitap_xtc_design(ambitap_xtc_handle* handle, float span_deg, float distance_m, float regularization,
+                                   float sample_rate);
 /// One shipped FIR (makeup baked in): speaker/input each 0 = left. Writes
 /// up to cap taps; returns the FIR length, or -1.
 AMBITAP_API int ambitap_xtc_fir(ambitap_xtc_handle* handle, int speaker, int input, float* out, int cap);
