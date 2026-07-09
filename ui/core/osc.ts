@@ -6,15 +6,17 @@
 
 export type OscArg = number | string;
 
+/** Padded size of an UNTERMINATED string of `length` chars: the NUL plus
+ *  alignment to the next 4-byte boundary (so a 4-char string takes 8). */
 function padded(length: number): number {
-    return (length + 4) & ~3; // pad to the next multiple of 4 (incl. NUL)
+    return (length + 4) & ~3;
 }
 
 function writeString(view: DataView, offset: number, text: string): number {
     for (let i = 0; i < text.length; ++i) {
         view.setUint8(offset + i, text.charCodeAt(i) & 0x7f);
     }
-    const end = padded(text.length + 1);
+    const end = padded(text.length);
     for (let i = text.length; i < end; ++i) {
         view.setUint8(offset + i, 0);
     }
@@ -23,7 +25,7 @@ function writeString(view: DataView, offset: number, text: string): number {
 
 /** Encode one OSC message; all numeric args are sent as float32. */
 export function encodeOsc(address: string, args: number[]): Uint8Array {
-    const size = padded(address.length + 1) + padded(1 + args.length + 1) + args.length * 4;
+    const size = padded(address.length) + padded(1 + args.length) + args.length * 4;
     const bytes = new Uint8Array(size);
     const view = new DataView(bytes.buffer);
     let offset = writeString(view, 0, address);
@@ -44,7 +46,7 @@ function readString(view: DataView, offset: number): { value: string; next: numb
     for (let i = offset; i < end; ++i) {
         value += String.fromCharCode(view.getUint8(i));
     }
-    return { value, next: offset + padded(end - offset + 1) };
+    return { value, next: offset + padded(end - offset) };
 }
 
 /** Decode one OSC message (f/i/s arguments). */
