@@ -1,10 +1,13 @@
 # AmbiTap UI — visualization and interaction widgets
 
-Status: planning document, written 2026-07-08. This is the authority for the
+Status: written 2026-07-08, updated 2026-07-09. This is the authority for the
 UI work, in the same spirit as `docs/ROADMAP.md` is for the object line.
-Nothing in `ui/` is built yet; this captures the agreed architecture, the
-widget catalog, and the build sequence so a working session can execute
-without re-deriving the strategy.
+**Build-sequence wave 1 is implemented** (coordinate/arcball core with unit
+tests, the renderer seam with canvas and mgraphics backends, the panner
+widget, browser and v8ui hosts); the browser host is verified end-to-end in
+headless Chromium and the v8ui bundle in a simulated-mgraphics smoke run, but
+— like the externals — it still **needs in-Max verification**. Waves 2+
+remain planning.
 
 The UI work lives in this top-level `ui/` directory of the AmbiTap library
 repo — next to `tools/capi/`, which it depends on — because the shared widget
@@ -220,12 +223,27 @@ They are also the two objects gated behind the measurement + listening pass
 (`docs/PERCEPTUAL-VERIFICATION.md`) — the widgets should *serve* that
 protocol (honest A/B, visible predictions vs gates), not bypass it.
 
+## Developing
+
+```bash
+cd ui
+npm install
+npm test         # tsc + node --test: core conventions, widget logic
+npm run build    # dist/web/ (open index.html) + dist/max/ (load in [v8ui])
+```
+
+Angles are radians on every interface (matching the library and the
+`ambitap.*~` attributes); degrees appear only in display strings.
+
 ## Build sequence
 
-1. **Seam first.** `ui/core/` coordinate + arcball math with unit tests
-   locked to the library conventions; `renderer.ts` interface; the
-   `canvas` and `mgraphics` backends; the **`panner`** widget running in a
-   browser page and in a `v8ui` help patch driving `ambitap.encode~`.
+1. **Seam first — DONE (needs in-Max verification).** `ui/core/` coordinate
+   + arcball math with unit tests locked to the library conventions;
+   `renderer.ts` interface; the `canvas` and `mgraphics` backends; the
+   **`panner`** widget running in a browser page and in a `v8ui` script
+   driving `ambitap.encode~` (`dist/max/ambitap.panner.js` emits
+   `azimuth <rad>` / `elevation <rad>` messages for the encode~ inlet and
+   accepts the same messages back, drag-gated).
    Exit criterion: one widget file, two hosts, no forked logic.
 2. **Visualizers.** WASM build of `tools/capi/` + AudioWorklet host;
    `heatmap` (jit.matrix path in Max, ImageData in browser), `doa`,
