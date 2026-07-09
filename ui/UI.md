@@ -316,8 +316,33 @@ bundles come out on macOS and Windows.
    `dumpfir` message so the Max widget plots the running object's real
    design. Browser page: `dist/web/designers.html`. The `xtc~` listening
    pass (`docs/PERCEPTUAL-VERIFICATION.md`) still gates the object itself.
-5. **Pd** inherits the browser/WASM widgets as-is (Pd has no v8ui
-   equivalent; a browser panel over OSC is the realistic UI story there).
+5. **Pd** — two phases, the second gated:
+   - **5a — OSC remote surface (DONE, in AmbiTap-Pd).** Pd has no v8ui
+     equivalent, so the browser dashboard (the richest host — it runs the
+     verified WASM core) is the Pd UI: `ambitap.ui-remote.pd` (AmbiTap-Pd
+     `abstractions/`) receives the widgets' OSC through
+     `scripts/osc-bridge.mjs` on pure vanilla objects (`netreceive -u -b`
+     + `oscparse`, Pd ≥ 0.46) and routes per-source direction and
+     orientation messages straight into `ambitap.*~`. Verified with the
+     full production loop — a drag in the real dashboard (headless
+     Chromium) through the real bridge delivered the complete azimuth
+     trajectory into headless Pd — and AmbiTap-Pd's CI reruns the route
+     end-to-end on every push. (That loop caught a real bug the mirrored
+     encode/decode round-trip tests could not: `core/osc.ts` over-padded
+     strings whose NUL-terminated length was already 4-aligned, so
+     `/ambitap/orientation` worked while `/ambitap/source/1/direction`
+     was dropped by `oscparse`.)
+   - **5b — in-patch widgets via a `[tapui]` host external (GATED).** One
+     generic Pd external embedding QuickJS with an mgraphics shim that
+     emits Tk canvas drawing (`sys_vgui`; photo-image path for the
+     heatmap's cell grid), loading the SAME bundles the CMake build
+     produces — the v8ui entry scripts stay the single source. Gates:
+     the in-Max verification pass confirms the widget mouse/message
+     protocols in a real host, and demonstrated demand for in-patch
+     widgets over the browser panel. If built, it becomes the only host
+     fully end-to-end testable in CI (headless Pd on Linux driving the
+     production bundles). Ruled out for logic-forking: per-widget data-
+     structure ports, Ofelia/Lua, plugdata-specific widgets.
 
 ## Open questions
 
