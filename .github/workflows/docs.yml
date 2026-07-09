@@ -1,7 +1,9 @@
 name: Docs
 
-# Build the Doxygen API site and publish it to GitHub Pages on every push to
-# main. On pull requests, build only (no deploy) so doc breakage is caught in
+# Build the Doxygen API site and the mdBook ("Hearing in Three Dimensions",
+# book/) and publish both to GitHub Pages on every push to main — the API
+# reference at the site root (its historical URL) and the book under /book/.
+# On pull requests, build only (no deploy) so breakage in either is caught in
 # review without touching the live site.
 
 on:
@@ -19,6 +21,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  MDBOOK_URL: https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-gnu.tar.gz
+  MDBOOK_SHA256: "9ef07fd288ba58ff3b99d1c94e6d414d431c9a61fdb20348e5beb74b823d546b"
+
 jobs:
   build:
     name: build docs
@@ -30,14 +36,31 @@ jobs:
       - name: Install Doxygen + Graphviz
         run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
+      - name: Install mdBook (pinned)
+        run: |
+          curl -sSL "$MDBOOK_URL" -o mdbook.tar.gz
+          echo "$MDBOOK_SHA256  mdbook.tar.gz" | sha256sum -c -
+          tar -xzf mdbook.tar.gz mdbook
+          ./mdbook --version
+
       - name: Build the API site
         run: doxygen docs/Doxyfile
+
+      - name: Build the book
+        run: ./mdbook build book
+
+      - name: Compose the Pages site (API at /, book at /book/)
+        run: |
+          mkdir -p site
+          cp -r docs/html/. site/
+          mkdir -p site/book
+          cp -r book/book/. site/book/
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/html
+          path: site
 
   deploy:
     name: deploy to Pages

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="270" viewBox="0 0 720 270" font-family="Helvetica, Arial, sans-serif">
+  <!-- Hand-authored schematic (no computed data): the yaw/pitch/roll axes and
+       their positive directions, per docs/CONCEPTS.md — intrinsic Z-Y'-X''
+       Euler, right-hand rule; +yaw swings the scene left, +pitch tips the
+       front down, +roll lifts the left side. -->
+  <rect width="720" height="270" fill="#ffffff"/>
+
+  <defs>
+    <marker id="yawhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0.5,0.5 L7.5,4 L0.5,7.5 z" fill="#4269d0"/>
+    </marker>
+    <marker id="pitchhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0.5,0.5 L7.5,4 L0.5,7.5 z" fill="#efb118"/>
+    </marker>
+    <marker id="rollhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0.5,0.5 L7.5,4 L0.5,7.5 z" fill="#ff725c"/>
+    </marker>
+    <marker id="axishead" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+      <path d="M0.5,0.5 L6.5,3.5 L0.5,6.5 z" fill="#888888"/>
+    </marker>
+  </defs>
+
+  <!-- ================= panel 1: yaw, top view ================= -->
+  <g>
+    <text x="120" y="28" text-anchor="middle" font-size="14" fill="#333333" font-weight="bold">yaw — about Z (up)</text>
+    <text x="120" y="46" text-anchor="middle" font-size="11" fill="#777777">seen from above</text>
+
+    <!-- head, nose pointing up (front) -->
+    <circle cx="120" cy="150" r="38" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <path d="M110,114 L120,100 L130,114 z" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <line x1="120" y1="96" x2="120" y2="72" stroke="#888888" stroke-width="1.2" marker-end="url(#axishead)"/>
+    <text x="120" y="64" text-anchor="middle" font-size="10" fill="#777777">front</text>
+
+    <!-- +yaw: counterclockwise from above (front swings left) -->
+    <path d="M 172,120 A 60,60 0 0 0 68,120" fill="none" stroke="#4269d0" stroke-width="2.5" marker-end="url(#yawhead)"/>
+    <text x="120" y="235" text-anchor="middle" font-size="12" fill="#333333">+yaw → scene swings left</text>
+  </g>
+
+  <!-- ================= panel 2: pitch, side view ================= -->
+  <g>
+    <text x="360" y="28" text-anchor="middle" font-size="14" fill="#333333" font-weight="bold">pitch — about Y (left)</text>
+    <text x="360" y="46" text-anchor="middle" font-size="11" fill="#777777">seen from the left side</text>
+
+    <!-- head profile, nose pointing left (front = left of panel) -->
+    <circle cx="360" cy="150" r="38" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <path d="M324,140 L310,150 L324,160 z" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <line x1="306" y1="150" x2="282" y2="150" stroke="#888888" stroke-width="1.2" marker-end="url(#axishead)"/>
+    <text x="272" y="141" text-anchor="middle" font-size="10" fill="#777777">front</text>
+
+    <!-- +pitch: the front axis rotates downward -->
+    <path d="M 300,150 A 60,60 0 0 0 317.6,192.4" fill="none" stroke="#efb118" stroke-width="2.5" marker-end="url(#pitchhead)"/>
+    <text x="360" y="235" text-anchor="middle" font-size="12" fill="#333333">+pitch → front tips down</text>
+  </g>
+
+  <!-- ================= panel 3: roll, back view ================= -->
+  <g>
+    <text x="600" y="28" text-anchor="middle" font-size="14" fill="#333333" font-weight="bold">roll — about X (front)</text>
+    <text x="600" y="46" text-anchor="middle" font-size="11" fill="#777777">seen from behind</text>
+
+    <!-- head with ears; behind the head, its left ear is on our left -->
+    <circle cx="600" cy="150" r="38" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <rect x="554" y="142" width="9" height="16" rx="3" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <rect x="637" y="142" width="9" height="16" rx="3" fill="#ebebeb" stroke="#666666" stroke-width="1.5"/>
+    <text x="545" y="136" text-anchor="middle" font-size="10" fill="#777777">L</text>
+    <text x="655" y="136" text-anchor="middle" font-size="10" fill="#777777">R</text>
+
+    <!-- +roll: left ear rises — over the top, moving toward the right -->
+    <path d="M 548,120 A 60,60 0 0 1 652,120" fill="none" stroke="#ff725c" stroke-width="2.5" marker-end="url(#rollhead)"/>
+    <text x="600" y="235" text-anchor="middle" font-size="12" fill="#333333">+roll → left ear rises</text>
+  </g>
+
+  <text x="360" y="262" text-anchor="middle" font-size="10" fill="#999999">intrinsic Z-Y′-X″ Euler: yaw applied first, then pitch, then roll (right-hand rule)</text>
+</svg>

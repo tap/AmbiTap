@@ -1,0 +1,14 @@
+[book]
+title = "Hearing in Three Dimensions"
+description = "A field guide to Ambisonics and spatial audio — from first listen to final delivery, with AmbiTap."
+authors = ["The AmbiTap project"]
+language = "en"
+src = "src"
+
+[build]
+create-missing = false
+
+[output.html]
+default-theme = "rust"
+git-repository-url = "https://github.com/tap/AmbiTap"
+site-url = "/AmbiTap/book/"
