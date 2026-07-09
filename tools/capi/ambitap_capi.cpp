@@ -678,4 +678,68 @@ int ambitap_vector_value(ambitap_vector_handle* handle, float* out3) {
     return 0;
 }
 
+struct ambitap_rotator_handle {
+    int                       order;
+    size_t                    channels;
+    std::vector<float>        mat;  // current SH rotation, dense row-major C x C
+    std::vector<float>        prev; // matrix faded from (sh_block_applier contract)
+    std::uintptr_t            epoch{0};
+    dsp::sh_block_applier     applier;
+    std::vector<const float*> in_ptrs;
+    std::vector<float*>       out_ptrs;
+
+    explicit ambitap_rotator_handle(int validated)
+        : order(validated)
+        , channels(channel_count(validated))
+        , mat(channels * channels, 0.f)
+        , prev(channels * channels, 0.f)
+        , in_ptrs(channels)
+        , out_ptrs(channels) {
+        for (size_t c = 0; c < channels; ++c) {
+            mat[c * channels + c]  = 1.f;
+            prev[c * channels + c] = 1.f;
+        }
+    }
+};
+
+ambitap_rotator_handle* ambitap_rotator_create(int order) {
+    try {
+        return new ambitap_rotator_handle(validated_order(order, "ambitap_rotator_create"));
+    }
+    catch (...) {
+        return nullptr;
+    }
+}
+
+void ambitap_rotator_destroy(ambitap_rotator_handle* handle) {
+    delete handle;
+}
+
+int ambitap_rotator_set_orientation(ambitap_rotator_handle* handle, float yaw, float pitch, float roll) {
+    if (!handle) {
+        return -1;
+    }
+    // Single-threaded embedders only (the WASM worklet delivers messages
+    // between render quanta): snapshot the current matrix as the fade
+    // source, then rebuild in place and bump the fade key.
+    handle->prev = handle->mat;
+    compute_sh_rotation(handle->order, yaw, pitch, roll, handle->mat.data());
+    ++handle->epoch;
+    return 0;
+}
+
+int ambitap_rotator_process(ambitap_rotator_handle* handle, const float* in, int n_frames, float* out) {
+    if (!handle || !in || !out || n_frames <= 0 || in == out) {
+        return -1;
+    }
+    const auto n = static_cast<size_t>(n_frames);
+    for (size_t c = 0; c < handle->channels; ++c) {
+        handle->in_ptrs[c]  = in + c * n;
+        handle->out_ptrs[c] = out + c * n;
+    }
+    handle->applier.apply(reinterpret_cast<const void*>(handle->epoch), handle->mat.data(), handle->prev.data(),
+                          handle->order, handle->in_ptrs.data(), handle->out_ptrs.data(), n, false);
+    return 0;
+}
+
 } // extern "C"

@@ -33,7 +33,7 @@
 </style>
 </head>
 <body>
-<h1>AmbiTap soundfield — encoder → soundfield_grid + energy_vector, live via WASM</h1>
+<h1>AmbiTap soundfield — encode → rotate → analyze, live via WASM</h1>
 <button id="start">start audio</button>
 <div class="row">
     <canvas id="panner" width="300" height="300"></canvas>
@@ -41,14 +41,31 @@
     <canvas id="doa" width="164" height="164"></canvas>
 </div>
 <div class="row">
-    <canvas id="meters" width="360" height="120"></canvas>
+    <canvas id="rotation" width="220" height="220"></canvas>
+    <div>
+        <select id="preset">
+            <option>stereo</option>
+            <option>quad</option>
+            <option>5.1</option>
+            <option>hexagon</option>
+            <option>7.1</option>
+            <option>cube</option>
+            <option>octagon</option>
+            <option selected>7.1.4</option>
+        </select>
+        <canvas id="layout" width="220" height="196" style="margin-top:6px"></canvas>
+    </div>
+    <canvas id="meters" width="330" height="120"></canvas>
 </div>
 <div id="readout"></div>
 <p class="note">
-    Two test sources run through the verified C++ core compiled to WebAssembly
-    inside an AudioWorklet: dsp::encoder (order 3) into
-    analysis::soundfield_grid and analysis::energy_vector. Drag the panner —
-    the heatmap lobes, the DOA dot, and the ACN meters follow.
+    Two test sources run through the verified C++ core compiled to
+    WebAssembly inside an AudioWorklet: dsp::encoder (order 3) → SH rotation
+    (the embedded profile's compute_sh_rotation + sh_block_applier) →
+    analysis::soundfield_grid + energy_vector, plus an ALLRAD decode matrix
+    for per-speaker metering. Drag the panner or tumble the rotation ball —
+    everything follows. Add ?remote=ws://localhost:8090 to mirror gestures
+    as OSC through scripts/osc-bridge.mjs into Max.
 </p>
 <script type="module" src="./main.js"></script>
 </body>

@@ -34,6 +34,8 @@ await build({
         'hosts/max/ambitap.heatmap.ts',
         'hosts/max/ambitap.doa.ts',
         'hosts/max/ambitap.meters.ts',
+        'hosts/max/ambitap.rotation.ts',
+        'hosts/max/ambitap.layout.ts',
     ],
     bundle: true,
     format: 'iife',

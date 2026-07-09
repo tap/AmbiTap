@@ -8,11 +8,15 @@ import { degrees, Direction } from '../../core/coords.js';
 import { CanvasRenderer } from '../../render/canvas.js';
 import { Doa } from '../../widgets/doa.js';
 import { Heatmap } from '../../widgets/heatmap.js';
+import { SpeakerLayout } from '../../widgets/layout.js';
 import { Meters } from '../../widgets/meters.js';
 import { Panner, PannerSource } from '../../widgets/panner.js';
+import { RotationBall } from '../../widgets/rotation.js';
+import { RemoteSurface } from './remote.js';
 
 const ORDER = 3;
 const AZ_STEPS = 32;
+const DEFAULT_LAYOUT = '7.1.4';
 
 interface Snapshot {
     type: 'snapshot';
@@ -22,6 +26,7 @@ interface Snapshot {
     peakDb: number;
     vec: [number, number, number];
     meters: Float32Array;
+    speakers: Float32Array | null;
 }
 
 function setupCanvas(id: string): { ctx: CanvasRenderingContext2D; renderer: CanvasRenderer } {
@@ -41,9 +46,16 @@ function setupCanvas(id: string): { ctx: CanvasRenderingContext2D; renderer: Can
 const pannerView = setupCanvas('panner');
 const heatmapView = setupCanvas('heatmap');
 const doaView = setupCanvas('doa');
+const rotationView = setupCanvas('rotation');
+const layoutView = setupCanvas('layout');
 const metersView = setupCanvas('meters');
 const readout = document.getElementById('readout')!;
 const startButton = document.getElementById('start') as HTMLButtonElement;
+const presetSelect = document.getElementById('preset') as HTMLSelectElement;
+
+// Optional remote surface: ?remote=ws://localhost:8090 (scripts/osc-bridge.mjs).
+const remoteUrl = new URLSearchParams(window.location.search).get('remote');
+const remote = remoteUrl ? new RemoteSurface(remoteUrl, (s) => (document.title = `AmbiTap — ${s}`)) : null;
 
 const SOURCES: Array<Direction & { id: string; frequency: number }> = [
     { id: '1', azimuth: Math.PI / 2, elevation: 0, frequency: 330 },
@@ -62,6 +74,7 @@ const panner = new Panner({
             azimuth: source.azimuth,
             elevation: source.elevation,
         });
+        remote?.sendDirection(source.id, source.azimuth, source.elevation);
     },
 });
 for (const s of SOURCES) {
@@ -71,6 +84,21 @@ for (const s of SOURCES) {
 const heatmap = new Heatmap();
 const doa = new Doa();
 const meters = new Meters();
+const rotation = new RotationBall({
+    onChange: (ypr) => {
+        dirty = true;
+        workletPort?.postMessage({ type: 'orientation', ...ypr });
+        remote?.sendOrientation(ypr.yaw, ypr.pitch, ypr.roll);
+    },
+});
+const speakerLayout = new SpeakerLayout();
+speakerLayout.setPreset(DEFAULT_LAYOUT);
+presetSelect.value = DEFAULT_LAYOUT;
+presetSelect.addEventListener('change', () => {
+    speakerLayout.setPreset(presetSelect.value);
+    workletPort?.postMessage({ type: 'layout', name: presetSelect.value });
+    dirty = true;
+});
 
 // Offscreen grid-resolution image, scaled onto the heatmap canvas.
 const gridCanvas = document.createElement('canvas');
@@ -97,6 +125,8 @@ function paintAll(): void {
     panner.draw(pannerView.renderer);
     paintHeatmap();
     doa.draw(doaView.renderer);
+    rotation.draw(rotationView.renderer);
+    speakerLayout.draw(layoutView.renderer);
     meters.draw(metersView.renderer);
 }
 
@@ -111,6 +141,9 @@ function onSnapshot(s: Snapshot): void {
     heatmap.setEnergyVector({ x: s.vec[0], y: s.vec[1], z: s.vec[2] });
     doa.update({ x: s.vec[0], y: s.vec[1], z: s.vec[2] });
     meters.update(s.meters);
+    if (s.speakers) {
+        speakerLayout.setLevels(s.speakers);
+    }
     dirty = true;
 
     const d = doa.direction();
@@ -129,7 +162,13 @@ async function startAudio(): Promise<void> {
     const node = new AudioWorkletNode(context, 'ambitap-analyzer', {
         numberOfInputs: 0,
         outputChannelCount: [2],
-        processorOptions: { module, order: ORDER, azSteps: AZ_STEPS, sources: SOURCES },
+        processorOptions: {
+            module,
+            order: ORDER,
+            azSteps: AZ_STEPS,
+            sources: SOURCES,
+            layout: presetSelect.value,
+        },
     });
     node.port.onmessage = (e) => {
         if ((e.data as Snapshot).type === 'snapshot') {
@@ -152,25 +191,41 @@ startButton.addEventListener('click', () => {
     });
 });
 
-// Panner pointer plumbing.
-const pannerCanvas = document.getElementById('panner') as HTMLCanvasElement;
-function pointerPos(e: PointerEvent): { x: number; y: number } {
-    const rect = pannerCanvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+// Pointer plumbing: the panner, rotation ball, and layout share the shape.
+interface PointerWidget {
+    pointerDown(x: number, y: number, now: number): boolean;
+    pointerMove?(x: number, y: number, now: number): boolean;
+    pointerUp?(now: number): boolean;
 }
-pannerCanvas.addEventListener('pointerdown', (e) => {
-    const { x, y } = pointerPos(e);
-    if (panner.pointerDown(x, y, e.timeStamp)) {
-        pannerCanvas.setPointerCapture(e.pointerId);
-        dirty = true;
-    }
-});
-pannerCanvas.addEventListener('pointermove', (e) => {
-    const { x, y } = pointerPos(e);
-    dirty = panner.pointerMove(x, y, e.timeStamp) || dirty;
-});
-pannerCanvas.addEventListener('pointerup', (e) => {
-    dirty = panner.pointerUp(e.timeStamp) || dirty;
+
+function wirePointer(id: string, widget: PointerWidget): void {
+    const canvas = document.getElementById(id) as HTMLCanvasElement;
+    const pos = (e: PointerEvent): { x: number; y: number } => {
+        const rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+        const { x, y } = pos(e);
+        if (widget.pointerDown(x, y, e.timeStamp)) {
+            canvas.setPointerCapture(e.pointerId);
+            dirty = true;
+        }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+        const { x, y } = pos(e);
+        dirty = (widget.pointerMove?.(x, y, e.timeStamp) ?? false) || dirty;
+    });
+    canvas.addEventListener('pointerup', (e) => {
+        dirty = (widget.pointerUp?.(e.timeStamp) ?? false) || dirty;
+    });
+}
+
+wirePointer('panner', panner);
+wirePointer('rotation', rotation);
+wirePointer('layout', { pointerDown: (x, y) => speakerLayout.pointerDown(x, y) });
+document.getElementById('rotation')!.addEventListener('dblclick', () => {
+    rotation.reset();
+    dirty = true;
 });
 
 function frame(): void {

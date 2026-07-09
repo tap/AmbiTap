@@ -90,7 +90,7 @@ export function yawPitchRollFromQuat(q: Quat): YawPitchRoll {
     const m00 = m[0]!, m01 = m[1]!, m10 = m[3]!, m11 = m[4]!;
     const m20 = m[6]!, m21 = m[7]!, m22 = m[8]!;
     const s = Math.min(1, Math.max(-1, m20)); // m20 = -sin(pitch)
-    const pitch = -Math.asin(s);
+    const pitch = s === 0 ? 0 : -Math.asin(s); // avoid -0 at identity
     if (Math.abs(s) > 0.999999) {
         // Gimbal lock: only yaw ± roll is observable.
         return { yaw: Math.atan2(-m01, m11), pitch, roll: 0 };

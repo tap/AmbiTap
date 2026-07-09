@@ -12,7 +12,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
     "esbuild": "^0.25.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "ws": "^8.21.0"
   }
 }
