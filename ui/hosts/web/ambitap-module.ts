@@ -23,6 +23,13 @@ interface AmbitapExports {
     ambitap_vector_destroy(handle: number): void;
     ambitap_vector_process(handle: number, hoa: number, nChannels: number, nFrames: number): number;
     ambitap_vector_value(handle: number, out3: number): number;
+    ambitap_rotator_create(order: number): number;
+    ambitap_rotator_destroy(handle: number): void;
+    ambitap_rotator_set_orientation(handle: number, yaw: number, pitch: number, roll: number): number;
+    ambitap_rotator_process(handle: number, input: number, nFrames: number, out: number): number;
+    ambitap_layout_preset(name: number, az: number, el: number, cap: number): number;
+    ambitap_decoder_matrix(algorithm: number, order: number, nSpeakers: number, az: number, el: number,
+        useMaxRe: number, out: number): number;
 }
 
 /** A float array in WASM memory. `view` is re-derived after memory growth
@@ -70,6 +77,67 @@ export class AmbitapModule {
 
     channelCount(order: number): number {
         return this.exports.ambitap_channel_count(order);
+    }
+
+    private allocCString(text: string): number {
+        // ASCII by construction (preset/algorithm names); TextEncoder is not
+        // guaranteed in AudioWorkletGlobalScope.
+        const ptr = this.exports.malloc(text.length + 1);
+        const view = new Uint8Array(this.exports.memory.buffer, ptr, text.length + 1);
+        for (let i = 0; i < text.length; ++i) {
+            view[i] = text.charCodeAt(i) & 0x7f;
+        }
+        view[text.length] = 0;
+        return ptr;
+    }
+
+    /** Speaker directions of a named library preset (math::layouts). */
+    layoutPreset(name: string): Array<{ azimuth: number; elevation: number }> {
+        const cap = 64;
+        const az = this.allocFloats(cap);
+        const el = this.allocFloats(cap);
+        const namePtr = this.allocCString(name);
+        const count = this.exports.ambitap_layout_preset(namePtr, az.ptr, el.ptr, cap);
+        this.exports.free(namePtr);
+        if (count < 0) {
+            az.dispose();
+            el.dispose();
+            throw new Error(`ambitap wasm: unknown layout preset '${name}'`);
+        }
+        const speakers = Array.from({ length: count }, (_, i) => ({
+            azimuth: az.view[i]!,
+            elevation: el.view[i]!,
+        }));
+        az.dispose();
+        el.dispose();
+        return speakers;
+    }
+
+    /** Decoder matrix (speakers x channels, row-major) for a speaker set. */
+    decoderMatrix(
+        algorithm: 'mode_match' | 'allrad' | 'epad',
+        order: number,
+        speakers: Array<{ azimuth: number; elevation: number }>,
+        useMaxRe: boolean,
+    ): Float32Array {
+        const channels = this.channelCount(order);
+        const n = speakers.length;
+        const az = this.allocFloats(n);
+        const el = this.allocFloats(n);
+        az.set(speakers.map((s) => s.azimuth));
+        el.set(speakers.map((s) => s.elevation));
+        const out = this.allocFloats(n * channels);
+        const algPtr = this.allocCString(algorithm);
+        const rc = this.exports.ambitap_decoder_matrix(algPtr, order, n, az.ptr, el.ptr, useMaxRe ? 1 : 0, out.ptr);
+        this.exports.free(algPtr);
+        const result = out.view.slice();
+        az.dispose();
+        el.dispose();
+        out.dispose();
+        if (rc !== 0) {
+            throw new Error(`ambitap wasm: decoder_matrix(${algorithm}) failed`);
+        }
+        return result;
     }
 }
 
@@ -185,5 +253,31 @@ export class EnergyVector {
     dispose(): void {
         this.mod.exports.ambitap_vector_destroy(this.handle);
         this.out3.dispose();
+    }
+}
+
+/** SH rotation handle (embedded profile: compute_sh_rotation +
+ *  sh_block_applier, click-free crossfade). out must not alias input. */
+export class Rotator {
+    private readonly handle: number;
+
+    constructor(
+        private readonly mod: AmbitapModule,
+        order: number,
+    ) {
+        this.handle = create(mod.exports.ambitap_rotator_create(order), 'rotator_create');
+    }
+
+    setOrientation(yaw: number, pitch: number, roll: number): void {
+        check(this.mod.exports.ambitap_rotator_set_orientation(this.handle, yaw, pitch, roll),
+            'rotator_set_orientation');
+    }
+
+    process(input: FloatBuffer, nFrames: number, out: FloatBuffer): void {
+        check(this.mod.exports.ambitap_rotator_process(this.handle, input.ptr, nFrames, out.ptr), 'rotator_process');
+    }
+
+    dispose(): void {
+        this.mod.exports.ambitap_rotator_destroy(this.handle);
     }
 }

@@ -2,17 +2,22 @@
 
 Status: written 2026-07-08, updated 2026-07-09. This is the authority for the
 UI work, in the same spirit as `docs/ROADMAP.md` is for the object line.
-**Build-sequence waves 1 and 2 are implemented**: the coordinate/arcball
-core, the renderer seam, and the panner (wave 1); the WASM build of the C
-ABI, the AudioWorklet host, and the heatmap / DOA / meters widgets in both
-hosts (wave 2 — streaming handles were added to `tools/capi/` for it, and
-`ambitap.grid~` to AmbiTap-Max for the Max heatmap feed). The browser
-dashboard is verified end-to-end in headless Chromium (WASM worklet running
-`dsp::encoder` → `analysis::soundfield_grid` + `energy_vector`, panner drags
-moving the heatmap lobes and DOA dot); the v8ui bundles pass
+**Build-sequence waves 1-3 are implemented**: the coordinate/arcball core,
+the renderer seam, and the panner (wave 1); the WASM build of the C ABI,
+the AudioWorklet host, and the heatmap / DOA / meters widgets in both hosts
+(wave 2 — streaming handles were added to `tools/capi/` for it, and
+`ambitap.grid~` to AmbiTap-Max for the Max heatmap feed); the rotation ball
+and decoder-layout widgets, an SH-rotation streaming handle on the embedded
+profile (`compute_sh_rotation` + `sh_block_applier`), and the
+browser-as-remote-surface OSC path (wave 3). The browser dashboard is
+verified end-to-end in headless Chromium — the WASM worklet runs
+`dsp::encoder` → SH rotation → `analysis::soundfield_grid` +
+`energy_vector` with an ALLRAD metering decode, and a yaw-ring drag both
+counter-rotates the heatmap and lands as `/ambitap/orientation` OSC on a
+UDP listener via `scripts/osc-bridge.mjs`. The v8ui bundles pass
 simulated-mgraphics smoke runs and `ambitap.grid~` passes a full-header
 type check, but — like the externals — the Max side still **needs in-Max
-verification**. Waves 3+ remain planning.
+verification**. Wave 4+ (the designer widgets) remains planning.
 
 The UI work lives in this top-level `ui/` directory of the AmbiTap library
 repo — next to `tools/capi/`, which it depends on — because the shared widget
@@ -264,8 +269,23 @@ Angles are radians on every interface (matching the library and the
    `ambitap.energyvec~` + `snapshot~` for the DOA, `mc.peakamp~` for the
    meters. Exit criterion met in the browser: the notebooks' soundfield
    story, live — panner drags move the heatmap lobes and the DOA dot.
-3. **`rotation` + `layout`,** including OSC head-tracking display and the
-   browser-as-remote-surface WebSocket path.
+3. **`rotation` + `layout` — DONE (Max side needs in-Max verification).**
+   The rotation ball (arcball tumble + yaw twist ring, head glyph, rotated
+   horizon; bidirectional, so incoming OSC head-tracking displays and is
+   drag-gated) and the decoder layout view (library presets cross-checked
+   against `ambitap_layout_preset` by the test suite, click-to-select,
+   live per-speaker levels). The worklet chain grew an SH-rotation stage —
+   a new `ambitap_rotator_*` streaming handle on the embedded profile
+   (`compute_sh_rotation` + `sh_block_applier`, no threads, click-free
+   crossfade) — plus an ALLRAD decode matrix for per-speaker metering.
+   Remote surface: widget gestures mirror as binary OSC over WebSocket
+   (`core/osc.ts`, `hosts/web/remote.ts`, `?remote=ws://...`) through
+   `scripts/osc-bridge.mjs` to UDP for `[udpreceive]` in Max
+   (`/ambitap/source/<id>/direction`, `/ambitap/orientation`; radians).
+   v8ui hosts: `ambitap.rotation.js` (drives `rotate~`/`binaural~`,
+   accepts `yaw`/`pitch`/`roll`/`ypr` back), `ambitap.layout.js`
+   (`preset <name>`, `speakers <az el ...>`, levels from `mc.peakamp~`,
+   emits `select`).
 4. **Designer widgets.** `roomdesigner`, then `xtcdesigner` (which waits on
    the small library accessor for the predicted-performance export, and on
    the perceptual-verification listening pass that gates `xtc~` itself).

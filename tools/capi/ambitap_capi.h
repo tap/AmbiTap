@@ -171,6 +171,18 @@ AMBITAP_API void                   ambitap_vector_destroy(ambitap_vector_handle*
 AMBITAP_API int ambitap_vector_process(ambitap_vector_handle* handle, const float* hoa, int n_channels, int n_frames);
 AMBITAP_API int ambitap_vector_value(ambitap_vector_handle* handle, float* out3);
 
+/// SH rotation via the embedded real-time profile — compute_sh_rotation
+/// (Ivanic-Ruedenberg, no Eigen, no threads) rebuilt synchronously in
+/// set_orientation, applied click-free by dsp::sh_block_applier (the
+/// previous matrix crossfades out over its fade window). Euler convention
+/// matches dsp::rotator: intrinsic Z-Y'-X'', yaw about +Z first. Buffers
+/// are channel-major planar; out must NOT alias in.
+typedef struct ambitap_rotator_handle ambitap_rotator_handle;
+AMBITAP_API ambitap_rotator_handle* ambitap_rotator_create(int order);
+AMBITAP_API void                    ambitap_rotator_destroy(ambitap_rotator_handle* handle);
+AMBITAP_API int ambitap_rotator_set_orientation(ambitap_rotator_handle* handle, float yaw, float pitch, float roll);
+AMBITAP_API int ambitap_rotator_process(ambitap_rotator_handle* handle, const float* in, int n_frames, float* out);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

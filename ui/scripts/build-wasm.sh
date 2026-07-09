@@ -38,10 +38,13 @@ fi
 
 EXPORTS=_malloc,_free
 EXPORTS+=,_ambitap_channel_count,_ambitap_evaluate_sh,_ambitap_max_re_weights
+EXPORTS+=,_ambitap_layout_preset,_ambitap_decoder_matrix
 EXPORTS+=,_ambitap_encoder_create,_ambitap_encoder_destroy,_ambitap_encoder_set_direction
 EXPORTS+=,_ambitap_encoder_set_gain,_ambitap_encoder_process
 EXPORTS+=,_ambitap_grid_create,_ambitap_grid_destroy,_ambitap_grid_process,_ambitap_grid_snapshot
 EXPORTS+=,_ambitap_vector_create,_ambitap_vector_destroy,_ambitap_vector_process,_ambitap_vector_value
+EXPORTS+=,_ambitap_rotator_create,_ambitap_rotator_destroy
+EXPORTS+=,_ambitap_rotator_set_orientation,_ambitap_rotator_process
 
 mkdir -p dist/wasm
 em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" \
