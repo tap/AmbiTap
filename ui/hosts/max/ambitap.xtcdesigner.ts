@@ -28,7 +28,13 @@ mgraphics.relative_coords = 0;
 mgraphics.autofill = 0;
 
 const xtc = new XtcDesigner({
-    onChange: (p) => {
+    // Emit on release only: every parameter message triggers a full xtc~
+    // redesign on the scheduler thread, which is far too heavy per
+    // mouse-move (the geometry pane still tracks the drag visually).
+    onChange: (p, phase) => {
+        if (phase !== 'end') {
+            return;
+        }
         outlet(0, 'span', p.spanDeg);
         outlet(0, 'distance', p.distance);
         outlet(0, 'regularization', p.regularization);
