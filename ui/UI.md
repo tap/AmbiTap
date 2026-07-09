@@ -252,6 +252,15 @@ npm run build             # dist/web/ (serve it and open index.html — ES
 Angles are radians on every interface (matching the library and the
 `ambitap.*~` attributes); degrees appear only in display strings.
 
+**Shipping to Max:** nothing generated is committed anywhere. AmbiTap-Max's
+CMake build runs `npm ci` + esbuild in `${AmbiTap_ROOT}/ui` (its AmbiTap
+submodule, or a sibling checkout via `-DAmbiTap_ROOT`) and stages
+`dist/max/*.js` into its gitignored `javascript/` folder, where Max resolves
+`[v8ui @jsfile ambitap.<widget>.js]`. The target (`ambitap_ui`, option
+`AMBITAP_MAX_BUILD_UI`, default ON) is stamp-tracked against the widget
+sources, so it only reruns when they change; its CI verifies all eight
+bundles come out on macOS and Windows.
+
 ## Build sequence
 
 1. **Seam first — DONE (needs in-Max verification).** `ui/core/` coordinate
