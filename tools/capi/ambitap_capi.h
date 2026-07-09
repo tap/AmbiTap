@@ -132,6 +132,45 @@ AMBITAP_API int ambitap_soundfield_grid(int order, int az_steps, float sample_ra
 AMBITAP_API int ambitap_energy_vector(int order, float sample_rate, float smoothing_s, const float* hoa, int n_frames,
                                       float* out);
 
+/// ---- Streaming handles ------------------------------------------------
+///
+/// The batch entries above construct, stream, and destroy per call — right
+/// for the notebooks, wrong for a live host where smoothing state must
+/// persist across blocks. These opaque handles wrap one processor instance
+/// each and keep it alive between calls; they exist for streaming hosts
+/// (the UI layer's WASM AudioWorklet — see ui/UI.md). Handles are not
+/// thread-safe: drive each from one thread. create returns NULL on error;
+/// destroy accepts NULL.
+
+/// dsp::encoder — mono in, channel-major planar HOA out[(order+1)^2 * n].
+/// Direction changes ramp click-free across the following samples, exactly
+/// as the library object does.
+typedef struct ambitap_encoder_handle ambitap_encoder_handle;
+AMBITAP_API ambitap_encoder_handle* ambitap_encoder_create(int order);
+AMBITAP_API void                    ambitap_encoder_destroy(ambitap_encoder_handle* handle);
+AMBITAP_API int ambitap_encoder_set_direction(ambitap_encoder_handle* handle, float azimuth, float elevation);
+AMBITAP_API int ambitap_encoder_set_gain(ambitap_encoder_handle* handle, float linear);
+AMBITAP_API int ambitap_encoder_process(ambitap_encoder_handle* handle, const float* mono, int n_frames, float* out);
+
+/// analysis::soundfield_grid — feed channel-major planar HOA blocks, then
+/// snapshot the smoothed heatmap on demand (rows = az_steps / 2,
+/// cols = az_steps; row 0 = zenith, column 0 = azimuth -pi; values [0, 1]
+/// normalized over dynamic_range_db below the peak, which lands in
+/// *peak_db).
+typedef struct ambitap_grid_handle ambitap_grid_handle;
+AMBITAP_API ambitap_grid_handle* ambitap_grid_create(int order, int az_steps, float sample_rate, float smoothing_ms);
+AMBITAP_API void                 ambitap_grid_destroy(ambitap_grid_handle* handle);
+AMBITAP_API int ambitap_grid_process(ambitap_grid_handle* handle, const float* hoa, int n_frames);
+AMBITAP_API int ambitap_grid_snapshot(ambitap_grid_handle* handle, float dynamic_range_db, float* out, float* peak_db);
+
+/// analysis::energy_vector — feed channel-major planar HOA blocks (>= 4
+/// channels used), read the smoothed intensity vector {x, y, z} on demand.
+typedef struct ambitap_vector_handle ambitap_vector_handle;
+AMBITAP_API ambitap_vector_handle* ambitap_vector_create(float sample_rate, float smoothing_s);
+AMBITAP_API void                   ambitap_vector_destroy(ambitap_vector_handle* handle);
+AMBITAP_API int ambitap_vector_process(ambitap_vector_handle* handle, const float* hoa, int n_channels, int n_frames);
+AMBITAP_API int ambitap_vector_value(ambitap_vector_handle* handle, float* out3);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

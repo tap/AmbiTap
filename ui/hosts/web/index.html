@@ -3,32 +3,52 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AmbiTap panner</title>
+<title>AmbiTap soundfield</title>
 <style>
     body {
         margin: 0;
         min-height: 100vh;
         display: grid;
         place-content: center;
-        gap: 12px;
+        gap: 10px;
         background: #101114;
         color: #c0c3c8;
         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     }
-    h1 { font-size: 15px; font-weight: 600; margin: 18px 0 0; }
-    canvas { touch-action: none; border-radius: 8px; }
-    #readout { font-variant-numeric: tabular-nums; white-space: pre; color: #8a8f96; }
-    p { max-width: 460px; color: #8a8f96; font-size: 12.5px; margin: 0 0 18px; }
+    h1 { font-size: 15px; font-weight: 600; margin: 16px 0 0; }
+    .row { display: flex; gap: 10px; align-items: flex-start; }
+    canvas { touch-action: none; border-radius: 8px; display: block; }
+    #readout { font-variant-numeric: tabular-nums; white-space: pre; color: #8a8f96; font-size: 12.5px; }
+    #start {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: 1px solid #3a3d44;
+        background: #1c1e23;
+        color: #e8eaee;
+        font: inherit;
+        cursor: pointer;
+        justify-self: start;
+    }
+    p.note { max-width: 640px; color: #8a8f96; font-size: 12.5px; margin: 0 0 16px; }
 </style>
 </head>
 <body>
-<h1>AmbiTap panner — canvas host</h1>
-<canvas id="panner" width="460" height="380"></canvas>
+<h1>AmbiTap soundfield — encoder → soundfield_grid + energy_vector, live via WASM</h1>
+<button id="start">start audio</button>
+<div class="row">
+    <canvas id="panner" width="300" height="300"></canvas>
+    <canvas id="heatmap" width="320" height="164"></canvas>
+    <canvas id="doa" width="164" height="164"></canvas>
+</div>
+<div class="row">
+    <canvas id="meters" width="360" height="120"></canvas>
+</div>
 <div id="readout"></div>
-<p>
-    Drag a dot to set azimuth (front is up, left is stage-left); drag the
-    right-hand ring to set elevation (top = zenith). The same widget file
-    drives ambitap.encode~ in Max through the mgraphics backend.
+<p class="note">
+    Two test sources run through the verified C++ core compiled to WebAssembly
+    inside an AudioWorklet: dsp::encoder (order 3) into
+    analysis::soundfield_grid and analysis::energy_vector. Drag the panner —
+    the heatmap lobes, the DOA dot, and the ACN meters follow.
 </p>
 <script type="module" src="./main.js"></script>
 </body>

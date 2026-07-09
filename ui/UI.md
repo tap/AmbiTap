@@ -2,12 +2,17 @@
 
 Status: written 2026-07-08, updated 2026-07-09. This is the authority for the
 UI work, in the same spirit as `docs/ROADMAP.md` is for the object line.
-**Build-sequence wave 1 is implemented** (coordinate/arcball core with unit
-tests, the renderer seam with canvas and mgraphics backends, the panner
-widget, browser and v8ui hosts); the browser host is verified end-to-end in
-headless Chromium and the v8ui bundle in a simulated-mgraphics smoke run, but
-— like the externals — it still **needs in-Max verification**. Waves 2+
-remain planning.
+**Build-sequence waves 1 and 2 are implemented**: the coordinate/arcball
+core, the renderer seam, and the panner (wave 1); the WASM build of the C
+ABI, the AudioWorklet host, and the heatmap / DOA / meters widgets in both
+hosts (wave 2 — streaming handles were added to `tools/capi/` for it, and
+`ambitap.grid~` to AmbiTap-Max for the Max heatmap feed). The browser
+dashboard is verified end-to-end in headless Chromium (WASM worklet running
+`dsp::encoder` → `analysis::soundfield_grid` + `energy_vector`, panner drags
+moving the heatmap lobes and DOA dot); the v8ui bundles pass
+simulated-mgraphics smoke runs and `ambitap.grid~` passes a full-header
+type check, but — like the externals — the Max side still **needs in-Max
+verification**. Waves 3+ remain planning.
 
 The UI work lives in this top-level `ui/` directory of the AmbiTap library
 repo — next to `tools/capi/`, which it depends on — because the shared widget
@@ -228,8 +233,12 @@ protocol (honest A/B, visible predictions vs gates), not bypass it.
 ```bash
 cd ui
 npm install
-npm test         # tsc + node --test: core conventions, widget logic
-npm run build    # dist/web/ (open index.html) + dist/max/ (load in [v8ui])
+npm test                  # tsc + node --test: core conventions, widget logic,
+                          # and (when built) the WASM module end-to-end
+./scripts/build-wasm.sh   # tools/capi -> dist/wasm/ambitap.wasm (needs emsdk
+                          # and an Eigen checkout; see the script header)
+npm run build             # dist/web/ (serve it and open index.html — ES
+                          # modules and WASM need http) + dist/max/ ([v8ui])
 ```
 
 Angles are radians on every interface (matching the library and the
@@ -245,10 +254,16 @@ Angles are radians on every interface (matching the library and the
    `azimuth <rad>` / `elevation <rad>` messages for the encode~ inlet and
    accepts the same messages back, drag-gated).
    Exit criterion: one widget file, two hosts, no forked logic.
-2. **Visualizers.** WASM build of `tools/capi/` + AudioWorklet host;
-   `heatmap` (jit.matrix path in Max, ImageData in browser), `doa`,
-   `meters`. Exit criterion: the notebooks' soundfield story, live, in both
-   hosts.
+2. **Visualizers — DONE (Max side needs in-Max verification).** WASM build
+   of `tools/capi/` (`scripts/build-wasm.sh`; streaming
+   encoder/grid/vector handles added to the ABI, since the batch entries
+   reset smoothing state per call) + AudioWorklet host running the verified
+   core on the audio thread; `heatmap` (ImageData blit in the browser,
+   Renderer-cell path in v8ui), `doa`, `meters`. Max feeds:
+   `ambitap.grid~` (new external, list-on-bang) for the heatmap,
+   `ambitap.energyvec~` + `snapshot~` for the DOA, `mc.peakamp~` for the
+   meters. Exit criterion met in the browser: the notebooks' soundfield
+   story, live — panner drags move the heatmap lobes and the DOA dot.
 3. **`rotation` + `layout`,** including OSC head-tracking display and the
    browser-as-remote-surface WebSocket path.
 4. **Designer widgets.** `roomdesigner`, then `xtcdesigner` (which waits on
@@ -266,9 +281,13 @@ Angles are radians on every interface (matching the library and the
 - **v8ui bundle format.** Confirm what module/bundle shape Max 9's `v8ui`
   loads most happily (single-file IIFE vs ES module) before settling the
   build tooling.
-- **Snapshot bridge in Max.** Heatmap data from `ambitap.*~` externals to
-  Jitter: a `jit.matrix`-filling outlet on a future `ambitap.grid~`
-  analysis external vs a dict message. Decide when wave 2 starts.
+- **Snapshot bridge in Max — RESOLVED (wave 2).** `ambitap.grid~` (in
+  AmbiTap-Max) wraps `analysis::soundfield_grid` with an MC passthrough and
+  emits the snapshot as a `grid <rows> <cols> <peak_db> <values...>` list on
+  bang (drive from `qmetro`); the v8ui heatmap paints it via the
+  Renderer-cell path — no Jitter dependency at `azimuth_steps <= 32`. A
+  `jit.matrix` outlet remains the upgrade path if higher grid resolutions
+  are ever wanted.
 - **Golden-image testing.** Headless-Chromium canvas renders give the
   shared model pixel-level regression tests; decide tolerance strategy
   (perceptual diff) before the widget count grows.

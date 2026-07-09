@@ -516,4 +516,166 @@ int ambitap_energy_vector(int order, float sample_rate, float smoothing_s, const
     }
 }
 
+// ---- Streaming handles --------------------------------------------------
+
+struct ambitap_encoder_handle {
+    dsp::encoder        enc;
+    std::vector<float*> ptrs;
+
+    explicit ambitap_encoder_handle(int order) : enc(order), ptrs(enc.channels()) {}
+};
+
+ambitap_encoder_handle* ambitap_encoder_create(int order) {
+    try {
+        return new ambitap_encoder_handle(order);
+    }
+    catch (...) {
+        return nullptr;
+    }
+}
+
+void ambitap_encoder_destroy(ambitap_encoder_handle* handle) {
+    delete handle;
+}
+
+int ambitap_encoder_set_direction(ambitap_encoder_handle* handle, float azimuth, float elevation) {
+    if (!handle) {
+        return -1;
+    }
+    handle->enc.set_direction(azimuth, elevation);
+    return 0;
+}
+
+int ambitap_encoder_set_gain(ambitap_encoder_handle* handle, float linear) {
+    if (!handle) {
+        return -1;
+    }
+    handle->enc.set_gain(linear);
+    return 0;
+}
+
+int ambitap_encoder_process(ambitap_encoder_handle* handle, const float* mono, int n_frames, float* out) {
+    if (!handle || !mono || !out || n_frames <= 0) {
+        return -1;
+    }
+    const auto n = static_cast<size_t>(n_frames);
+    for (size_t c = 0; c < handle->ptrs.size(); ++c) {
+        handle->ptrs[c] = out + c * n;
+    }
+    handle->enc.process(mono, handle->ptrs.data(), n);
+    return 0;
+}
+
+struct ambitap_grid_handle {
+    analysis::soundfield_grid grid;
+    std::vector<const float*> ptrs;
+
+    ambitap_grid_handle(int order, int az_steps, float sample_rate, float smoothing_ms)
+        : grid(order, az_steps)
+        , ptrs(grid.channels()) {
+        grid.prepare(sample_rate);
+        grid.set_smoothing_time_ms(smoothing_ms);
+    }
+};
+
+ambitap_grid_handle* ambitap_grid_create(int order, int az_steps, float sample_rate, float smoothing_ms) {
+    if (az_steps < 2 || sample_rate <= 0.f) {
+        return nullptr;
+    }
+    try {
+        return new ambitap_grid_handle(order, az_steps, sample_rate, smoothing_ms);
+    }
+    catch (...) {
+        return nullptr;
+    }
+}
+
+void ambitap_grid_destroy(ambitap_grid_handle* handle) {
+    delete handle;
+}
+
+int ambitap_grid_process(ambitap_grid_handle* handle, const float* hoa, int n_frames) {
+    if (!handle || !hoa || n_frames <= 0) {
+        return -1;
+    }
+    const auto n = static_cast<size_t>(n_frames);
+    for (size_t c = 0; c < handle->ptrs.size(); ++c) {
+        handle->ptrs[c] = hoa + c * n;
+    }
+    handle->grid.process(handle->ptrs.data(), n);
+    return 0;
+}
+
+int ambitap_grid_snapshot(ambitap_grid_handle* handle, float dynamic_range_db, float* out, float* peak_db) {
+    if (!handle || !out || !peak_db || dynamic_range_db <= 0.f) {
+        return -1;
+    }
+    try {
+        const auto image = handle->grid.snapshot(dynamic_range_db);
+        if (image.data.empty()) {
+            return -1;
+        }
+        std::copy(image.data.begin(), image.data.end(), out);
+        *peak_db = image.peak_db;
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+struct ambitap_vector_handle {
+    analysis::energy_vector vec;
+    std::vector<float>      scratch; // process() writes a trajectory; only value() is read
+};
+
+ambitap_vector_handle* ambitap_vector_create(float sample_rate, float smoothing_s) {
+    if (sample_rate <= 0.f) {
+        return nullptr;
+    }
+    try {
+        auto* handle = new ambitap_vector_handle;
+        handle->vec.prepare(sample_rate);
+        handle->vec.set_smoothing_time(smoothing_s);
+        return handle;
+    }
+    catch (...) {
+        return nullptr;
+    }
+}
+
+void ambitap_vector_destroy(ambitap_vector_handle* handle) {
+    delete handle;
+}
+
+int ambitap_vector_process(ambitap_vector_handle* handle, const float* hoa, int n_channels, int n_frames) {
+    if (!handle || !hoa || n_channels < 4 || n_frames <= 0) {
+        return -1;
+    }
+    try {
+        const auto n = static_cast<size_t>(n_frames);
+        if (handle->scratch.size() < 3 * n) {
+            handle->scratch.resize(3 * n);
+        }
+        const float* in[4] = {hoa, hoa + n, hoa + 2 * n, hoa + 3 * n};
+        float* xyz[3] = {handle->scratch.data(), handle->scratch.data() + n, handle->scratch.data() + 2 * n};
+        handle->vec.process(in, xyz, n);
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_vector_value(ambitap_vector_handle* handle, float* out3) {
+    if (!handle || !out3) {
+        return -1;
+    }
+    const auto v = handle->vec.value();
+    out3[0]      = v[0];
+    out3[1]      = v[1];
+    out3[2]      = v[2];
+    return 0;
+}
+
 } // extern "C"
