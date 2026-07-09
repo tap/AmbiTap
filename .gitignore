@@ -12,5 +12,8 @@ __pycache__/
 # Generated documentation site (built by docs/Doxyfile, deployed by CI)
 docs/html/
 
+# mdBook output (book/ sources build into here; deployed by CI)
+book/book/
+
 # Cross-library benchmark checkouts (run.sh clones libspatialaudio + SAF here)
 bench/compare/_work/
