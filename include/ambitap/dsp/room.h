@@ -766,10 +766,14 @@ namespace ambitap::dsp {
             return std::max(v, static_cast<double>(k_min_rt60));
         }
 
+      public:
         /// Enumerate every shoebox image source arriving before t_max
         /// (Allen-Berkley: image = (1-2p)*src + 2rL per axis, amplitude
         /// prod(beta^exponent) / distance) and call
         /// fn(t_seconds, amplitude, unit_direction, reflection_count).
+        /// Pure static math — public so UI/tools layers can draw the model
+        /// (reflectogram, image-source cloud) without a room instance; the
+        /// C ABI exports it as ambitap_room_image_sources.
         template <typename Fn>
         static void for_each_image(const std::array<float, 3>& dims, const std::array<float, 3>& source,
                                    const std::array<float, 3>& listener, const std::array<float, k_walls>& beta,
@@ -819,6 +823,7 @@ namespace ambitap::dsp {
             }
         }
 
+      private:
         /// Omni (W) energy the tail must carry from the ER cutoff onward so
         /// it continues the same image-source model that produced the early
         /// reflections: the image sum enumerated to k_target_enum_seconds,

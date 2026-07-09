@@ -45,9 +45,14 @@ EXPORTS+=,_ambitap_grid_create,_ambitap_grid_destroy,_ambitap_grid_process,_ambi
 EXPORTS+=,_ambitap_vector_create,_ambitap_vector_destroy,_ambitap_vector_process,_ambitap_vector_value
 EXPORTS+=,_ambitap_rotator_create,_ambitap_rotator_destroy
 EXPORTS+=,_ambitap_rotator_set_orientation,_ambitap_rotator_process
+EXPORTS+=,_ambitap_room_image_sources
+EXPORTS+=,_ambitap_xtc_create,_ambitap_xtc_destroy,_ambitap_xtc_design,_ambitap_xtc_fir,_ambitap_xtc_info
+EXPORTS+=,_ambitap_builtin_hrtf_info,_ambitap_builtin_hrtf_hrir
 
 mkdir -p dist/wasm
-em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" \
+# Ooura FFT (AmbiTap::fft) is C — compile separately so rdft keeps C linkage.
+emcc -c "$LIB_ROOT/third_party/ooura/fftsg.c" -O2 -o dist/wasm/fftsg.o
+em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" dist/wasm/fftsg.o \
     -I "$LIB_ROOT/include" -isystem "$EIGEN_DIR" \
     -std=c++20 -O2 -fwasm-exceptions \
     --no-entry \
@@ -55,5 +60,6 @@ em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" \
     -sALLOW_MEMORY_GROWTH=1 \
     -sINITIAL_MEMORY=16MB \
     -o dist/wasm/ambitap.wasm
+rm -f dist/wasm/fftsg.o
 
 ls -la dist/wasm/ambitap.wasm

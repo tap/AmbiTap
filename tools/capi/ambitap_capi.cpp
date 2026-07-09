@@ -742,4 +742,102 @@ int ambitap_rotator_process(ambitap_rotator_handle* handle, const float* in, int
     return 0;
 }
 
+int ambitap_room_image_sources(const float* dims3, const float* source3, const float* listener3, const float* beta6,
+                               float t_max, int cap, float* t, float* amplitude, float* direction, int* reflections) {
+    if (!dims3 || !source3 || !listener3 || !beta6 || !t || !amplitude || !direction || !reflections || cap <= 0
+        || t_max <= 0.f) {
+        return -1;
+    }
+    try {
+        const std::array<float, 3>            dims{dims3[0], dims3[1], dims3[2]};
+        const std::array<float, 3>            source{source3[0], source3[1], source3[2]};
+        const std::array<float, 3>            listener{listener3[0], listener3[1], listener3[2]};
+        std::array<float, dsp::room::k_walls> beta{};
+        for (size_t w = 0; w < dsp::room::k_walls; ++w) {
+            beta[w] = beta6[w];
+        }
+
+        int  count    = 0;
+        bool overflow = false;
+        dsp::room::for_each_image(dims, source, listener, beta, static_cast<double>(t_max),
+                                  [&](double time, double amp, const double* u, int refl) {
+                                      if (count >= cap) {
+                                          overflow = true;
+                                          return;
+                                      }
+                                      t[count]                 = static_cast<float>(time);
+                                      amplitude[count]         = static_cast<float>(amp);
+                                      direction[count * 3]     = static_cast<float>(u[0]);
+                                      direction[count * 3 + 1] = static_cast<float>(u[1]);
+                                      direction[count * 3 + 2] = static_cast<float>(u[2]);
+                                      reflections[count]       = refl;
+                                      ++count;
+                                  });
+        return overflow ? -1 : count;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+struct ambitap_xtc_handle {
+    dsp::xtc canceller;
+};
+
+ambitap_xtc_handle* ambitap_xtc_create(void) {
+    try {
+        return new ambitap_xtc_handle;
+    }
+    catch (...) {
+        return nullptr;
+    }
+}
+
+void ambitap_xtc_destroy(ambitap_xtc_handle* handle) {
+    delete handle;
+}
+
+int ambitap_xtc_design(ambitap_xtc_handle* handle, float span_deg, float distance_m, float regularization,
+                       float sample_rate) {
+    if (!handle || sample_rate <= 0.f) {
+        return -1;
+    }
+    try {
+        // Each setter redesigns; order the cheap ones first and let the
+        // final setter produce the shipped design. Control-thread only.
+        handle->canceller.set_sample_rate(sample_rate);
+        handle->canceller.set_distance(distance_m);
+        handle->canceller.set_regularization(regularization);
+        handle->canceller.set_span(span_deg);
+        return 0;
+    }
+    catch (...) {
+        return -1;
+    }
+}
+
+int ambitap_xtc_fir(ambitap_xtc_handle* handle, int speaker, int input, float* out, int cap) {
+    if (!handle || !out || speaker < 0 || speaker > 1 || input < 0 || input > 1) {
+        return -1;
+    }
+    const auto& fir = handle->canceller.fir(static_cast<size_t>(speaker), static_cast<size_t>(input));
+    if (static_cast<size_t>(cap) < fir.size()) {
+        return -1;
+    }
+    std::copy(fir.begin(), fir.end(), out);
+    return static_cast<int>(fir.size());
+}
+
+int ambitap_xtc_info(ambitap_xtc_handle* handle, float* design_gain_db, float* makeup_linear, int* latency_samples,
+                     int* fir_length) {
+    if (!handle || !design_gain_db || !makeup_linear || !latency_samples || !fir_length) {
+        return -1;
+    }
+    *design_gain_db  = handle->canceller.design_gain_db();
+    *makeup_linear   = handle->canceller.makeup_gain();
+    *latency_samples = static_cast<int>(dsp::xtc::latency_samples());
+    *fir_length      = static_cast<int>(dsp::xtc::k_fir_length);
+    return 0;
+}
+
 } // extern "C"
