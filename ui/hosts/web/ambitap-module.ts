@@ -30,6 +30,18 @@ interface AmbitapExports {
     ambitap_layout_preset(name: number, az: number, el: number, cap: number): number;
     ambitap_decoder_matrix(algorithm: number, order: number, nSpeakers: number, az: number, el: number,
         useMaxRe: number, out: number): number;
+    ambitap_room_image_sources(dims3: number, source3: number, listener3: number, beta6: number, tMax: number,
+        cap: number, t: number, amplitude: number, direction: number, reflections: number): number;
+    ambitap_xtc_create(): number;
+    ambitap_xtc_destroy(handle: number): void;
+    ambitap_xtc_design(handle: number, spanDeg: number, distance: number, regularization: number,
+        sampleRate: number): number;
+    ambitap_xtc_fir(handle: number, speaker: number, input: number, out: number, cap: number): number;
+    ambitap_xtc_info(handle: number, designGainDb: number, makeupLinear: number, latencySamples: number,
+        firLength: number): number;
+    ambitap_builtin_hrtf_info(order: number, channels: number, length: number, sampleRate: number): number;
+    ambitap_builtin_hrtf_hrir(order: number, magls: number, azimuth: number, elevation: number, left: number,
+        right: number): number;
 }
 
 /** A float array in WASM memory. `view` is re-derived after memory growth
@@ -254,6 +266,134 @@ export class EnergyVector {
         this.mod.exports.ambitap_vector_destroy(this.handle);
         this.out3.dispose();
     }
+}
+
+export interface WasmImageSource {
+    t: number;
+    amplitude: number;
+    direction: { x: number; y: number; z: number };
+    reflections: number;
+}
+
+/** dsp::room::for_each_image via the ABI (the widgets use the TS port in
+ *  core/imagesource.ts; this exists so tests can cross-check it). */
+export function roomImageSources(
+    mod: AmbitapModule,
+    dims: [number, number, number],
+    source: [number, number, number],
+    listener: [number, number, number],
+    beta: number[],
+    tMax: number,
+    cap = 65536,
+): WasmImageSource[] {
+    const d = mod.allocFloats(3);
+    const s = mod.allocFloats(3);
+    const l = mod.allocFloats(3);
+    const b = mod.allocFloats(6);
+    const t = mod.allocFloats(cap);
+    const amp = mod.allocFloats(cap);
+    const dir = mod.allocFloats(cap * 3);
+    const reflPtr = mod.exports.malloc(cap * 4);
+    d.set(dims);
+    s.set(source);
+    l.set(listener);
+    b.set(beta);
+    const count = mod.exports.ambitap_room_image_sources(d.ptr, s.ptr, l.ptr, b.ptr, tMax, cap, t.ptr, amp.ptr,
+        dir.ptr, reflPtr);
+    if (count < 0) {
+        throw new Error('ambitap wasm: room_image_sources failed');
+    }
+    const refl = new Int32Array(mod.exports.memory.buffer, reflPtr, cap);
+    const out: WasmImageSource[] = [];
+    for (let i = 0; i < count; ++i) {
+        out.push({
+            t: t.view[i]!,
+            amplitude: amp.view[i]!,
+            direction: { x: dir.view[i * 3]!, y: dir.view[i * 3 + 1]!, z: dir.view[i * 3 + 2]! },
+            reflections: refl[i]!,
+        });
+    }
+    mod.exports.free(reflPtr);
+    d.dispose();
+    s.dispose();
+    l.dispose();
+    b.dispose();
+    t.dispose();
+    amp.dispose();
+    dir.dispose();
+    return out;
+}
+
+/** dsp::xtc design handle: redesign + FIR/metadata readback. */
+export class XtcDesign {
+    private readonly handle: number;
+
+    constructor(private readonly mod: AmbitapModule) {
+        this.handle = create(mod.exports.ambitap_xtc_create(), 'xtc_create');
+    }
+
+    design(spanDeg: number, distance: number, regularization: number, sampleRate: number): void {
+        check(this.mod.exports.ambitap_xtc_design(this.handle, spanDeg, distance, regularization, sampleRate),
+            'xtc_design');
+    }
+
+    fir(speaker: 0 | 1, input: 0 | 1): Float32Array {
+        const buf = this.mod.allocFloats(4096);
+        const len = this.mod.exports.ambitap_xtc_fir(this.handle, speaker, input, buf.ptr, buf.length);
+        if (len < 0) {
+            buf.dispose();
+            throw new Error('ambitap wasm: xtc_fir failed');
+        }
+        const out = buf.view.slice(0, len);
+        buf.dispose();
+        return out;
+    }
+
+    info(): { designGainDb: number; makeupLinear: number; latencySamples: number; firLength: number } {
+        const f = this.mod.allocFloats(2);
+        const i = this.mod.exports.malloc(8);
+        check(this.mod.exports.ambitap_xtc_info(this.handle, f.ptr, f.ptr + 4, i, i + 4), 'xtc_info');
+        const ints = new Int32Array(this.mod.exports.memory.buffer, i, 2);
+        const out = {
+            designGainDb: f.view[0]!,
+            makeupLinear: f.view[1]!,
+            latencySamples: ints[0]!,
+            firLength: ints[1]!,
+        };
+        f.dispose();
+        this.mod.exports.free(i);
+        return out;
+    }
+
+    dispose(): void {
+        this.mod.exports.ambitap_xtc_destroy(this.handle);
+    }
+}
+
+/** Built-in KEMAR HRIR reconstructed at a direction (both ears, at the
+ *  dataset's sample rate) — the XTC designer's plant. */
+export function builtinHrtfHrir(
+    mod: AmbitapModule,
+    order: number,
+    magls: boolean,
+    azimuth: number,
+    elevation: number,
+): { left: Float32Array; right: Float32Array } {
+    const infoPtr = mod.exports.malloc(12);
+    const ratePtr = mod.exports.malloc(4);
+    check(mod.exports.ambitap_builtin_hrtf_info(infoPtr, infoPtr + 4, infoPtr + 8, ratePtr), 'builtin_hrtf_info');
+    const length = new Int32Array(mod.exports.memory.buffer, infoPtr, 3)[2]!;
+    mod.exports.free(infoPtr);
+    mod.exports.free(ratePtr);
+
+    const left = mod.allocFloats(length);
+    const right = mod.allocFloats(length);
+    check(mod.exports.ambitap_builtin_hrtf_hrir(order, magls ? 1 : 0, azimuth, elevation, left.ptr, right.ptr),
+        'builtin_hrtf_hrir');
+    const out = { left: left.view.slice(), right: right.view.slice() };
+    left.dispose();
+    right.dispose();
+    return out;
 }
 
 /** SH rotation handle (embedded profile: compute_sh_rotation +

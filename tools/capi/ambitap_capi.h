@@ -183,6 +183,39 @@ AMBITAP_API void                    ambitap_rotator_destroy(ambitap_rotator_hand
 AMBITAP_API int ambitap_rotator_set_orientation(ambitap_rotator_handle* handle, float yaw, float pitch, float roll);
 AMBITAP_API int ambitap_rotator_process(ambitap_rotator_handle* handle, const float* in, int n_frames, float* out);
 
+/// Shoebox image sources (dsp::room::for_each_image, Allen-Berkley): every
+/// image arriving before t_max seconds for room dims3 {x,y,z} (meters),
+/// source3/listener3 positions, and per-wall amplitude reflection
+/// coefficients beta6 (x0,x1,y0,y1,z0,z1). Writes up to cap entries —
+/// arrival time (s), amplitude (walls product / distance), unit direction
+/// (listener -> image, 3 floats per entry, x = front / y = left / z = up),
+/// and reflection count — in enumeration order (NOT time-sorted). Returns
+/// the number written, or -1 on bad arguments / cap overflow. Feeds the UI
+/// layer's room-designer reflectogram (ui/UI.md wave 4).
+AMBITAP_API int ambitap_room_image_sources(const float* dims3, const float* source3, const float* listener3,
+                                           const float* beta6, float t_max, int cap, float* t, float* amplitude,
+                                           float* direction, int* reflections);
+
+/// dsp::xtc designer handle: construct (designs at the defaults — span 20
+/// deg, distance 1 m, regularization 0.5, 44.1 kHz), redesign on demand,
+/// and read back the four shipped FIRs the audio path would convolve —
+/// the data behind the UI layer's XTC filter-response plot. No audio path
+/// is prepared; this is control-thread design math only.
+typedef struct ambitap_xtc_handle ambitap_xtc_handle;
+AMBITAP_API ambitap_xtc_handle* ambitap_xtc_create(void);
+AMBITAP_API void                ambitap_xtc_destroy(ambitap_xtc_handle* handle);
+/// Set the geometry and redesign. span_deg is the full speaker angle
+/// (clamped 5-120), distance in meters (>= 0.1), regularization in [0, 1].
+AMBITAP_API int ambitap_xtc_design(ambitap_xtc_handle* handle, float span_deg, float distance_m,
+                                   float regularization, float sample_rate);
+/// One shipped FIR (makeup baked in): speaker/input each 0 = left. Writes
+/// up to cap taps; returns the FIR length, or -1.
+AMBITAP_API int ambitap_xtc_fir(ambitap_xtc_handle* handle, int speaker, int input, float* out, int cap);
+/// Design metadata: realized pre-makeup peak |H| (dB), the makeup factor
+/// (linear, <= 1), processing latency (samples), and the FIR length.
+AMBITAP_API int ambitap_xtc_info(ambitap_xtc_handle* handle, float* design_gain_db, float* makeup_linear,
+                                 int* latency_samples, int* fir_length);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

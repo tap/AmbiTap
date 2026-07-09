@@ -18,7 +18,15 @@ await build({
     target: 'es2020',
     outfile: 'dist/web/worklet.js',
 });
+await build({
+    entryPoints: ['hosts/web/designers.ts'],
+    bundle: true,
+    format: 'esm',
+    target: 'es2020',
+    outfile: 'dist/web/designers.js',
+});
 await copyFile('hosts/web/index.html', 'dist/web/index.html');
+await copyFile('hosts/web/designers.html', 'dist/web/designers.html');
 // The WASM module is built separately (scripts/build-wasm.sh, needs emsdk);
 // stage it next to the page when present.
 try {
@@ -36,6 +44,8 @@ await build({
         'hosts/max/ambitap.meters.ts',
         'hosts/max/ambitap.rotation.ts',
         'hosts/max/ambitap.layout.ts',
+        'hosts/max/ambitap.roomdesigner.ts',
+        'hosts/max/ambitap.xtcdesigner.ts',
     ],
     bundle: true,
     format: 'iife',

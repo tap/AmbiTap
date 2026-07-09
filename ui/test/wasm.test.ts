@@ -9,8 +9,19 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { AmbitapModule, Encoder, EnergyVector, Grid, Rotator } from '../hosts/web/ambitap-module.js';
+import { imageSources } from '../core/imagesource.js';
+import {
+    AmbitapModule,
+    builtinHrtfHrir,
+    Encoder,
+    EnergyVector,
+    Grid,
+    roomImageSources,
+    Rotator,
+    XtcDesign,
+} from '../hosts/web/ambitap-module.js';
 import { LAYOUT_PRESETS } from '../widgets/layout.js';
+import { XtcDesigner } from '../widgets/xtcdesigner.js';
 
 const wasmPath = join(dirname(fileURLToPath(import.meta.url)), '../../dist/wasm/ambitap.wasm');
 
@@ -146,4 +157,84 @@ test('wasm decoder matrix has the metering shape', { skip: !bytes }, async () =>
     const matrix = mod.decoderMatrix('allrad', 3, speakers, true);
     assert.equal(matrix.length, 11 * 16);
     assert.ok(matrix.some((v) => v !== 0));
+});
+
+test('TS image-source port matches room::for_each_image exactly', { skip: !bytes }, async () => {
+    const module = await WebAssembly.compile(new Uint8Array(bytes!).slice().buffer);
+    const mod = new AmbitapModule(module);
+    const dims: [number, number, number] = [7.1, 5.3, 3.1];
+    const src: [number, number, number] = [3.674, 1.137, 1.977];
+    const lis: [number, number, number] = [1.746, 1.711, 0.668];
+    const beta = [0.9, 0.92, 0.91, 0.93, 0.89, 0.94];
+
+    const reference = roomImageSources(mod, dims, src, lis, beta, 0.08);
+    // The ABI receives float32; hand the port identical float32-rounded
+    // inputs so both sides run the same double math from the same values.
+    const f32 = <T extends number[]>(v: T): T => v.map(Math.fround) as T;
+    const ported = imageSources(f32(dims), f32(src), f32(lis), f32(beta) as never, 0.08);
+    assert.equal(ported.length, reference.length, 'image count');
+
+    // The ABI returns float32 while the port keeps float64, so arrivals a
+    // few ns apart can order-swap: match each ported arrival to an unused
+    // reference arrival within tolerance instead of pairing by index.
+    const sortKey = (a: { t: number }, b: { t: number }): number => a.t - b.t;
+    const a = [...reference].sort(sortKey);
+    const b = [...ported].sort(sortKey);
+    const used = new Array<boolean>(a.length).fill(false);
+    for (let i = 0; i < b.length; ++i) {
+        const p = b[i]!;
+        let matched = false;
+        for (let j = Math.max(0, i - 4); j < Math.min(a.length, i + 5); ++j) {
+            const r = a[j]!;
+            if (
+                !used[j] &&
+                Math.abs(r.t - p.t) < 1e-6 &&
+                r.reflections === p.reflections &&
+                Math.abs(r.amplitude - p.amplitude) < 1e-5 * Math.max(1, r.amplitude) &&
+                Math.abs(r.direction.x - p.direction.x) < 1e-4 &&
+                Math.abs(r.direction.y - p.direction.y) < 1e-4 &&
+                Math.abs(r.direction.z - p.direction.z) < 1e-4
+            ) {
+                used[j] = true;
+                matched = true;
+                break;
+            }
+        }
+        assert.ok(matched, `arrival ${i} (t=${p.t}, refl=${p.reflections}) has no reference match`);
+    }
+});
+
+test('xtc design pipeline: real FIRs + KEMAR plant give real in-band rejection', { skip: !bytes }, async () => {
+    const module = await WebAssembly.compile(new Uint8Array(bytes!).slice().buffer);
+    const mod = new AmbitapModule(module);
+    const design = new XtcDesign(mod);
+    design.design(30, 1.0, 0.5, 44100);
+    const info = design.info();
+    assert.equal(info.firLength, 1024);
+    assert.equal(info.latencySamples, 512);
+    assert.ok(info.designGainDb <= 12.01, `design gain ${info.designGainDb} under the ceiling`);
+    assert.ok(info.makeupLinear > 0 && info.makeupLinear <= 1);
+
+    const widget = new XtcDesigner();
+    widget.setFilters(
+        [
+            [design.fir(0, 0), design.fir(0, 1)],
+            [design.fir(1, 0), design.fir(1, 1)],
+        ],
+        44100,
+        { designGainDb: info.designGainDb, makeupLinear: info.makeupLinear, latencySamples: info.latencySamples },
+    );
+    const half = (15 * Math.PI) / 180;
+    widget.setPlant(builtinHrtfHrir(mod, 5, false, half, 0), builtinHrtfHrir(mod, 5, false, -half, 0));
+
+    const rejection = widget.inBandRejectionDb();
+    assert.ok(rejection !== null);
+    assert.ok(rejection! > 15, `in-band rejection ${rejection} dB (expect well above 15)`);
+
+    // The shipped |H| never exceeds unity (X5's makeup contract).
+    const curves = widget.computeCurves()!;
+    for (let i = 0; i < curves.freqs.length; ++i) {
+        assert.ok(curves.hIpsiDb[i]! < 0.1, `|H| over unity at ${curves.freqs[i]} Hz`);
+    }
+    design.dispose();
 });

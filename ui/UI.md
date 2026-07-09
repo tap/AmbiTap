@@ -9,15 +9,18 @@ the AudioWorklet host, and the heatmap / DOA / meters widgets in both hosts
 `ambitap.grid~` to AmbiTap-Max for the Max heatmap feed); the rotation ball
 and decoder-layout widgets, an SH-rotation streaming handle on the embedded
 profile (`compute_sh_rotation` + `sh_block_applier`), and the
-browser-as-remote-surface OSC path (wave 3). The browser dashboard is
-verified end-to-end in headless Chromium — the WASM worklet runs
-`dsp::encoder` → SH rotation → `analysis::soundfield_grid` +
-`energy_vector` with an ALLRAD metering decode, and a yaw-ring drag both
+browser-as-remote-surface OSC path (wave 3); and the room~ / xtc~ designer
+widgets with their C-ABI exports (wave 4). The browser dashboard and the
+designers page are verified end-to-end in headless Chromium — the WASM
+worklet runs `dsp::encoder` → SH rotation → `analysis::soundfield_grid` +
+`energy_vector` with an ALLRAD metering decode; a yaw-ring drag both
 counter-rotates the heatmap and lands as `/ambitap/orientation` OSC on a
-UDP listener via `scripts/osc-bridge.mjs`. The v8ui bundles pass
-simulated-mgraphics smoke runs and `ambitap.grid~` passes a full-header
-type check, but — like the externals — the Max side still **needs in-Max
-verification**. Wave 4+ (the designer widgets) remains planning.
+UDP listener via `scripts/osc-bridge.mjs`; and the XTC designer's
+P = C·H plot reports the real design numbers (26 dB worst in-band
+rejection at span 20°, improving with span). The v8ui bundles pass
+simulated-mgraphics smoke runs and the externals changes pass full-header
+type checks, but — like the externals — the Max side still **needs in-Max
+verification**.
 
 The UI work lives in this top-level `ui/` directory of the AmbiTap library
 repo — next to `tools/capi/`, which it depends on — because the shared widget
@@ -286,18 +289,37 @@ Angles are radians on every interface (matching the library and the
    accepts `yaw`/`pitch`/`roll`/`ypr` back), `ambitap.layout.js`
    (`preset <name>`, `speakers <az el ...>`, levels from `mc.peakamp~`,
    emits `select`).
-4. **Designer widgets.** `roomdesigner`, then `xtcdesigner` (which waits on
-   the small library accessor for the predicted-performance export, and on
-   the perceptual-verification listening pass that gates `xtc~` itself).
+4. **Designer widgets — DONE (Max side needs in-Max verification).**
+   `roomdesigner`: plan + side geometry editing (draggable source/listener,
+   wall resizing with a drag-frozen mapping), the mirrored-room image cloud,
+   and the reflectogram with the RT60 slope — all drawn from
+   `core/imagesource.ts`, a port of `room::for_each_image` cross-checked
+   arrival-for-arrival against the ABI by the test suite.
+   `xtcdesigner`: speaker-geometry editing (angle = span, radius =
+   distance), regularization slider, and the response plot — the four
+   shipped FIRs via `ambitap_xtc_*` plus the performance matrix P = C·H
+   against the same KEMAR plant the design inverted
+   (`ambitap_builtin_hrtf_hrir` at ±span/2 — the design's own numbers, not
+   a reimplementation), with the cancellation band shaded, the +12 dB
+   ceiling ruled, and the loudness-match A/B note drawn in. ABI additions:
+   `ambitap_room_image_sources`, the `ambitap_xtc_*` design handle
+   (`room::for_each_image` became public for it); `ambitap.xtc~` gained a
+   `dumpfir` message so the Max widget plots the running object's real
+   design. Browser page: `dist/web/designers.html`. The `xtc~` listening
+   pass (`docs/PERCEPTUAL-VERIFICATION.md`) still gates the object itself.
 5. **Pd** inherits the browser/WASM widgets as-is (Pd has no v8ui
    equivalent; a browser panel over OSC is the realistic UI story there).
 
 ## Open questions
 
-- **C ABI additions for the designers.** `room::for_each_image` and
-  `xtc::fir()` (+ a predicted-performance accessor) are not yet exported in
-  `tools/capi/`. Small, but they touch the library repo — sequence them
-  with wave 4.
+- **C ABI additions for the designers — RESOLVED (wave 4).**
+  `ambitap_room_image_sources` exports the Allen-Berkley enumeration
+  (`room::for_each_image`, made public) and `ambitap_xtc_*` wraps a
+  `dsp::xtc` design instance (redesign + FIR/metadata readback). The
+  predicted-performance question resolved without a new accessor: the
+  widget computes P = C·H from the shipped FIRs and the SAME
+  `builtin_hrtf_hrir` plant path the design inverts, so the plot shows the
+  design's numbers by construction.
 - **v8ui bundle format.** Confirm what module/bundle shape Max 9's `v8ui`
   loads most happily (single-file IIFE vs ES module) before settling the
   build tooling.
