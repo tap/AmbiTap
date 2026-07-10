@@ -8,12 +8,24 @@ Max/Pd objects run. Purely schematic diagrams (box-and-arrow SVGs with no
 data in them) are hand-authored and not regenerated here.
 
 Figures:
-  itd-ild.svg         Interaural time/level differences vs. azimuth, measured
-                      from the embedded KEMAR HRTF set (book ch. 1).
-  pan-law.svg         Equal-power stereo pan law + where the phantom image
-                      can and cannot go (book ch. 1; the pan law is analytic).
-  order-patterns.svg  max-rE virtual-microphone polar patterns at orders
-                      1/3/5 (book ch. 3).
+  itd-ild.svg           Interaural time/level differences vs. azimuth,
+                        measured from the embedded KEMAR HRTF set (ch. 1).
+  pan-law.svg           Equal-power stereo pan law + where the phantom image
+                        can and cannot go (ch. 1; the pan law is analytic).
+  order-patterns.svg    max-rE virtual-microphone polar patterns at orders
+                        1/3/5 (ch. 3).
+  b-format.svg          The order-1 basis as microphone pickup patterns:
+                        W omni + Y/Z/X figure-8s (ch. 6).
+  order-blur.svg        Beamwidth vs. order, and the quadratic channel-count
+                        price (ch. 7).
+  reflectogram.svg      Image-source early reflections of a shoebox room,
+                        from the room model (ch. 11).
+  decoder-comparison.svg  Energy and rE concentration around the circle for
+                        mode-matching / ALLRAD / EPAD on 5.1 (ch. 12).
+  ls-vs-magls.svg       Reconstructed HRTF magnitude at both ears, LS vs
+                        MagLS at order 3 (ch. 13).
+  heatmap.svg           analysis::soundfield_grid image of a two-source
+                        scene (ch. 14).
 
 Usage:  python3 scripts/generate_book_figures.py
 Needs:  numpy, matplotlib; builds libambitap_capi via cmake if missing.
@@ -36,14 +48,17 @@ import ambitap_py as at  # noqa: E402  (path set up above)
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
+# Fixed hashsalt (plus the stripped Date metadata below): regenerating an
+# unchanged figure produces a byte-identical SVG, so `git status` stays
+# honest about which figures actually changed.
+matplotlib.rcParams["svg.hashsalt"] = "ambitap-book"
 import matplotlib.pyplot as plt  # noqa: E402
 
 OUT = REPO / "book" / "src" / "img"
 PALETTE = at.PALETTE
 
-# Strip the volatile creation-date metadata so regenerating an unchanged
-# figure produces a byte-identical SVG (same discipline as the notebooks'
-# committed artifacts).
+# Strip the volatile creation-date metadata (paired with the fixed
+# svg.hashsalt above) so unchanged figures regenerate byte-identically.
 SAVE = dict(format="svg", bbox_inches="tight", metadata={"Date": None})
 
 
@@ -213,11 +228,279 @@ def fig_order_patterns() -> None:
     plt.close(fig)
 
 
+def fig_b_format() -> None:
+    """The four order-1 basis functions drawn as microphone pickup patterns.
+    Solid = positive lobe, dashed = negative — the classic polar-pattern
+    convention. W/Y/X on the horizontal plane; Z on a vertical slice."""
+    theta = np.linspace(-np.pi, np.pi, 721)
+    horiz = np.array([at.evaluate_sh(1, float(t), 0.0) for t in theta])  # (721, 4)
+    vert = np.array([at.evaluate_sh(1, 0.0, float(t)) for t in theta])
+
+    # The mic-pattern claims of ch. 6, checked: W is direction-blind; Y peaks
+    # left (+pi/2), X peaks front, Z peaks up, each with a mirror-image
+    # negative lobe.
+    assert np.allclose(horiz[:, 0], horiz[0, 0]), "W must be omnidirectional"
+    assert theta[np.argmax(horiz[:, 1])] > 0, "Y must peak to the left"
+    assert abs(theta[np.argmax(horiz[:, 3])]) < 0.01, "X must peak at front"
+    assert abs(theta[np.argmax(vert[:, 2])] - np.pi / 2) < 0.01, "Z must peak at zenith"
+
+    panels = [
+        ("W — omni (ACN 0)", horiz[:, 0], "front up"),
+        ("Y — left/right (ACN 1)", horiz[:, 1], "front up"),
+        ("Z — up/down (ACN 2)", vert[:, 2], "vertical slice, up = up"),
+        ("X — front/back (ACN 3)", horiz[:, 3], "front up"),
+    ]
+    fig, axes = plt.subplots(1, 4, figsize=(10.0, 2.9), subplot_kw={"projection": "polar"})
+    for ax, (title, g, note), color in zip(axes, panels, PALETTE):
+        pos, neg = np.where(g >= 0, g, np.nan), np.where(g < 0, -g, np.nan)
+        ax.plot(theta, pos, color=color, lw=1.8)
+        ax.plot(theta, neg, color=color, lw=1.4, ls="--")
+        ax.set_title(f"{title}\n{note}", fontsize=8)
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_ylim(0, 1.1)
+    fig.tight_layout()
+    fig.savefig(OUT / "b-format.svg", **SAVE)
+    plt.close(fig)
+
+
+def _beamwidth(order: int) -> float:
+    theta = np.linspace(-np.pi, np.pi, 1441)
+    w = at.max_re_weights(order)
+    acn = np.arange((order + 1) ** 2)
+    per_channel = w[np.floor(np.sqrt(acn)).astype(int)]
+    y0 = at.evaluate_sh(order, 0.0, 0.0)
+    g = np.array([np.dot(per_channel * y0, at.evaluate_sh(order, float(t), 0.0))
+                  for t in theta])
+    g = np.abs(g) / np.max(np.abs(g))
+    above = theta[g >= np.sqrt(0.5)]
+    return float(np.degrees(above.max() - above.min()))
+
+
+def fig_order_blur() -> None:
+    orders = np.arange(1, 6)
+    widths = np.array([_beamwidth(int(o)) for o in orders])
+    channels = (orders + 1) ** 2
+    assert np.all(np.diff(widths) < 0), "beamwidth must shrink monotonically"
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.0, 3.2))
+    ax1.plot(orders, widths, "o-", color=PALETTE[0], lw=1.8)
+    for o, wdeg in zip(orders, widths):
+        ax1.annotate(f"{wdeg:.0f}°", (o, wdeg), textcoords="offset points",
+                     xytext=(8, 4), fontsize=8)
+    ax1.set_xlabel("ambisonic order")
+    ax1.set_ylabel("−3 dB beamwidth (°)")
+    ax1.set_title("What order buys: sharpness")
+    ax1.set_xticks(orders)
+    ax1.set_ylim(0, 180)
+
+    ax2.bar(orders, channels, color=PALETTE[1], width=0.6)
+    for o, c in zip(orders, channels):
+        ax2.annotate(str(c), (o, c), ha="center", va="bottom", fontsize=9)
+    ax2.set_xlabel("ambisonic order")
+    ax2.set_ylabel("channels: (order+1)²")
+    ax2.set_title("What order costs: channel count")
+    ax2.set_xticks(orders)
+
+    for ax in (ax1, ax2):
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(OUT / "order-blur.svg", **SAVE)
+    plt.close(fig)
+
+
+def fig_reflectogram() -> None:
+    """Image-source early reflections of a shoebox room, straight from the
+    library's room model (the same enumeration ambitap.room~ renders)."""
+    lib = at._LIB
+    f32p = np.ctypeslib.ndpointer(dtype=np.float32, flags="C")
+    import ctypes
+    lib.ambitap_room_image_sources.argtypes = [f32p, f32p, f32p, f32p,
+                                               ctypes.c_float, ctypes.c_int,
+                                               f32p, f32p, f32p,
+                                               np.ctypeslib.ndpointer(dtype=np.int32, flags="C")]
+    lib.ambitap_room_image_sources.restype = ctypes.c_int
+
+    dims = np.array([8.0, 6.0, 3.5], dtype=np.float32)          # a rehearsal room
+    source = np.array([2.0, 1.5, 1.6], dtype=np.float32)
+    listener = np.array([5.5, 3.5, 1.6], dtype=np.float32)
+    beta = np.full(6, 0.85, dtype=np.float32)                   # reflection coeffs
+    cap = 4096
+    t = np.empty(cap, dtype=np.float32)
+    amp = np.empty(cap, dtype=np.float32)
+    direction = np.empty(3 * cap, dtype=np.float32)
+    refl = np.empty(cap, dtype=np.int32)
+    n = lib.ambitap_room_image_sources(dims, source, listener, beta, 0.08, cap,
+                                       t, amp, direction, refl)
+    assert n > 10, "a shoebox must produce early reflections"
+    t, amp, refl = t[:n] * 1e3, amp[:n], refl[:n]
+    direct = refl == 0
+    assert direct.sum() == 1 and t[direct][0] == t.min(), "direct path arrives first"
+
+    db = 20 * np.log10(np.maximum(np.abs(amp), 1e-9) / np.abs(amp[direct][0]))
+    fig, ax = plt.subplots(figsize=(8.0, 3.2))
+    for order_n, color, label in ((0, PALETTE[2], "direct"),
+                                  (1, PALETTE[0], "1st reflection"),
+                                  (2, PALETTE[1], "2nd"),
+                                  (3, PALETTE[4], "3rd+")):
+        sel = (refl == order_n) if order_n < 3 else (refl >= 3)
+        m, s, b = ax.stem(t[sel], db[sel], basefmt=" ")
+        plt.setp(s, color=color, linewidth=1.2)
+        plt.setp(m, color=color, markersize=3.5, label=label)
+    ax.set_xlabel("time after emission (ms)")
+    ax.set_ylabel("level re. direct path (dB)")
+    ax.set_title("Early reflections of an 8 × 6 × 3.5 m room (image-source model)")
+    ax.legend(fontsize=8, frameon=False)
+    ax.set_ylim(-40, 3)
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(OUT / "reflectogram.svg", **SAVE)
+    plt.close(fig)
+
+
+def fig_decoder_comparison() -> None:
+    """Energy and rE concentration around the horizontal circle for the three
+    decoder constructions on 5.1 (order 3, max-rE on): the actual matrices
+    the decode~ object builds."""
+    spk_az, spk_el = at.layout("5.1")
+    order = 3
+    theta = np.linspace(-np.pi, np.pi, 361)
+    Y = np.stack([at.evaluate_sh(order, float(a), 0.0) for a in theta])  # (T, C)
+    u = np.stack([np.cos(spk_az) * np.cos(spk_el),                       # unit vectors
+                  np.sin(spk_az) * np.cos(spk_el),
+                  np.sin(spk_el)], axis=1)                               # (L, 3)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.0, 3.4))
+    results = {}
+    for alg, color in (("mode_match", PALETTE[0]), ("allrad", PALETTE[1]),
+                       ("epad", PALETTE[2])):
+        D = at.decoder_matrix(alg, order, spk_az, spk_el, use_max_re=True)
+        G = Y @ D.T                                # (T, L) speaker gains per direction
+        E = np.sum(G**2, axis=1)                   # energy
+        rE = np.linalg.norm((G**2) @ u, axis=1) / np.maximum(E, 1e-12)
+        results[alg] = (E, rE)
+        ax1.plot(np.degrees(theta), 10 * np.log10(E / E.mean()), color=color,
+                 lw=1.6, label=alg)
+        ax2.plot(np.degrees(theta), rE, color=color, lw=1.6, label=alg)
+
+    # The chapter's claims, checked: on an irregular, gappy layout like 5.1
+    # ALLRAD holds loudness flattest around the circle by a wide margin (its
+    # design goal); and every construction focuses rE harder inside the
+    # frontal stage, where the speakers actually are, than in the rear gap.
+    spread = {a: np.ptp(10 * np.log10(E / E.mean())) for a, (E, _) in results.items()}
+    assert spread["allrad"] <= min(spread.values()) + 1e-6, "ALLRAD must be flattest"
+    assert spread["allrad"] < 0.5 * min(spread["mode_match"], spread["epad"]), \
+        "the ALLRAD advantage on 5.1 should be decisive, not marginal"
+    for alg, (_, rE) in results.items():
+        front = np.abs(np.degrees(theta)) <= 30
+        back = np.abs(np.degrees(theta)) >= 150
+        assert rE[front].mean() > rE[back].mean(), f"{alg}: front must beat the gap"
+
+    for spk in np.degrees(spk_az):
+        for ax in (ax1, ax2):
+            ax.axvline(spk, color="0.88", lw=0.8, zorder=0)
+    ax1.set_ylabel("energy re. mean (dB)")
+    ax1.set_title("Loudness around the circle")
+    ax2.set_ylabel("|rE| (concentration, 0–1)")
+    ax2.set_title("Image focus around the circle")
+    for ax in (ax1, ax2):
+        ax.set_xlabel("source azimuth (°) — vertical lines: the five speakers")
+        ax.set_xticks([-180, -110, -30, 0, 30, 110, 180])
+        ax.legend(fontsize=8, frameon=False)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(OUT / "decoder-comparison.svg", **SAVE)
+    plt.close(fig)
+
+
+def fig_ls_vs_magls() -> None:
+    """Reconstructed HRTF magnitude at both ears for a hard-left source,
+    order 3: LS loses high-frequency energy at the far ear; MagLS holds the
+    magnitude. Same data paths ambitap.binaural~ convolves."""
+    info = at.builtin_hrtf_info()
+    rate = info["sample_rate"]
+    az = np.deg2rad(90.0)  # hard left: left ear near, right ear shadowed
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.4))
+    curves = {}
+    for magls, label, ls in ((False, "LS, order 3", "--"), (True, "MagLS, order 3", "-")):
+        left, right = at.builtin_hrtf_hrir(az, 0.0, order=3, magls=magls)
+        freqs = np.fft.rfftfreq(len(left), 1.0 / rate)
+        for ax, ear, sig in ((axes[0], "near (left)", left), (axes[1], "far (right)", right)):
+            mag = 20 * np.log10(np.maximum(np.abs(np.fft.rfft(sig)), 1e-9))
+            color = PALETTE[0] if not magls else PALETTE[2]
+            ax.semilogx(freqs[1:], mag[1:], ls, color=color, lw=1.5, label=label)
+            curves[(magls, ear)] = (freqs, mag)
+            ax.set_title(f"{ear} ear — source hard left")
+
+    # The chapter's claim, checked: above the order-3 aliasing region the LS
+    # reconstruction sheds energy at the shadowed ear relative to MagLS.
+    f, ls_mag = curves[(False, "far (right)")]
+    _, magls_mag = curves[(True, "far (right)")]
+    hi = (f >= 6000) & (f <= 16000)
+    assert magls_mag[hi].mean() > ls_mag[hi].mean(), "MagLS must hold HF magnitude"
+
+    for ax in axes:
+        ax.set_xlabel("frequency (Hz)")
+        ax.set_ylabel("magnitude (dB)")
+        ax.set_xlim(100, rate / 2)
+        ax.legend(fontsize=8, frameon=False)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(OUT / "ls-vs-magls.svg", **SAVE)
+    plt.close(fig)
+
+
+def fig_heatmap() -> None:
+    """analysis::soundfield_grid — the image behind ambitap.grid~ and the
+    heatmap widget — for a scene with two sources of different levels."""
+    rng = np.random.default_rng(7)
+    order, n = 3, 48000
+    hoa = np.zeros((at.channel_count(order), n), dtype=np.float32)
+    for src_az, src_el, gain in ((np.deg2rad(40), np.deg2rad(15), 1.0),
+                                 (np.deg2rad(-120), np.deg2rad(-10), 0.4)):
+        coeffs = at.evaluate_sh(order, float(src_az), float(src_el))
+        hoa += np.outer(coeffs, gain * rng.standard_normal(n).astype(np.float32))
+    img, peak_db = at.soundfield_grid(hoa, order=order, az_steps=128,
+                                      smoothing_ms=500.0)
+
+    # The louder source must be the image's global maximum, near its true
+    # direction (az 40°, el 15°).
+    el_steps, az_steps = img.shape
+    iy, ix = np.unravel_index(np.argmax(img), img.shape)
+    az_found = -180.0 + 360.0 * (ix + 0.5) / az_steps
+    el_found = 90.0 - 180.0 * (iy + 0.5) / el_steps
+    assert abs(az_found - 40) < 15 and abs(el_found - 15) < 15, \
+        f"peak at ({az_found:.0f}, {el_found:.0f}), expected near (40, 15)"
+
+    fig, ax = plt.subplots(figsize=(8.0, 3.4))
+    im = ax.imshow(img, extent=[-180, 180, -90, 90], aspect="auto",
+                   origin="upper", cmap="viridis", vmin=0, vmax=1)
+    ax.plot(40, 15, "o", ms=12, mfc="none", mec="white", mew=1.5)
+    ax.plot(-120, -10, "o", ms=12, mfc="none", mec="white", mew=1.2, ls=":")
+    ax.annotate("source, 0 dB", (40, 15), xytext=(52, 32), color="white", fontsize=8)
+    ax.annotate("source, −8 dB", (-120, -10), xytext=(-108, -36), color="white", fontsize=8)
+    ax.set_xlabel("azimuth (°) — 0 = front, +90 = left")
+    ax.set_ylabel("elevation (°)")
+    ax.set_title(f"Soundfield heatmap of a two-source scene (peak {peak_db:.0f} dB)")
+    fig.colorbar(im, ax=ax, label="normalized energy")
+    fig.tight_layout()
+    fig.savefig(OUT / "heatmap.svg", **SAVE)
+    plt.close(fig)
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     fig_itd_ild()
     fig_pan_law()
     fig_order_patterns()
+    fig_b_format()
+    fig_order_blur()
+    fig_reflectogram()
+    fig_decoder_comparison()
+    fig_ls_vs_magls()
+    fig_heatmap()
     print(f"wrote {len(list(OUT.glob('*.svg')))} SVGs to {OUT}")
 
 
