@@ -120,7 +120,8 @@ book borrows three mechanical commitments from its sibling (the
 
 ## Status of this draft
 
-This is an early, in-progress draft. The Introduction and Parts 0–I are
-written; the remaining chapters exist as the outline you can see in the
-table of contents, and are being written to the same contract: every claim
-demonstrable, every patch shipped, every figure generated.
+This is a complete first draft — all parts and appendices are written, the
+companion patches ship in the packages, and every computed figure
+regenerates from the library with its claims asserted at build time. What
+it has not yet had is readers; found something wrong, unclear, or missing,
+file an issue on the repository like you would for any other bug.

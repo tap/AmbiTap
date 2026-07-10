@@ -15,37 +15,37 @@
 
 # Part II — What's in the bus
 
-- [One omni and a lot of figure-8s]()
-- [Order and blur]()
-- [The paperwork: formats and conventions]()
+- [One omni and a lot of figure-8s](part2/omni-and-figure-8s.md)
+- [Order and blur](part2/order-and-blur.md)
+- [The paperwork: formats and conventions](part2/paperwork.md)
 
 # Part III — The craft, task by task
 
-- [Placing sources]()
-- [Distance]()
-- [Rooms]()
-- [Decoding to real speakers]()
-- [Binaural, properly]()
-- [Watching the scene]()
-- [Mixing inside the scene]()
-- [Speakers pretending to be headphones]()
-- [Beds and stems]()
+- [Placing sources](part3/placing-sources.md)
+- [Distance](part3/distance.md)
+- [Rooms](part3/rooms.md)
+- [Decoding to real speakers](part3/decoding.md)
+- [Binaural, properly](part3/binaural.md)
+- [Watching the scene](part3/watching.md)
+- [Mixing inside the scene](part3/mixing.md)
+- [Speakers pretending to be headphones](part3/transaural.md)
+- [Beds and stems](part3/beds.md)
 
 # Part IV — The wider world
 
-- [The same patch in Pd]()
-- [Recording a scene]()
-- [The DAW route]()
-- [Games and XR]()
-- [Atmos and friends]()
+- [The same patch in Pd](part4/pd.md)
+- [Recording a scene](part4/recording.md)
+- [The DAW route](part4/daw.md)
+- [Games and XR](part4/games-xr.md)
+- [Atmos and friends](part4/atmos.md)
 
 # Part V — Which tool, when
 
-- [The decision guide]()
+- [The decision guide](part5/decision-guide.md)
 
 # Appendices
 
-- [A: Glossary]()
-- [B: Conventions cheat sheet]()
-- [C: Max ↔ Pd object reference]()
-- [D: Annotated further reading]()
+- [A: Glossary](appendix/glossary.md)
+- [B: Conventions cheat sheet](appendix/cheat-sheet.md)
+- [C: Max ↔ Pd object reference](appendix/object-reference.md)
+- [D: Annotated further reading](appendix/further-reading.md)
