@@ -28,7 +28,9 @@ include/ambitap/
 ├── dsp/                 runtime-sized processors: encoder, rotator, decoder,
 │                        binaural renderer, mirror, virtual mic, doppler,
 │                        directional loudness, spatial compressor,
-│                        FuMa <-> AmbiX format converter
+│                        room reverb (image-source + SH FDN), plate reverb
+│                        (N-in/M-out Dattorro tank), near-field compensation,
+│                        crosstalk cancellation, FuMa <-> AmbiX format converter
 │   └── util/            wait-free publication (rt_published), async matrix
 │                        rebuild worker, parameter smoothing
 └── analysis/            UI-feeding analysis: energy vector, soundfield heatmap
