@@ -15,6 +15,7 @@
 #include "dsp/format_converter.h"
 #include "dsp/mirror.h"
 #include "dsp/nfc.h"
+#include "dsp/plate.h"
 #include "dsp/room.h"
 #include "dsp/rotator.h"
 #include "dsp/spatial_compressor.h"

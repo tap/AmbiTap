@@ -8,6 +8,7 @@
 // Copyright 2026 Timothy Place.
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <string>
@@ -117,6 +118,22 @@ int main() {
         }
         std::printf("\n");
     }
+
+    // Plate reverb across tank sizes: 2 branches is the stereo Dattorro
+    // figure-8; 8 branches with wide I/O is the heavy multichannel case.
+    for (auto [ins, outs, branches] : {std::array<int, 3>{1, 2, 2}, {4, 8, 4}, {8, 16, 8}}) {
+        ambitap::dsp::plate plate(ins, outs, branches);
+        plate.prepare(k_fs);
+        plate.snap_parameters();
+        planar in(static_cast<size_t>(ins), k_block, 0.25f);
+        planar out(static_cast<size_t>(outs), k_block, 0.f);
+        report("plate " + std::to_string(ins) + "x" + std::to_string(outs) + " branches " + std::to_string(branches),
+               bench_us_per_block([&] {
+                   plate.process(in.in.data(), out.out.data(), k_block);
+                   g_sink += out.bufs[0][0];
+               }));
+    }
+    std::printf("\n");
 
     // Rebuild latency: how long a decoder matrix build takes off the audio
     // thread (order 5, 7.1.4 via ALLRAD — the expensive path).

@@ -23,6 +23,7 @@
 #include "ambitap/dsp/format_converter.h"
 #include "ambitap/dsp/mirror.h"
 #include "ambitap/dsp/nfc.h"
+#include "ambitap/dsp/plate.h"
 #include "ambitap/dsp/room.h"
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/dsp/spatial_compressor.h"
@@ -360,4 +361,24 @@ TEST(RtSafety, RoomProcessIsAllocationFree) {
         EXPECT_EQ(guard.allocations(), 0);
         EXPECT_EQ(guard.frees(), 0);
     }
+}
+
+TEST(RtSafety, PlateProcessIsAllocationFree) {
+    constexpr size_t frames = 64;
+
+    dsp::plate plate(4, 4, 8);
+    plate.prepare(48000.f);
+    plate.set_decay(0.8f); // mid-ramp exercises the smoothing path too
+    plate.set_predelay_seconds(0.05f);
+
+    planar             io(4, frames);
+    std::vector<float> frame_in(4, 0.5f), frame_out(4);
+
+    rt_guard guard;
+    for (int i = 0; i < 8; ++i) {
+        plate.process(io.in.data(), io.out.data(), frames);
+        plate.process_frame(frame_in.data(), frame_out.data());
+    }
+    EXPECT_EQ(guard.allocations(), 0);
+    EXPECT_EQ(guard.frees(), 0);
 }
