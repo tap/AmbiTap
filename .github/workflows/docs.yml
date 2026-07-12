@@ -1,10 +1,10 @@
 name: Docs
 
-# Build the Doxygen API site and the mdBook ("Hearing in Three Dimensions",
-# book/) and publish both to GitHub Pages on every push to main — the API
-# reference at the site root (its historical URL) and the book under /book/.
-# On pull requests, build only (no deploy) so breakage in either is caught in
-# review without touching the live site.
+# Build the mdBook ("Hearing in Three Dimensions", book/) and the Doxygen
+# API site and publish both to GitHub Pages on every push to main — the book
+# at the site root and the API reference under /api/. On pull requests, build
+# only (no deploy) so breakage in either is caught in review without touching
+# the live site.
 
 on:
   push:
@@ -43,18 +43,18 @@ jobs:
           tar -xzf mdbook.tar.gz mdbook
           ./mdbook --version
 
-      - name: Build the API site
-        run: doxygen docs/Doxyfile
-
       - name: Build the book
         run: ./mdbook build book
 
-      - name: Compose the Pages site (API at /, book at /book/)
+      - name: Build the API site
+        run: doxygen docs/Doxyfile
+
+      - name: Compose the Pages site (book at /, API at /api/)
         run: |
           mkdir -p site
-          cp -r docs/html/. site/
-          mkdir -p site/book
-          cp -r book/book/. site/book/
+          cp -r book/book/. site/
+          mkdir -p site/api
+          cp -r docs/html/. site/api/
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'
