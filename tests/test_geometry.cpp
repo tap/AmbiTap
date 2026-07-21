@@ -15,7 +15,7 @@
 #include "ambitap/math/geometry/speaker_layout.h"
 #include "ambitap/math/geometry/tdesigns.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 TEST(ConvexHull, RandomSpherePointsSatisfyEuler) {
     // Points in generic position (no coplanar faces): a closed triangulated

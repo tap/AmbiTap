@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Portable pi (M_PI is a POSIX extension MSVC hides behind
     /// _USE_MATH_DEFINES; the library avoids it).
@@ -30,4 +30,4 @@ namespace ambitap {
         return {std::atan2(y, x), std::atan2(z, std::sqrt(x * x + y * y))};
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

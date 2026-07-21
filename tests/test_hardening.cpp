@@ -26,7 +26,7 @@
 #include "ambitap/math/geometry/layouts.h"
 #include "ambitap/math/geometry/speaker_layout.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 // Audit finding C6: orders beyond k_max_order used to overflow evaluate_sh's
 // fixed-size Legendre table (stack corruption) via any processor constructor.

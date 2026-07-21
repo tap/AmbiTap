@@ -18,7 +18,7 @@
 #include "../math/core/spherical_harmonics.h"
 #include "../math/core/validate.h"
 
-namespace ambitap::analysis {
+namespace tap::ambi::analysis {
 
     /// Project a HOA bus onto a dense equirectangular grid of directions and
     /// accumulate smoothed per-direction energy — the data behind a "where is
@@ -231,4 +231,4 @@ namespace ambitap::analysis {
         }
     };
 
-} // namespace ambitap::analysis
+} // namespace tap::ambi::analysis

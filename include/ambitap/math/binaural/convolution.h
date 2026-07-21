@@ -13,7 +13,7 @@
 
 #include "ooura_fft.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Partitioned overlap-save FIR convolver.
     ///
@@ -161,4 +161,4 @@ namespace ambitap {
     using partitioned_convolver   = basic_partitioned_convolver<double, real_fft>;
     using partitioned_convolver32 = basic_partitioned_convolver<float, real_fft32>;
 
-} // namespace ambitap
+} // namespace tap::ambi

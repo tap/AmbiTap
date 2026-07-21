@@ -17,7 +17,7 @@
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Sections in the IIR cascade of a single order-m NFC filter: ceil(m/2)
     /// (floor(m/2) biquads plus, for odd m, one first-order section).
@@ -449,4 +449,4 @@ namespace ambitap::dsp {
         void publish() { m_smooth.set(m_coefficients.data(), m_total_coeffs); }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

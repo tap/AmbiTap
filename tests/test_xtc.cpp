@@ -15,7 +15,7 @@
 
 #include "ambitap/dsp/xtc.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

@@ -17,7 +17,7 @@
 #include "../core/validate.h"
 #include "max_re.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Compute an EPAD (Energy-Preserving Ambisonic Decoder) matrix for a given
     /// ambisonics order and speaker layout.
@@ -55,7 +55,7 @@ namespace ambitap {
                                                 bool use_max_re = false) {
         validated_order(order, "compute_epad_decoder");
         if (speakers.empty()) {
-            throw std::invalid_argument("ambitap::compute_epad_decoder: empty speaker list");
+            throw std::invalid_argument("tap::ambi::compute_epad_decoder: empty speaker list");
         }
 
         const auto L = static_cast<Eigen::Index>(speakers.size());
@@ -103,4 +103,4 @@ namespace ambitap {
         return D;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

@@ -13,7 +13,7 @@
 #include <thread>
 #include <utility>
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Publishes a heap-allocated product from a builder thread to ONE
     /// real-time reader thread, with a genuinely wait-free read side.
@@ -138,4 +138,4 @@ namespace ambitap::dsp {
         std::shared_ptr<Product> m_latest; // keep-alive + peek()
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

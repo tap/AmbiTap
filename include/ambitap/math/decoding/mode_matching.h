@@ -18,7 +18,7 @@
 #include "../core/validate.h"
 #include "max_re.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Compute a mode-matching (pseudoinverse) decoder matrix for a given ambisonics
     /// order and speaker layout.
@@ -49,7 +49,7 @@ namespace ambitap {
                                                          bool use_max_re = false) {
         validated_order(order, "compute_mode_matching_decoder");
         if (speakers.empty()) {
-            throw std::invalid_argument("ambitap::compute_mode_matching_decoder: empty speaker list");
+            throw std::invalid_argument("tap::ambi::compute_mode_matching_decoder: empty speaker list");
         }
 
         const auto L = static_cast<Eigen::Index>(speakers.size());
@@ -91,4 +91,4 @@ namespace ambitap {
         return D;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

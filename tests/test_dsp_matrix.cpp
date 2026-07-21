@@ -16,7 +16,7 @@
 #include "ambitap/dsp/rotator.h"
 #include "ambitap/math/geometry/layouts.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

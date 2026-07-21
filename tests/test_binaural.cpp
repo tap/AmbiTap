@@ -14,7 +14,7 @@
 #include "ambitap/math/binaural/ooura_fft.h"
 #include "ambitap/math/core/indexing.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

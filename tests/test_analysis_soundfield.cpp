@@ -11,7 +11,7 @@
 #include "ambitap/analysis/soundfield_grid.h"
 #include "ambitap/dsp/encoder.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 TEST(AnalysisSoundfieldGrid, DimensionsAndResolutionChange) {
     analysis::soundfield_grid sg(1, 32);

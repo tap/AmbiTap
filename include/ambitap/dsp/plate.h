@@ -18,7 +18,7 @@
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Maximum input channel count accepted by dsp::plate.
     inline constexpr int k_plate_max_inputs = 64;
@@ -264,11 +264,11 @@ namespace ambitap::dsp {
         static int validated_count(int value, int lowest, int highest, const char* what) {
             if (value < lowest || value > highest) {
 #if AMBITAP_HAS_EXCEPTIONS
-                throw std::invalid_argument(std::string("ambitap::dsp::plate: ") + what + " " + std::to_string(value)
+                throw std::invalid_argument(std::string("tap::ambi::dsp::plate: ") + what + " " + std::to_string(value)
                                             + " outside supported range [" + std::to_string(lowest) + ", "
                                             + std::to_string(highest) + "]");
 #else
-                assert(false && "ambitap::dsp::plate: count outside supported range");
+                assert(false && "tap::ambi::dsp::plate: count outside supported range");
                 (void)what;
                 return std::clamp(value, lowest, highest);
 #endif
@@ -521,4 +521,4 @@ namespace ambitap::dsp {
         ++m_t;
     }
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

@@ -47,7 +47,7 @@
 namespace {
 
     constexpr int    k_order = 3;
-    constexpr size_t k_chans = ambitap::channel_count(k_order);
+    constexpr size_t k_chans = tap::ambi::channel_count(k_order);
     constexpr size_t k_block = 64;
 
     float g_in[k_chans][k_block];
@@ -79,7 +79,7 @@ namespace {
 } // namespace
 
 int main() {
-    using namespace ambitap;
+    using namespace tap::ambi;
 
     const float* in[k_chans];
     float*       out[k_chans];

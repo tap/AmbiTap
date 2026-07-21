@@ -15,7 +15,7 @@
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Apply a variable propagation delay to a higher-order ambisonics signal.
     ///
@@ -177,4 +177,4 @@ namespace ambitap::dsp {
         size_t                          m_write_idx{0};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

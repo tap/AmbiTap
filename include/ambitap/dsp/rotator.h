@@ -16,7 +16,7 @@
 #include "util/async_rebuilder.h"
 #include "util/sh_block_applier.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Rotate a higher-order ambisonics signal by Euler angles (yaw, pitch, roll).
     ///
@@ -182,4 +182,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

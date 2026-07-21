@@ -13,7 +13,7 @@
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/dsp/spatial_compressor.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 TEST(DspDoppler, SilentUntilPrepared) {
     dsp::doppler dop(1);

@@ -17,7 +17,7 @@
 #include "../core/coords.h"
 #include "convex_hull.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Convert spherical coordinates to a Cartesian unit vector.
     inline Eigen::Vector3f spherical_to_cartesian(float azimuth, float elevation) {
@@ -45,7 +45,7 @@ namespace ambitap {
         explicit speaker_layout(const std::vector<spherical_coord>& speakers)
             : m_speakers(speakers) {
             if (speakers.empty()) {
-                throw std::invalid_argument("ambitap::speaker_layout: empty speaker list");
+                throw std::invalid_argument("tap::ambi::speaker_layout: empty speaker list");
             }
 
             m_cart.reserve(speakers.size());
@@ -303,4 +303,4 @@ namespace ambitap {
         std::vector<size_t> m_ring_index;
     };
 
-} // namespace ambitap
+} // namespace tap::ambi

@@ -11,7 +11,7 @@
 
 #include <cstddef>
 
-namespace ambitap {
+namespace tap::ambi {
 
 inline constexpr int    room_data_seed         = 11;
 inline constexpr size_t room_data_lines        = 16;
@@ -5188,7 +5188,7 @@ inline constexpr float room_noise[room_data_lines][room_data_burst_length] = {
     },
 };
 
-} // namespace ambitap
+} // namespace tap::ambi
 
 #endif // AMBITAP_DSP_ROOM_DATA_H
 // NOLINTEND(readability-identifier-naming)

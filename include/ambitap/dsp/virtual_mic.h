@@ -14,7 +14,7 @@
 #include "../math/decoding/max_re.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Extract a mono signal from a HOA bus, pointing in a chosen direction.
     ///
@@ -133,4 +133,4 @@ namespace ambitap::dsp {
         smoothed_table<k_max_channel_count> m_smooth;
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

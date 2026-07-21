@@ -10,7 +10,7 @@
 
 #include "matrix_applier.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Apply an SH rotation matrix to a HOA bus, with the same click-free
     /// crossfade semantics as matrix_applier — but visiting only the
@@ -101,4 +101,4 @@ namespace ambitap::dsp {
         size_t      m_fade_pos{k_fade_samples};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

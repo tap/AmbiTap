@@ -18,7 +18,7 @@
 #include "../geometry/tdesigns.h"
 #include "max_re.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Compute an ALLRAD decoder matrix for a given ambisonics order and speaker layout.
     ///
@@ -113,4 +113,4 @@ namespace ambitap {
         return G.transpose() * D_virtual;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

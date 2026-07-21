@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Resample a FIR from in_rate to out_rate with a Hann-windowed sinc
     /// kernel (32 input samples per side). Offline use only — allocates;
@@ -60,4 +60,4 @@ namespace ambitap {
         return out;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

@@ -15,7 +15,7 @@
 #include "ambitap/dsp/mirror.h"
 #include "ambitap/dsp/virtual_mic.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

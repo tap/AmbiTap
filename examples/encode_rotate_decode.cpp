@@ -20,7 +20,7 @@ int main() {
     constexpr float  pi     = 3.14159265358979f;
 
     // 1. Encode a 440 Hz tone as a point source 45° to the left.
-    ambitap::dsp::encoder enc(order);
+    tap::ambi::dsp::encoder enc(order);
     enc.set_direction(45.0f * pi / 180.0f, 0.0f);
     enc.snap_parameters(); // offline render: no parameter ramp
 
@@ -36,7 +36,7 @@ int main() {
     enc.process(mono.data(), hoa_ptrs.data(), frames);
 
     // 2. Rotate the whole soundfield 90° to the right (yaw = -90°).
-    ambitap::dsp::rotator rot(order);
+    tap::ambi::dsp::rotator rot(order);
     rot.set_rotation(-90.0f * pi / 180.0f, 0.0f, 0.0f);
     rot.wait_for_settling(); // offline: block until the matrix is built
 
@@ -50,9 +50,9 @@ int main() {
     rot.process(rot_in.data(), rot_out.data(), frames);
 
     // 3. Decode to 5.1 (2D pairwise VBAP under the hood via ALLRAD).
-    const auto            speakers = ambitap::layouts::surround_5_1();
-    ambitap::dsp::decoder dec(order);
-    dec.set_algorithm(ambitap::dsp::decoder_algorithm::allrad);
+    const auto              speakers = tap::ambi::layouts::surround_5_1();
+    tap::ambi::dsp::decoder dec(order);
+    dec.set_algorithm(tap::ambi::dsp::decoder_algorithm::allrad);
     dec.set_speakers(speakers);
     dec.wait_for_settling();
 
@@ -74,7 +74,7 @@ int main() {
     for (size_t s = 0; s < speakers.size(); ++s) {
         double e = 0.0;
         // Skip the adoption crossfade at the head of the buffer.
-        const size_t start = ambitap::dsp::decoder::k_fade_samples;
+        const size_t start = tap::ambi::dsp::decoder::k_fade_samples;
         for (size_t i = start; i < frames; ++i) {
             e += static_cast<double>(out[s][i]) * static_cast<double>(out[s][i]);
         }

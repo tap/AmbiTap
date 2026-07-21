@@ -26,7 +26,7 @@
 #include "util/async_rebuilder.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Shoebox room reverberation in the spherical-harmonic domain: a mono
     /// source at a stated position in a stated room, rendered as direct sound,
@@ -1224,4 +1224,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

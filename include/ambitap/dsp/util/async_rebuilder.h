@@ -15,7 +15,7 @@
 
 #include "rt_published.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Owns a worker thread that rebuilds an expensive product (decoder matrix,
     /// SH rotation matrix, HRTF projection, …) off the audio thread and
@@ -153,4 +153,4 @@ namespace ambitap::dsp {
         std::thread m_worker; // last member: joins before anything else dies
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

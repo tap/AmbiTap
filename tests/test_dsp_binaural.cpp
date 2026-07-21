@@ -11,7 +11,7 @@
 
 #include "ambitap/dsp/binaural_renderer.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

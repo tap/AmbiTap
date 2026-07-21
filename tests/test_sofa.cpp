@@ -14,7 +14,7 @@
 
 #include "ambitap/math/binaural/sofa_reader.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

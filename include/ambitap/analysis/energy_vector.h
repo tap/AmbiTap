@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstddef>
 
-namespace ambitap::analysis {
+namespace tap::ambi::analysis {
 
     /// Real-time active intensity vector for a higher-order ambisonics bus.
     ///
@@ -122,4 +122,4 @@ namespace ambitap::analysis {
         std::array<std::atomic<float>, 3> m_published{};
     };
 
-} // namespace ambitap::analysis
+} // namespace tap::ambi::analysis

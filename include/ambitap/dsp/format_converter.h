@@ -14,7 +14,7 @@
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Conversion direction for format_converter.
     enum class format_direction {
@@ -157,4 +157,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

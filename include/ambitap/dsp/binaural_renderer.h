@@ -26,7 +26,7 @@
 #include "binaural_core.h"
 #include "rotator.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Decode a higher-order ambisonics signal to binaural stereo by convolving
     /// each HOA channel with its corresponding SH-domain HRTF filter and summing
@@ -146,14 +146,14 @@ namespace ambitap::dsp {
         ///         channels() FIRs, any FIR is empty, or lengths are unequal.
         void set_custom_hrtf(std::vector<std::vector<float>> left, std::vector<std::vector<float>> right) {
             if (left.size() != m_channels || right.size() != m_channels) {
-                throw std::invalid_argument("ambitap::dsp::binaural_renderer::set_custom_hrtf: need exactly "
+                throw std::invalid_argument("tap::ambi::dsp::binaural_renderer::set_custom_hrtf: need exactly "
                                             "channels() FIRs per ear");
             }
             const size_t taps = left.front().size();
             for (const auto* ear : {&left, &right}) {
                 for (const auto& fir : *ear) {
                     if (fir.empty() || fir.size() != taps) {
-                        throw std::invalid_argument("ambitap::dsp::binaural_renderer::set_custom_hrtf: all FIRs "
+                        throw std::invalid_argument("tap::ambi::dsp::binaural_renderer::set_custom_hrtf: all FIRs "
                                                     "must be non-empty and equal length");
                     }
                 }
@@ -317,7 +317,7 @@ namespace ambitap::dsp {
         /// would index off the end of the embedded tables.
         void require_hrtf_coverage(const char* who) const {
             if (!has_custom_hrtf() && m_order > builtin_hrtf_order) {
-                throw std::invalid_argument(std::string("ambitap::dsp::binaural_renderer::") + who + ": order "
+                throw std::invalid_argument(std::string("tap::ambi::dsp::binaural_renderer::") + who + ": order "
                                             + std::to_string(m_order) + " exceeds the built-in HRTF order "
                                             + std::to_string(builtin_hrtf_order) + "; supply set_custom_hrtf() first");
             }
@@ -383,4 +383,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

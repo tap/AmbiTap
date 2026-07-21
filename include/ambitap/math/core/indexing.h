@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Number of ambisonics channels for a given order: (N+1)^2.
     /// @param order  Ambisonics order (0 = omnidirectional, 1 = first-order, etc.)
@@ -53,4 +53,4 @@ namespace ambitap {
         return acn_order(acn);
     }
 
-} // namespace ambitap
+} // namespace tap::ambi
