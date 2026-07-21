@@ -224,10 +224,10 @@ jobs:
           arm-none-eabi-g++ -std=c++20 -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             -fno-exceptions -fno-rtti -Os \
             -Wall -Wextra -Werror -Wdouble-promotion \
-            -Iinclude \
+            -Iinclude -Isubmodules/dsptap/include \
             -c tools/embedded/rt_core_check.cpp -o rt_core_check.o
           arm-none-eabi-gcc -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -Os \
-            -c third_party/ooura/fftsg_float.c -o fftsg_float.o
+            -c submodules/dsptap/third_party/ooura/fftsg_float.c -o fftsg_float.o
           arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             --specs=nosys.specs --specs=nano.specs \
             rt_core_check.o fftsg_float.o -o rt_core_check.elf
@@ -249,14 +249,14 @@ jobs:
       - name: Trimmed HRTF table is a working drop-in (tools/hrtf_trim)
         run: |
           set -o pipefail
-          g++ -std=c++20 -O1 -Iinclude tools/hrtf_trim/hrtf_trim.cpp -o hrtf_trim
+          g++ -std=c++20 -O1 -Iinclude -Isubmodules/dsptap/include tools/hrtf_trim/hrtf_trim.cpp -o hrtf_trim
           mkdir -p trimmed/ambitap/math/binaural
           ./hrtf_trim --order 3 --projection ls \
             --out trimmed/ambitap/math/binaural/hrtf_data.h
           arm-none-eabi-g++ -std=c++20 -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             -fno-exceptions -fno-rtti -Os \
             -Wall -Wextra -Werror -Wdouble-promotion \
-            -Itrimmed -Iinclude \
+            -Itrimmed -Iinclude -Isubmodules/dsptap/include \
             -c tools/embedded/rt_core_check.cpp -o rt_trim.o
           arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             --specs=rdimon.specs --specs=nano.specs -nostartfiles \
