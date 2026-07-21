@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    ambitap::dsp::room room(order);
+    tap::ambi::dsp::room room(order);
     if (have_source) {
         room.set_source_position(src[0], src[1], src[2]);
     }

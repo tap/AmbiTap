@@ -56,7 +56,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         return 0;
 
     try {
-        const ambitap::hrtf_data hrtf = ambitap::load_sofa(path);
+        const tap::ambi::hrtf_data hrtf = tap::ambi::load_sofa(path);
 
         // Exercise the downstream math too: project onto a low order (cheap;
         // higher orders just rank-reject on sparse grids). Only meaningful

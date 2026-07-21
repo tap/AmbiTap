@@ -13,7 +13,7 @@
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Encode a mono source as a point-source at a given direction into a HOA bus
     /// (ACN ordering, SN3D normalization).
@@ -129,4 +129,4 @@ namespace ambitap::dsp {
         smoothed_scalar                     m_gain{1.0f};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

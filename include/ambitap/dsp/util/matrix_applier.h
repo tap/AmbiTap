@@ -8,7 +8,7 @@
 
 #include <cstddef>
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Apply a row-major (rows × cols) matrix to a multichannel signal, with
     /// click-free adoption: each newly presented matrix crossfades in over
@@ -91,4 +91,4 @@ namespace ambitap::dsp {
         size_t      m_fade_pos{k_fade_samples};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

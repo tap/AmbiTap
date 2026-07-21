@@ -15,7 +15,7 @@
 #include "ambitap/math/decoding/mode_matching.h"
 #include "ambitap/math/geometry/layouts.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

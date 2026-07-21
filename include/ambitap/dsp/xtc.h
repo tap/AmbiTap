@@ -19,7 +19,7 @@
 #include "../math/binaural/resample.h"
 #include "../math/core/spherical_harmonics.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Crosstalk canceller for playing binaural (or plain stereo) program over
     /// two loudspeakers: each ear should hear only its own channel, so the
@@ -599,4 +599,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

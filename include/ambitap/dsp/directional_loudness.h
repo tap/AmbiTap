@@ -13,7 +13,7 @@
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Apply a directional gain to a higher-order ambisonics signal.
     ///
@@ -148,4 +148,4 @@ namespace ambitap::dsp {
         smoothed_scalar m_inv_norm{1.0f};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

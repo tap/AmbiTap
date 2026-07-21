@@ -24,7 +24,7 @@
 #include "../core/normalization.h"
 #include "../core/spherical_harmonics.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// HRTF data loaded from a SOFA file.
     ///
@@ -66,7 +66,7 @@ namespace ambitap {
             Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXf> cod(Y);
             cod.setThreshold(1e-4f);
             if (cod.rank() < C) {
-                throw std::runtime_error("ambitap::hrtf_data::decompose_sh: measurement grid cannot support order "
+                throw std::runtime_error("tap::ambi::hrtf_data::decompose_sh: measurement grid cannot support order "
                                          + std::to_string(order) + " (re-encoding matrix rank "
                                          + std::to_string(cod.rank()) + " < " + std::to_string(C) + " channels)");
             }
@@ -107,17 +107,17 @@ namespace ambitap {
 
         const std::unique_ptr<MYSOFA_HRTF, decltype(&mysofa_free)> hrtf(mysofa_load(path.c_str(), &err), &mysofa_free);
         if (hrtf == nullptr || err != MYSOFA_OK) {
-            throw std::runtime_error("ambitap::load_sofa: failed to load \"" + path + "\"");
+            throw std::runtime_error("tap::ambi::load_sofa: failed to load \"" + path + "\"");
         }
 
         if (hrtf->R != 2) {
-            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has " + std::to_string(hrtf->R)
+            throw std::runtime_error("tap::ambi::load_sofa: \"" + path + "\" has " + std::to_string(hrtf->R)
                                      + " receivers; only 2 (left/right) is supported");
         }
         if (hrtf->DataDelay.values != nullptr) {
             for (unsigned i = 0; i < hrtf->DataDelay.elements; ++i) {
                 if (hrtf->DataDelay.values[i] != 0.0f) {
-                    throw std::runtime_error("ambitap::load_sofa: \"" + path
+                    throw std::runtime_error("tap::ambi::load_sofa: \"" + path
                                              + "\" carries non-zero Data.Delay, which is not supported; "
                                                "bake the delays into the IRs before loading");
                 }
@@ -133,11 +133,11 @@ namespace ambitap {
         const size_t M = static_cast<size_t>(hrtf->M);
         const size_t N = static_cast<size_t>(hrtf->N);
         if (M == 0 || N == 0) {
-            throw std::runtime_error("ambitap::load_sofa: \"" + path + "\" has no measurements or zero-length IRs");
+            throw std::runtime_error("tap::ambi::load_sofa: \"" + path + "\" has no measurements or zero-length IRs");
         }
         auto require = [&](const MYSOFA_ARRAY& arr, size_t need, const char* what) {
             if (arr.values == nullptr || arr.elements < need) {
-                throw std::runtime_error("ambitap::load_sofa: \"" + path
+                throw std::runtime_error("tap::ambi::load_sofa: \"" + path
                                          + "\" is missing or has a "
                                            "truncated "
                                          + what);
@@ -183,6 +183,6 @@ namespace ambitap {
         return data;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi
 
 #endif // AMBITAP_HAS_SOFA

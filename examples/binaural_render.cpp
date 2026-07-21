@@ -68,10 +68,10 @@ int main(int argc, char** argv) {
     constexpr size_t seconds     = 4;
     constexpr size_t frames      = static_cast<size_t>(sample_rate) * seconds;
 
-    ambitap::dsp::encoder enc(order);
+    tap::ambi::dsp::encoder enc(order);
     enc.snap_parameters();
 
-    ambitap::dsp::binaural_renderer bin(order);
+    tap::ambi::dsp::binaural_renderer bin(order);
     bin.prepare(block, sample_rate);
 
     std::vector<float> left(frames), right(frames);

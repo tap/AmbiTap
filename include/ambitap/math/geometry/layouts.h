@@ -10,7 +10,7 @@
 
 #include "../core/coords.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Standard speaker layout presets. Azimuth: 0 = front, pi/2 = left. Elevation: 0 = horizon.
     namespace layouts {
@@ -106,4 +106,4 @@ namespace ambitap {
 
     } // namespace layouts
 
-} // namespace ambitap
+} // namespace tap::ambi

@@ -17,7 +17,7 @@
 
 #include "ambitap/dsp/room.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// log2(x) for positive finite x: exponent extraction plus a degree-6
     /// Chebyshev fit of log2(m) on the mantissa interval [1, 2).
@@ -83,4 +83,4 @@ namespace ambitap {
         return fast_exp2(db * 0.16609640f);
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

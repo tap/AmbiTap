@@ -11,7 +11,7 @@
 
 #include "indexing.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     namespace detail {
 
@@ -160,4 +160,4 @@ namespace ambitap {
         compute_sh_rotation_from_matrix(order, R, out);
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

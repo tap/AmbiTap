@@ -15,7 +15,7 @@
 #include "indexing.h"
 #include "normalization.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Evaluate all real spherical harmonics up to the given order at a direction,
     /// using ACN ordering and SN3D normalization (AmbiX convention).
@@ -98,4 +98,4 @@ namespace ambitap {
         evaluate_sh(order, coord.azimuth, coord.elevation, out);
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

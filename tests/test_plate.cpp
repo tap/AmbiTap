@@ -16,7 +16,7 @@
 
 #include "ambitap/dsp/plate.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

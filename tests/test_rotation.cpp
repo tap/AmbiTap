@@ -12,7 +12,7 @@
 #include "ambitap/math/core/rotation.h"
 #include "ambitap/math/core/spherical_harmonics.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

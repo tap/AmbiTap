@@ -87,16 +87,14 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 
 # ------------------------------------------------------------------------------
-# Ooura FFT (vendored) — provides the extern "C" rdft/cdft used by
-# include/ambitap/math/binaural/ooura_fft.h. PIC so MODULE/SHARED consumers
-# (host applications, Max externals, Pd externals) can link it.
+# Shared real FFT (DspTap) — the Ooura wrapper used by
+# include/ambitap/math/binaural/ooura_fft.h, formerly vendored here
+# (third_party/ooura). Now consumed from the tap/dsptap submodule as tap::dsp,
+# which carries the same numeric contract (plus double-engine float-I/O
+# overloads for the binaural HRTF analysis) and builds the Ooura static lib PIC.
 # ------------------------------------------------------------------------------
 
-add_library(ambitap_fft STATIC third_party/ooura/fftsg.c third_party/ooura/fftsg_float.c)
-add_library(AmbiTap::fft ALIAS ambitap_fft)
-set_target_properties(ambitap_fft PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    OUTPUT_NAME ambitap_fft)
+add_subdirectory(submodules/dsptap)
 
 # ------------------------------------------------------------------------------
 # The library proper (header-only)
@@ -115,7 +113,7 @@ target_compile_features(ambitap INTERFACE cxx_std_20)
 # FetchContent, the shim (BUILD_INTERFACE-only usage requirements, installs
 # empty) joins the export set and AmbiTapConfig.cmake forwards it to the
 # consumer's real Eigen3::Eigen.
-target_link_libraries(ambitap INTERFACE Eigen3::Eigen ambitap_fft)
+target_link_libraries(ambitap INTERFACE Eigen3::Eigen tap::dsp)
 
 # ------------------------------------------------------------------------------
 # Optional SOFA support (libmysofa). Build-tree only: the installed/exported
@@ -152,7 +150,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Install / export: makes find_package(AmbiTap) work.
 #   - headers            -> <prefix>/include/ambitap
-#   - ambitap, ambitap_fft targets + AmbiTapTargets.cmake
+#   - ambitap + the DspTap targets (tap_dsp, tap_dsp_fft) + AmbiTapTargets.cmake
 #   - AmbiTapConfig.cmake (find_dependency(Eigen3)) + version file
 # ------------------------------------------------------------------------------
 
@@ -162,7 +160,12 @@ if(AMBITAP_INSTALL)
 
     install(DIRECTORY include/ambitap
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install(TARGETS ambitap ambitap_fft
+    install(DIRECTORY submodules/dsptap/include/tap
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    # tap_dsp (INTERFACE) + tap_dsp_fft (the Ooura static lib) come from the
+    # DspTap submodule and are part of ambitap's link interface, so they must
+    # join the same export set.
+    install(TARGETS ambitap tap_dsp tap_dsp_fft
         EXPORT AmbiTapTargets)
     if(TARGET ambitap_eigen)
         # FetchContent Eigen shim: exports as an empty INTERFACE target (its
@@ -173,7 +176,7 @@ if(AMBITAP_INSTALL)
     install(EXPORT AmbiTapTargets
         NAMESPACE AmbiTap::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AmbiTap)
-    install(FILES third_party/ooura/readme.txt
+    install(FILES submodules/dsptap/third_party/ooura/readme.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/ambitap
         RENAME OOURA_LICENSE.txt)
     install(FILES LICENSE THIRD_PARTY_NOTICES.md

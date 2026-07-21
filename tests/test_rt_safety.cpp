@@ -166,7 +166,7 @@ void operator delete[](void* p, std::align_val_t al, const std::nothrow_t&) noex
     ::operator delete(p, al);
 }
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

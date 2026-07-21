@@ -14,7 +14,7 @@
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Compress a higher-order ambisonics signal without altering its spatial
     /// image: detect level on the W (omni) channel only, then apply the same
@@ -143,4 +143,4 @@ namespace ambitap::dsp {
         float m_envelope{0.f}; // audio-thread state
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

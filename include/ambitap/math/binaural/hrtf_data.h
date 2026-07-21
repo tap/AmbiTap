@@ -26,7 +26,7 @@
 
 #include <cstddef>
 
-namespace ambitap {
+namespace tap::ambi {
 
 inline constexpr int    builtin_hrtf_order       = 5;
 inline constexpr size_t builtin_hrtf_channels    = 36;
@@ -2645,7 +2645,7 @@ inline constexpr float builtin_hrtf_magls_right[36][128] = {
     }
 };
 
-} // namespace ambitap
+} // namespace tap::ambi
 
 #endif // AMBITAP_MATH_HRTF_DATA_H
 // NOLINTEND(readability-identifier-naming)

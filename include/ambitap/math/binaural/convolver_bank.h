@@ -13,7 +13,7 @@
 
 #include "ooura_fft.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Partitioned overlap-save convolution of N input channels against
     /// N × M impulse responses, mixed down to M outputs — the shape of
@@ -199,4 +199,4 @@ namespace ambitap {
     using convolver_bank   = basic_convolver_bank<double, real_fft>;
     using convolver_bank32 = basic_convolver_bank<float, real_fft32>;
 
-} // namespace ambitap
+} // namespace tap::ambi

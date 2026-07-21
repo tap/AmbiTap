@@ -10,7 +10,7 @@
 
 #include "ambitap/dsp/nfc.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

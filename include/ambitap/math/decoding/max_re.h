@@ -11,7 +11,7 @@
 
 #include "../core/coords.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Per-order max-rE weights for a decoder of the given ambisonics order.
     ///
@@ -76,4 +76,4 @@ namespace ambitap {
         return weights;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

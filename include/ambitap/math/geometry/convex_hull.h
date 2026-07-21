@@ -14,7 +14,7 @@
 
 #include <Eigen/Dense>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Triangular face of a convex hull, storing indices into the point array.
     struct triangle {
@@ -320,4 +320,4 @@ namespace ambitap {
         return result;
     }
 
-} // namespace ambitap
+} // namespace tap::ambi

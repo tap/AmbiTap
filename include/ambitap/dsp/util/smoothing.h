@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Number of samples over which parameter changes ramp to their target.
     /// ~2.7 ms at 48 kHz — long enough to suppress zipper noise and clicks,
@@ -175,4 +175,4 @@ namespace ambitap::dsp {
         mutable size_t        m_pos{k_smoothing_samples};
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

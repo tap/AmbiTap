@@ -20,7 +20,7 @@
 #include "ambitap/dsp/util/rt_published.h"
 #include "ambitap/math/geometry/layouts.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

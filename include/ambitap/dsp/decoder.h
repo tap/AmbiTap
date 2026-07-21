@@ -20,7 +20,7 @@
 #include "util/async_rebuilder.h"
 #include "util/matrix_applier.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Decoder construction algorithm.
     enum class decoder_algorithm {
@@ -223,4 +223,4 @@ namespace ambitap::dsp {
         }
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

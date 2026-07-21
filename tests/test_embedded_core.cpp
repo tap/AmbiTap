@@ -21,7 +21,7 @@
 #include "ambitap/math/core/rotation_recurrence.h"
 #include "ambitap/math/core/spherical_harmonics.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 // ---------------------------------------------------------------------------
 // fast_math: the approximations must be far inside the compressor's audible

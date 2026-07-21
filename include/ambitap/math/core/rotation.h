@@ -13,7 +13,7 @@
 #include "indexing.h"
 #include "rotation_recurrence.h"
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// Real-SH rotation matrix for a given 3x3 Cartesian rotation.
     ///
@@ -76,4 +76,4 @@ namespace ambitap {
         Eigen::MatrixXf m_matrix;
     };
 
-} // namespace ambitap
+} // namespace tap::ambi

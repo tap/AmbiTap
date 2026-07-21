@@ -21,11 +21,12 @@
 
 namespace {
 
-    void emit_array(std::FILE* f, const char* name, const float (*table)[ambitap::builtin_hrtf_length], int channels) {
-        std::fprintf(f, "inline constexpr float %s[%d][%zu] = {\n", name, channels, ambitap::builtin_hrtf_length);
+    void emit_array(std::FILE* f, const char* name, const float (*table)[tap::ambi::builtin_hrtf_length],
+                    int channels) {
+        std::fprintf(f, "inline constexpr float %s[%d][%zu] = {\n", name, channels, tap::ambi::builtin_hrtf_length);
         for (int ch = 0; ch < channels; ++ch) {
             std::fprintf(f, "    { // ACN %d\n", ch);
-            for (size_t i = 0; i < ambitap::builtin_hrtf_length; ++i) {
+            for (size_t i = 0; i < tap::ambi::builtin_hrtf_length; ++i) {
                 if (i % 8 == 0)
                     std::fprintf(f, "       ");
                 std::fprintf(f, " %.8ef,", static_cast<double>(table[ch][i]));
@@ -61,12 +62,12 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (order < 1 || order > ambitap::builtin_hrtf_order || out_path.empty()
+    if (order < 1 || order > tap::ambi::builtin_hrtf_order || out_path.empty()
         || (projection != "ls" && projection != "magls" && projection != "both")) {
         std::fprintf(stderr,
                      "usage: hrtf_trim --order N (1..%d) [--projection ls|magls|both] "
                      "--out FILE\n",
-                     ambitap::builtin_hrtf_order);
+                     tap::ambi::builtin_hrtf_order);
         return 1;
     }
 
@@ -80,7 +81,7 @@ int main(int argc, char** argv) {
 
     const bool   ls    = projection != "magls";
     const bool   magls = projection != "ls";
-    const size_t bytes = static_cast<size_t>(channels) * ambitap::builtin_hrtf_length * sizeof(float) * 2
+    const size_t bytes = static_cast<size_t>(channels) * tap::ambi::builtin_hrtf_length * sizeof(float) * 2
                          * ((ls ? 1u : 0u) + (magls ? 1u : 0u));
 
     std::fprintf(f,
@@ -100,26 +101,27 @@ int main(int argc, char** argv) {
                  "\n"
                  "#include <cstddef>\n"
                  "\n"
-                 "namespace ambitap {\n"
+                 "namespace tap::ambi {\n"
                  "\n"
                  "inline constexpr int    builtin_hrtf_order       = %d;\n"
                  "inline constexpr size_t builtin_hrtf_channels    = %d;\n"
                  "inline constexpr size_t builtin_hrtf_length      = %zu;\n"
                  "inline constexpr float  builtin_hrtf_sample_rate = %.1ff;\n"
                  "\n",
-                 ambitap::builtin_hrtf_order, order, projection.c_str(), bytes,
+                 tap::ambi::builtin_hrtf_order, order, projection.c_str(), bytes,
                  projection == "both" ? ""
                                       : "///\n/// SINGLE-PROJECTION BUILD: the omitted projection's symbols alias the\n"
                                         "/// kept arrays, so binaural_renderer::set_projection() has NO effect.\n",
-                 order, channels, ambitap::builtin_hrtf_length, static_cast<double>(ambitap::builtin_hrtf_sample_rate));
+                 order, channels, tap::ambi::builtin_hrtf_length,
+                 static_cast<double>(tap::ambi::builtin_hrtf_sample_rate));
 
     if (ls) {
-        emit_array(f, "builtin_hrtf_left", ambitap::builtin_hrtf_left, channels);
-        emit_array(f, "builtin_hrtf_right", ambitap::builtin_hrtf_right, channels);
+        emit_array(f, "builtin_hrtf_left", tap::ambi::builtin_hrtf_left, channels);
+        emit_array(f, "builtin_hrtf_right", tap::ambi::builtin_hrtf_right, channels);
     }
     if (magls) {
-        emit_array(f, "builtin_hrtf_magls_left", ambitap::builtin_hrtf_magls_left, channels);
-        emit_array(f, "builtin_hrtf_magls_right", ambitap::builtin_hrtf_magls_right, channels);
+        emit_array(f, "builtin_hrtf_magls_left", tap::ambi::builtin_hrtf_magls_left, channels);
+        emit_array(f, "builtin_hrtf_magls_right", tap::ambi::builtin_hrtf_magls_right, channels);
     }
     if (!magls) {
         std::fprintf(f, "inline constexpr auto& builtin_hrtf_magls_left  = builtin_hrtf_left;\n"
@@ -130,7 +132,7 @@ int main(int argc, char** argv) {
                         "inline constexpr auto& builtin_hrtf_right = builtin_hrtf_magls_right;\n\n");
     }
 
-    std::fprintf(f, "} // namespace ambitap\n\n#endif // AMBITAP_MATH_HRTF_DATA_H\n");
+    std::fprintf(f, "} // namespace tap::ambi\n\n#endif // AMBITAP_MATH_HRTF_DATA_H\n");
     std::fclose(f);
 
     std::fprintf(stderr, "wrote %s: order %d, projection %s, %zu bytes of tables\n", out_path.c_str(), order,

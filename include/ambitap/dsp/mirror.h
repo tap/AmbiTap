@@ -13,7 +13,7 @@
 #include "../math/core/validate.h"
 #include "util/smoothing.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Mirror a HOA signal across one or more cardinal planes: left-right,
     /// front-back, and/or up-down.
@@ -142,4 +142,4 @@ namespace ambitap::dsp {
         smoothed_table<k_max_channel_count> m_smooth;
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

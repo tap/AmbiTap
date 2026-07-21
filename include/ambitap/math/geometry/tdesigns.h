@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-namespace ambitap {
+namespace tap::ambi {
 
 // T-design order 4, 14 points
 constexpr float tdesign_4_data[][3] = {
@@ -1218,7 +1218,7 @@ inline const float (*tdesign_for_order(int order, size_t& count))[3] {
     }
 }
 
-} // namespace ambitap
+} // namespace tap::ambi
 
 #endif // AMBITAP_MATH_TDESIGNS_H
 // NOLINTEND(readability-identifier-naming)

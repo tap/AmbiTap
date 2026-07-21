@@ -67,12 +67,12 @@ int main() {
                 k_block, k_fs / 1000.f, 1e6 * k_block / k_fs, k_runs, k_reps);
 
     for (int order : {1, 3, 5}) {
-        const size_t       channels = ambitap::channel_count(order);
+        const size_t       channels = tap::ambi::channel_count(order);
         planar             hoa(channels, k_block, 0.25f);
         std::vector<float> mono(k_block, 0.5f);
 
         {
-            ambitap::dsp::encoder enc(order);
+            tap::ambi::dsp::encoder enc(order);
             enc.set_direction(0.4f, 0.1f);
             enc.snap_parameters();
             report("encoder      order " + std::to_string(order), bench_us_per_block([&] {
@@ -81,12 +81,12 @@ int main() {
                    }));
         }
         {
-            ambitap::dsp::rotator rot(order);
+            tap::ambi::dsp::rotator rot(order);
             rot.set_rotation(0.4f, 0.2f, -0.1f);
             rot.wait_for_settling();
             planar dst(channels, k_block, 0.f);
             // run out the adoption crossfade so the settled path is measured
-            for (size_t i = 0; i < ambitap::dsp::rotator::k_fade_samples / k_block + 1; ++i) {
+            for (size_t i = 0; i < tap::ambi::dsp::rotator::k_fade_samples / k_block + 1; ++i) {
                 rot.process(hoa.in.data(), dst.out.data(), k_block);
             }
             report("rotator      order " + std::to_string(order), bench_us_per_block([&] {
@@ -95,11 +95,11 @@ int main() {
                    }));
         }
         {
-            ambitap::dsp::decoder dec(order);
-            dec.set_speakers(ambitap::layouts::cube());
+            tap::ambi::dsp::decoder dec(order);
+            dec.set_speakers(tap::ambi::layouts::cube());
             dec.wait_for_settling();
             planar spk(8, k_block, 0.f);
-            for (size_t i = 0; i < ambitap::dsp::decoder::k_fade_samples / k_block + 1; ++i) {
+            for (size_t i = 0; i < tap::ambi::dsp::decoder::k_fade_samples / k_block + 1; ++i) {
                 dec.process(hoa.in.data(), spk.out.data(), 8, k_block);
             }
             report("decoder/cube order " + std::to_string(order), bench_us_per_block([&] {
@@ -108,7 +108,7 @@ int main() {
                    }));
         }
         {
-            ambitap::dsp::binaural_renderer bin(order);
+            tap::ambi::dsp::binaural_renderer bin(order);
             bin.prepare(k_block, k_fs);
             std::vector<float> l(k_block), r(k_block);
             report("binaural     order " + std::to_string(order), bench_us_per_block([&] {
@@ -122,7 +122,7 @@ int main() {
     // Plate reverb across tank sizes: 2 branches is the stereo Dattorro
     // figure-8; 8 branches with wide I/O is the heavy multichannel case.
     for (auto [ins, outs, branches] : {std::array<int, 3>{1, 2, 2}, {4, 8, 4}, {8, 16, 8}}) {
-        ambitap::dsp::plate plate(ins, outs, branches);
+        tap::ambi::dsp::plate plate(ins, outs, branches);
         plate.prepare(k_fs);
         plate.snap_parameters();
         planar in(static_cast<size_t>(ins), k_block, 0.25f);
@@ -138,10 +138,10 @@ int main() {
     // Rebuild latency: how long a decoder matrix build takes off the audio
     // thread (order 5, 7.1.4 via ALLRAD — the expensive path).
     {
-        ambitap::dsp::decoder dec(5);
-        dec.set_algorithm(ambitap::dsp::decoder_algorithm::allrad);
+        tap::ambi::dsp::decoder dec(5);
+        dec.set_algorithm(tap::ambi::dsp::decoder_algorithm::allrad);
         const auto t0 = clock_t_::now();
-        dec.set_speakers(ambitap::layouts::surround_7_1_4());
+        dec.set_speakers(tap::ambi::layouts::surround_7_1_4());
         dec.wait_for_settling();
         const auto t1 = clock_t_::now();
         std::printf("decoder rebuild (allrad, order 5, 7.1.4): %.1f ms (worker thread)\n",

@@ -10,7 +10,7 @@
 #include "ambitap/dsp/encoder.h"
 #include "ambitap/math/core/spherical_harmonics.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 TEST(DspEncoder, CoefficientsMatchEvaluateSh) {
     dsp::encoder enc(3);

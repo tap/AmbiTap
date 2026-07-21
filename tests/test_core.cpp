@@ -13,7 +13,7 @@
 #include "ambitap/math/core/spherical_harmonics.h"
 #include "ambitap/math/geometry/tdesigns.h"
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 TEST(Indexing, ChannelCount) {
     EXPECT_EQ(channel_count(0), 1u);

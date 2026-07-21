@@ -15,7 +15,7 @@
 #include "../math/core/indexing.h"
 #include "../math/core/validate.h"
 
-namespace ambitap::dsp {
+namespace tap::ambi::dsp {
 
     /// Convolve a HOA bus to binaural stereo against caller-supplied SH-domain
     /// HRTF FIRs and apply a click-free output volume.
@@ -122,4 +122,4 @@ namespace ambitap::dsp {
         float              m_volume_current{1.0f}; // audio-thread ramp state
     };
 
-} // namespace ambitap::dsp
+} // namespace tap::ambi::dsp

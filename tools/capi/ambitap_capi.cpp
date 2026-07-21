@@ -11,7 +11,7 @@
 
 #include <ambitap/ambitap.h>
 
-using namespace ambitap;
+using namespace tap::ambi;
 
 namespace {
 

@@ -8,7 +8,7 @@
 #include <cmath>
 #include <cstddef>
 
-namespace ambitap {
+namespace tap::ambi {
 
     /// SN3D (Schmidt semi-normalized) factor for spherical harmonic (n, |m|).
     ///
@@ -43,4 +43,4 @@ namespace ambitap {
         return 1.0f / std::sqrt(static_cast<float>(2 * order + 1));
     }
 
-} // namespace ambitap
+} // namespace tap::ambi
