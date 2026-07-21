@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
     constexpr int    order = 3;
     constexpr size_t block = 64;
-    constexpr float  pi    = 3.14159265358979f;
+    constexpr float  k_pi  = 3.14159265358979f;
     // NOTE: the built-in HRTF set is sampled at 44.1 kHz; pass the host rate
     // to prepare() and the renderer resamples the FIRs to match.
     constexpr float  sample_rate = 48000.0f;
@@ -88,10 +88,10 @@ int main(int argc, char** argv) {
     // A 330 Hz tone orbiting the head once per two seconds.
     size_t n = 0;
     for (size_t start = 0; start + block <= frames; start += block) {
-        const float az = 2.0f * pi * static_cast<float>(start) / (2.0f * sample_rate); // one revolution / 2 s
+        const float az = 2.0f * k_pi * static_cast<float>(start) / (2.0f * sample_rate); // one revolution / 2 s
         enc.set_direction(az, 0.0f); // ramped by the encoder: click-free motion
         for (size_t i = 0; i < block; ++i, ++n) {
-            mono[i] = 0.5f * std::sin(2.0f * pi * 330.0f * static_cast<float>(n) / sample_rate);
+            mono[i] = 0.5f * std::sin(2.0f * k_pi * 330.0f * static_cast<float>(n) / sample_rate);
         }
         enc.process(mono.data(), hoa_out.data(), block);
         bin.process(hoa_in.data(), left.data() + start, right.data() + start, block);
