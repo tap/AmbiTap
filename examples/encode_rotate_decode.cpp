@@ -17,16 +17,16 @@
 int main() {
     constexpr int    order  = 3;
     constexpr size_t frames = 4800; // 100 ms at 48 kHz
-    constexpr float  pi     = 3.14159265358979f;
+    constexpr float  k_pi   = 3.14159265358979f;
 
     // 1. Encode a 440 Hz tone as a point source 45° to the left.
     tap::ambi::dsp::encoder enc(order);
-    enc.set_direction(45.0f * pi / 180.0f, 0.0f);
+    enc.set_direction(45.0f * k_pi / 180.0f, 0.0f);
     enc.snap_parameters(); // offline render: no parameter ramp
 
     std::vector<float> mono(frames);
     for (size_t i = 0; i < frames; ++i) {
-        mono[i] = std::sin(2.0f * pi * 440.0f * static_cast<float>(i) / 48000.0f);
+        mono[i] = std::sin(2.0f * k_pi * 440.0f * static_cast<float>(i) / 48000.0f);
     }
     std::vector<std::vector<float>> hoa(enc.channels(), std::vector<float>(frames));
     std::vector<float*>             hoa_ptrs;
@@ -37,7 +37,7 @@ int main() {
 
     // 2. Rotate the whole soundfield 90° to the right (yaw = -90°).
     tap::ambi::dsp::rotator rot(order);
-    rot.set_rotation(-90.0f * pi / 180.0f, 0.0f, 0.0f);
+    rot.set_rotation(-90.0f * k_pi / 180.0f, 0.0f, 0.0f);
     rot.wait_for_settling(); // offline: block until the matrix is built
 
     std::vector<std::vector<float>> rotated(rot.channels(), std::vector<float>(frames));

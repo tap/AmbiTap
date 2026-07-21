@@ -294,7 +294,7 @@ jobs:
           #include <ambitap/ambitap.h>
           #include <cstdio>
           int main() {
-              ambitap::dsp::encoder enc(3);
+              tap::ambi::dsp::encoder enc(3);
               enc.set_direction(0.5f, 0.1f);
               enc.snap_parameters();
               float out[16];
