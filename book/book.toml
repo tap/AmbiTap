@@ -11,4 +11,9 @@ create-missing = false
 [output.html]
 default-theme = "rust"
 git-repository-url = "https://github.com/tap/AmbiTap"
-site-url = "/AmbiTap/book/"
+# The Pages site is assembled in docs.yml as site/ with this book at the ROOT
+# (and the Doxygen API reference under site/api/), so the book is served from
+# /AmbiTap/, not /AmbiTap/book/. site-url feeds the absolute links in the
+# generated 404.html; pointing it at a path the site does not have gave the
+# 404 page a broken "home" link.
+site-url = "/AmbiTap/"

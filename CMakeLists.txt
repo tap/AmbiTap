@@ -102,6 +102,12 @@ add_subdirectory(submodules/dsptap)
 
 add_library(ambitap INTERFACE)
 add_library(AmbiTap::ambitap ALIAS ambitap)
+# The family-wide alias, per the namespace convention in taphouse's README: one
+# `tap::<library>` sub-namespace per repo, and the CMake alias matches it. The
+# older spelling above stays so existing consumers keep working; prefer
+# `tap::ambi` in new code. Note this is a build-tree alias only -- the
+# installed config package still exports under its own namespace.
+add_library(tap::ambi ALIAS ambitap)
 target_include_directories(ambitap INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
