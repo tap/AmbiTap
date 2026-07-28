@@ -1,8 +1,16 @@
 include(FetchContent)
+# Fetched by git clone at a commit pin, which is the form every sibling *Tap repo
+# uses (DspTap/MuTap/RatioTap/SampleRateTap). This repo previously declared a
+# release *tarball* instead; that is the one mechanism an HTTPS-proxied build
+# environment blocks, so AmbiTap was the only library in the family whose tests
+# could not be configured behind a proxy. Note the family currently runs two
+# GTest versions -- this repo on v1.15.2, the other four on v1.14.0. Unifying
+# them is a deliberate call for whoever needs it, not a side effect of this
+# mechanism change.
 FetchContent_Declare(googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz
-    URL_HASH SHA256=7b42b4d6ed48810c5362c265a17faebe90dc2373c885e5216439d37927f02926
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    # Commit pin, not the movable tag: tags can be re-pointed upstream.
+    GIT_TAG b514bdc898e2951020cbdca1304b75f5950d1f59 # v1.15.2
     # Prefer an already-installed GTest (offline builds, distro packages).
     FIND_PACKAGE_ARGS NAMES GTest
 )
