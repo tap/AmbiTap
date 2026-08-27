@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.24)
+# DOWNLOAD_EXTRACT_TIMESTAMP below is guarded, so 3.22 -- Ubuntu 22.04 LTS's
+# stock cmake -- is enough. Nothing else here needs 3.23+.
+cmake_minimum_required(VERSION 3.22)
 
 project(AmbiTap VERSION 0.1.0 LANGUAGES C CXX)
 
@@ -57,13 +59,21 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 if(NOT TARGET Eigen3::Eigen)
     include(FetchContent)
+    # CMP0135 (new in 3.24) changed URL extraction to stamp files with the
+    # extraction time; DOWNLOAD_EXTRACT_TIMESTAMP TRUE asks for the older
+    # behaviour, which IS the default before 3.24. So below 3.24 the argument
+    # is both unavailable and unnecessary -- omitting it is exactly equivalent.
+    set(_ambitap_extract_ts "")
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+        set(_ambitap_extract_ts DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    endif()
     if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
         # A SOURCE_SUBDIR with no CMakeLists.txt makes MakeAvailable download
         # without add_subdirectory() — headers only, no Eigen build system.
         FetchContent_Declare(eigen
             URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
             URL_HASH SHA256=8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${_ambitap_extract_ts}
             SOURCE_SUBDIR cmake_subdir_that_does_not_exist
         )
         FetchContent_MakeAvailable(eigen)
@@ -73,7 +83,7 @@ if(NOT TARGET Eigen3::Eigen)
         FetchContent_Declare(eigen
             URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
             URL_HASH SHA256=8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${_ambitap_extract_ts}
         )
         FetchContent_GetProperties(eigen)
         if(NOT eigen_POPULATED)
