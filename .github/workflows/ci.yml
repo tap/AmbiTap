@@ -239,7 +239,7 @@ jobs:
           arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             --specs=rdimon.specs --specs=nano.specs -nostartfiles \
             -T tools/embedded/qemu/mps3_an547.ld -Wl,--no-warn-rwx-segments \
-            rt_core_check.o startup_an547.o fftsg_float.o -o rt_core_qemu.elf
+            rt_core_check.o startup_an547.o -o rt_core_qemu.elf
           timeout 120 qemu-system-arm -machine mps3-an547 -semihosting -nographic \
             -kernel rt_core_qemu.elf | tee qemu.log
           grep -q "RT-PROFILE-PASS" qemu.log
@@ -259,7 +259,7 @@ jobs:
           arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             --specs=rdimon.specs --specs=nano.specs -nostartfiles \
             -T tools/embedded/qemu/mps3_an547.ld -Wl,--no-warn-rwx-segments \
-            rt_trim.o startup_an547.o fftsg_float.o -o rt_trim_qemu.elf
+            rt_trim.o startup_an547.o -o rt_trim_qemu.elf
           arm-none-eabi-size rt_trim_qemu.elf
           timeout 120 qemu-system-arm -machine mps3-an547 -semihosting -nographic \
             -kernel rt_trim_qemu.elf | tee qemu_trim.log
