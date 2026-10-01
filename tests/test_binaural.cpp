@@ -46,9 +46,9 @@ TEST(RealFft, RoundTrip) {
     EXPECT_EQ(fft.size(), N);
     EXPECT_EQ(fft.num_bins(), N / 2 + 1);
 
-    const auto         input = random_signal(N, 1);
-    std::vector<float> freq(N), time(N);
-    fft.forward(input.data(), freq.data());
+    const auto          input = random_signal(N, 1);
+    std::vector<double> freq(input.begin(), input.end()), time(N);
+    fft.forward_inplace(freq.data());
     fft.inverse(freq.data(), time.data());
 
     for (size_t i = 0; i < N; ++i) {
@@ -57,10 +57,11 @@ TEST(RealFft, RoundTrip) {
 }
 
 TEST(RealFft, DcBinOfConstantSignal) {
-    constexpr size_t   N = 64;
-    real_fft           fft(N);
-    std::vector<float> input(N, 0.5f), freq(N);
-    fft.forward(input.data(), freq.data());
+    constexpr size_t    N = 64;
+    real_fft            fft(N);
+    std::vector<float>  input(N, 0.5f);
+    std::vector<double> freq(input.begin(), input.end());
+    fft.forward_inplace(freq.data());
 
     EXPECT_NEAR(freq[0], 0.5f * static_cast<float>(N), 1e-4f); // DC = sum
     // All non-DC bins of a constant are zero (freq[1] is the Nyquist bin).

@@ -198,7 +198,7 @@ namespace tap::ambi::dsp {
             std::vector<float>         absorption_rev; ///< absorption, per-line reversed (audio path)
             std::array<float, k_lines> iir_b0{};       ///< per-line one-pole b0 (kind==iir)
             std::array<float, k_lines> iir_a1{};       ///< per-line one-pole pole (kind==iir)
-            std::vector<double>        inject_spectra; ///< [line][partition][fft], Ooura packing
+            std::vector<double>        inject_spectra; ///< [line][partition][fft], DspTap packing
             size_t                     partitions{0};
             size_t                     chunk{0};   ///< partition/block size the spectra assume
             std::array<float, k_lines> out_gain{}; ///< per-channel sn3d * calibration
@@ -959,9 +959,9 @@ namespace tap::ambi::dsp {
             }
 
             // Interpolate onto the uniform mesh and apply the linear-phase
-            // shift exp(-j pi 127 x). Ooura's rdft stores +sin imaginary
-            // parts (the conjugate of numpy's convention), so the packed
-            // imaginary component flips sign.
+            // shift exp(-j pi 127 x). DspTap's packed spectrum stores +sin
+            // imaginary parts (W = exp(+i), the conjugate of numpy's
+            // convention), so the packed imaginary component flips sign.
             std::array<double, G> spec{};
             size_t                seg = 0;
             for (size_t k = 0; k < nfreqs; ++k) {

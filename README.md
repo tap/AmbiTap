@@ -22,7 +22,7 @@ include/ambitap/
 │   ├── core/            spherical harmonics, ACN indexing, SN3D/N3D, SH rotation
 │   ├── geometry/        3D convex hull, 3D + 2D pairwise VBAP, presets, T-designs
 │   ├── decoding/        mode-matching, ALLRAD, EPAD decoder construction, max-rE
-│   └── binaural/        Ooura real-FFT wrapper, partitioned overlap-save convolver,
+│   └── binaural/        DspTap real-FFT alias, partitioned overlap-save convolver,
 │                        embedded SH-domain MIT KEMAR HRTF (order 5, LS + MagLS),
 │                        FIR resampling, optional SOFA reader
 ├── dsp/                 runtime-sized processors: encoder, rotator, decoder,
@@ -36,8 +36,8 @@ include/ambitap/
 └── analysis/            UI-feeding analysis: energy vector, soundfield heatmap
 ```
 
-The library is header-only apart from one tiny static target (`AmbiTap::fft`,
-the vendored Ooura `fftsg.c`).
+The library is header-only, the DspTap real FFT included (its `tap_dsp_fft`
+objects exist only for the CMSIS-DSP backend on a Cortex-M55 build).
 
 **The real-time contract** (machine-checked in `tests/test_rt_safety.cpp` and
 `tests/test_dsp_threads.cpp`, under TSan in CI): every `process()` path is
@@ -148,8 +148,9 @@ Options:
 
 ## Third-party
 
-- **Ooura FFT** (`third_party/ooura/`) — Takuya Ooura's split-radix FFT package;
-  freely usable with attribution (see `third_party/ooura/readme.txt`).
+- **DspTap** (`submodules/dsptap/`) — the Tap family's shared DSP primitives,
+  MIT; its real FFT is a clean-room engine (DspTap's `NOTICE.md` keeps the
+  Ooura license record for the trees that carried the earlier port).
 - **Eigen** — MPL2, header-only, not vendored.
 - **MIT KEMAR HRTF** — `math/binaural/hrtf_data.h` is a spherical-harmonic
   projection of the MIT KEMAR (normal pinna) measurements of W. G. Gardner and

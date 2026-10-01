@@ -273,17 +273,21 @@ namespace tap::ambi::dsp {
                         ir[t] += sh[ch] * fir[t];
                     }
                 }
-                std::vector<float> spec(fft_size);
-                fft.forward(ir.data(), spec.data());
+                // Transform in double (the engine's golden profile), the float IR widened in.
+                std::vector<double> spec(fft_size);
+                for (size_t t = 0; t < fft_size; ++t) {
+                    spec[t] = static_cast<double>(ir[t]);
+                }
+                fft.forward_inplace(spec.data());
 
-                // Ooura packing: spec[0]=Re(0), spec[1]=Re(N/2),
+                // DspTap packing: spec[0]=Re(0), spec[1]=Re(N/2),
                 // spec[2k]=Re(k), spec[2k+1]=Im(k).
                 std::vector<float> m(bins);
-                m[0]        = std::fabs(spec[0]);
-                m[bins - 1] = std::fabs(spec[1]);
+                m[0]        = static_cast<float>(std::fabs(spec[0]));
+                m[bins - 1] = static_cast<float>(std::fabs(spec[1]));
                 for (size_t k = 1; k < bins - 1; ++k) {
-                    const float re = spec[2 * k];
-                    const float im = spec[2 * k + 1];
+                    const float re = static_cast<float>(spec[2 * k]);
+                    const float im = static_cast<float>(spec[2 * k + 1]);
                     m[k]           = std::sqrt(re * re + im * im);
                 }
                 mag[ear] = std::move(m);
