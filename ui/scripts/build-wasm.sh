@@ -60,6 +60,5 @@ em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" \
     -sALLOW_MEMORY_GROWTH=1 \
     -sINITIAL_MEMORY=16MB \
     -o dist/wasm/ambitap.wasm
-rm -f dist/wasm/fftsg.o
 
 ls -la dist/wasm/ambitap.wasm
