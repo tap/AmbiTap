@@ -50,9 +50,9 @@ EXPORTS+=,_ambitap_xtc_create,_ambitap_xtc_destroy,_ambitap_xtc_design,_ambitap_
 EXPORTS+=,_ambitap_builtin_hrtf_info,_ambitap_builtin_hrtf_hrir
 
 mkdir -p dist/wasm
-# Ooura FFT (AmbiTap::fft) is C — compile separately so rdft keeps C linkage.
-emcc -c "$LIB_ROOT/third_party/ooura/fftsg.c" -O2 -o dist/wasm/fftsg.o
-em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" dist/wasm/fftsg.o \
+# The real FFT is DspTap's header-only srdif engine (tap::dsp), reached through
+# the submodule's include path below; nothing is compiled separately for it.
+em++ "$LIB_ROOT/tools/capi/ambitap_capi.cpp" \
     -I "$LIB_ROOT/include" -isystem "$EIGEN_DIR" \
     -std=c++20 -O2 -fwasm-exceptions \
     --no-entry \

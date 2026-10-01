@@ -226,11 +226,9 @@ jobs:
             -Wall -Wextra -Werror -Wdouble-promotion \
             -Iinclude -Isubmodules/dsptap/include \
             -c tools/embedded/rt_core_check.cpp -o rt_core_check.o
-          arm-none-eabi-gcc -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -Os \
-            -c submodules/dsptap/third_party/ooura/fftsg_float.c -o fftsg_float.o
           arm-none-eabi-g++ -mcpu=cortex-m55 -mthumb -mfloat-abi=hard \
             --specs=nosys.specs --specs=nano.specs \
-            rt_core_check.o fftsg_float.o -o rt_core_check.elf
+            rt_core_check.o -o rt_core_check.elf
           arm-none-eabi-size rt_core_check.elf
 
       - name: Run the RT profile self-checks on QEMU (mps3-an547)

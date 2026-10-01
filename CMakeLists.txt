@@ -97,11 +97,11 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 
 # ------------------------------------------------------------------------------
-# Shared real FFT (DspTap) — the Ooura wrapper used by
-# include/ambitap/math/binaural/ooura_fft.h, formerly vendored here
-# (third_party/ooura). Now consumed from the tap/dsptap submodule as tap::dsp,
-# which carries the same numeric contract (plus double-engine float-I/O
-# overloads for the binaural HRTF analysis) and builds the Ooura static lib PIC.
+# Shared real FFT (DspTap) — reached through
+# include/ambitap/math/binaural/ooura_fft.h, which once held a vendored Ooura
+# wrapper (third_party/ooura). Now consumed from the tap/dsptap submodule as
+# tap::dsp, header-only (the clean-room srdif engine at the same numeric
+# contract); tap_dsp_fft carries CMSIS-DSP objects only under TAP_DSP_FFT_CMSIS.
 # ------------------------------------------------------------------------------
 
 add_subdirectory(submodules/dsptap)
@@ -178,11 +178,16 @@ if(AMBITAP_INSTALL)
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     install(DIRECTORY submodules/dsptap/include/tap
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    # tap_dsp (INTERFACE) + tap_dsp_fft (the Ooura static lib) come from the
-    # DspTap submodule and are part of ambitap's link interface, so they must
-    # join the same export set.
-    install(TARGETS ambitap tap_dsp tap_dsp_fft
+    # tap_dsp (INTERFACE) comes from the DspTap submodule and is part of
+    # ambitap's link interface, so it must join the same export set.
+    install(TARGETS ambitap tap_dsp
         EXPORT AmbiTapTargets)
+    # tap_dsp_fft exists only when DspTap builds the CMSIS-DSP backend
+    # (TAP_DSP_FFT_CMSIS); every other build of tap::dsp is header-only.
+    if(TARGET tap_dsp_fft)
+        install(TARGETS tap_dsp_fft
+            EXPORT AmbiTapTargets)
+    endif()
     if(TARGET ambitap_eigen)
         # FetchContent Eigen shim: exports as an empty INTERFACE target (its
         # include dir is BUILD_INTERFACE-only); consumers get real Eigen from
