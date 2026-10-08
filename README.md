@@ -1,4 +1,4 @@
-# AmbiTap
+# <picture><source media="(prefers-color-scheme: dark)" srcset=".github/icon-dark.svg"><img src=".github/icon-light.svg" width="40" height="40" alt="" align="top"></picture> AmbiTap
 
 [![CI](https://github.com/tap/AmbiTap/actions/workflows/ci.yml/badge.svg)](https://github.com/tap/AmbiTap/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
